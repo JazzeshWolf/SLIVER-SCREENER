@@ -28,6 +28,9 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          # Match the Pages sub-path to the actual repo name automatically
+          # (avoids blank pages from a case/name mismatch).
+          BASE_PATH: /${{ github.event.repository.name }}/
           # Optional: a FRED key baked in at build for client-side real-yield history.
           VITE_FRED_KEY: ${{ secrets.VITE_FRED_KEY }}
       - uses: actions/upload-pages-artifact@v3
