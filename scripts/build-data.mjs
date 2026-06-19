@@ -118,14 +118,41 @@ async function yahooHistory(symbol, range = "6mo") {
   }
 }
 
-// Fetch a daily series trying multiple providers until one returns data.
-async function fetchSeries(name, yahooSym, stooqSym) {
-  let h = await yahooHistory(yahooSym);
+// Twelve Data — key-authenticated (not IP-blocked like keyless APIs). Free tier
+// covers XAG/USD, XAU/USD, USD/INR, DXY. Set TWELVEDATA_KEY as a repo secret.
+async function twelveDataHistory(symbol, n = 160) {
+  const key = process.env.TWELVEDATA_KEY;
+  if (!key) return [];
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=${n}&order=ASC&apikey=${key}`;
+  try {
+    const j = await getJson(url);
+    if (j.status === "error" || !Array.isArray(j.values)) {
+      console.warn(`td ${symbol}: ${j.message || "no values"}`);
+      return [];
+    }
+    return j.values
+      .map((v) => ({ t: v.datetime, v: Number(v.close) }))
+      .filter((p) => Number.isFinite(p.v) && p.v > 0);
+  } catch (e) {
+    console.warn(`td ${symbol}: ${e.message}`);
+    return [];
+  }
+}
+
+// Fetch a daily series, trying providers in order until one returns data:
+// Twelve Data (key) -> Yahoo (keyless) -> stooq (keyless).
+async function fetchSeries(name, { td, yahoo, stooq }) {
+  let h = await twelveDataHistory(td);
+  if (h.length > 5) {
+    console.log(`${name}: td ${h.length} pts`);
+    return h;
+  }
+  h = await yahooHistory(yahoo);
   if (h.length > 5) {
     console.log(`${name}: yahoo ${h.length} pts`);
     return h;
   }
-  h = await stooqHistory(stooqSym);
+  h = await stooqHistory(stooq);
   console.log(`${name}: stooq ${h.length} pts`);
   return h;
 }
@@ -267,10 +294,10 @@ async function main() {
 
   // 1) Histories (server-side, reliable).
   const [xagH, xauH, dxyH, inrH, fredReal, fredNom] = await Promise.all([
-    fetchSeries("xag", "SI=F", "xagusd"),
-    fetchSeries("xau", "GC=F", "xauusd"),
-    fetchSeries("dxy", "DX-Y.NYB", "^dxy"),
-    fetchSeries("usdinr", "INR=X", "usdinr"),
+    fetchSeries("xag", { td: "XAG/USD", yahoo: "SI=F", stooq: "xagusd" }),
+    fetchSeries("xau", { td: "XAU/USD", yahoo: "GC=F", stooq: "xauusd" }),
+    fetchSeries("dxy", { td: "DXY", yahoo: "DX-Y.NYB", stooq: "^dxy" }),
+    fetchSeries("usdinr", { td: "USD/INR", yahoo: "INR=X", stooq: "usdinr" }),
     fredSeries("DFII10"),
     fredSeries("DGS10"),
   ]);

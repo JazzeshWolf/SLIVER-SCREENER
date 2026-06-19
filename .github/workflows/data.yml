@@ -34,6 +34,8 @@ jobs:
 
       - name: Build data snapshot
         env:
+          # Free market-data key (Twelve Data) — the reliable history source.
+          TWELVEDATA_KEY: ${{ secrets.TWELVEDATA_KEY }}
           # Optional enhancements — set as repo secrets if you use them.
           KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
           KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
