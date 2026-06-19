@@ -227,9 +227,13 @@ export function scoreHorizon(
 
   rawScore = clamp(rawScore * 10, -10, 10);
 
+  // Best available history across all inputs — confidence should reflect the
+  // series actually backing the present factors (e.g. gold/INR), not only silver.
   const maxHistory = Math.max(
     live.xagHistory.length,
+    live.xauHistory.length,
     live.dxyHistory.length,
+    live.usdInrHistory.length,
     live.real10yHistory.length,
   );
   const stale = live.partial || mcx.stale;
