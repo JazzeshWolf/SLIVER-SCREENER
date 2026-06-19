@@ -24,14 +24,28 @@ async function getJson(url, opts) {
 
 /** Fetch + gunzip the instrument master (MCX only, falling back to complete). */
 export async function fetchInstruments() {
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    Accept: "application/gzip, application/octet-stream, application/json, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    Referer: "https://upstox.com/",
+  };
   for (const url of [INSTRUMENTS_MCX, INSTRUMENTS_ALL]) {
     try {
-      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error(`${res.status}`);
       const buf = Buffer.from(await res.arrayBuffer());
-      const text = buf[0] === 0x1f && buf[1] === 0x8b ? gunzipSync(buf).toString("utf8") : buf.toString("utf8");
+      const gz = buf[0] === 0x1f && buf[1] === 0x8b;
+      if (!gz && (buf[0] === 0x3c /* '<' */ || buf.length < 100)) {
+        throw new Error("blocked (HTML/empty response)");
+      }
+      const text = gz ? gunzipSync(buf).toString("utf8") : buf.toString("utf8");
       const arr = JSON.parse(text);
-      if (Array.isArray(arr) && arr.length) return arr;
+      if (Array.isArray(arr) && arr.length) {
+        console.log(`upstox instruments: ${arr.length} from ${url}`);
+        return arr;
+      }
     } catch (e) {
       console.warn(`upstox instruments ${url}: ${e.message}`);
     }
