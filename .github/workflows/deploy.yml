@@ -3,7 +3,9 @@ name: Deploy to GitHub Pages
 # Pages build type is set to "workflow" via actions/configure-pages (enablement).
 on:
   push:
-    branches: [main]
+    # Includes the repo's current default branch — the github-pages environment
+    # only permits deployments from the default branch.
+    branches: [main, "claude/wizardly-pasteur-58a976"]
     paths-ignore:
       - "public/data/**" # data refreshes shouldn't trigger a full redeploy
   workflow_dispatch: {}
