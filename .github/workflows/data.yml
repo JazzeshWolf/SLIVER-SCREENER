@@ -1,0 +1,47 @@
+name: Refresh MCX data
+
+# Free "serverless backend": fetches MCX data during market hours, computes
+# OI/IV/basis, and commits public/data/latest.json + history.jsonl.
+on:
+  schedule:
+    # Every 10 min, ~09:00–23:30 IST (03:30–18:00 UTC), Mon–Fri.
+    # MCX silver has a morning + evening session; widen/narrow as needed.
+    - cron: "*/10 3-18 * * 1-5"
+  workflow_dispatch: {} # manual trigger for testing
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build data snapshot
+        env:
+          # Optional enhancements — set as repo secrets if you use them.
+          KITE_API_KEY: ${{ secrets.KITE_API_KEY }}
+          KITE_ACCESS_TOKEN: ${{ secrets.KITE_ACCESS_TOKEN }}
+          FRED_KEY: ${{ secrets.FRED_KEY }}
+        run: node scripts/build-data.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "sliver-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if [ -n "$(git status --porcelain public/data)" ]; then
+            git add public/data
+            git commit -m "data: refresh MCX snapshot [skip ci]"
+            git push
+          else
+            echo "No data changes."
+          fi

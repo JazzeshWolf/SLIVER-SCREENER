@@ -1,0 +1,80 @@
+{
+  "asOf": "2026-06-19T10:05:00Z",
+  "stale": false,
+  "partial": false,
+  "mcx": {
+    "symbol": "SILVER",
+    "silverFut": 275500,
+    "prevClose": 273900,
+    "expiry": "2026-07-04",
+    "dte": 15,
+    "oi": 18420,
+    "oiChg": 1240
+  },
+  "options": {
+    "atmStrike": 275000,
+    "atmIv": 0.34,
+    "ivRank": 68,
+    "ivPercentile": 64,
+    "rv20": 0.27,
+    "expectedMove1sd": 18300,
+    "chain": [
+      {
+        "strike": 265000,
+        "type": "PE",
+        "ltp": 1850,
+        "iv": 0.37,
+        "oi": 2100
+      },
+      {
+        "strike": 270000,
+        "type": "PE",
+        "ltp": 2950,
+        "iv": 0.35,
+        "oi": 3400
+      },
+      {
+        "strike": 275000,
+        "type": "CE",
+        "ltp": 4100,
+        "iv": 0.34,
+        "oi": 4200
+      },
+      {
+        "strike": 280000,
+        "type": "CE",
+        "ltp": 2600,
+        "iv": 0.345,
+        "oi": 3900
+      },
+      {
+        "strike": 285000,
+        "type": "CE",
+        "ltp": 1500,
+        "iv": 0.36,
+        "oi": 2750
+      }
+    ]
+  },
+  "basis": {
+    "fairValue": 272800,
+    "basis": 2700
+  },
+  "events": [
+    {
+      "name": "US CPI (June)",
+      "date": "2026-07-10",
+      "kind": "us_cpi"
+    },
+    {
+      "name": "FOMC decision",
+      "date": "2026-07-29",
+      "kind": "fomc"
+    },
+    {
+      "name": "MCX Silver July expiry",
+      "date": "2026-07-04",
+      "kind": "mcx_expiry"
+    }
+  ]
+}
