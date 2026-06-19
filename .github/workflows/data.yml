@@ -34,7 +34,10 @@ jobs:
 
       - name: Build data snapshot
         env:
-          # Free market-data key (Twelve Data) — the reliable history source.
+          # Upstox 1-year read-only "Analytics" token — real MCX SILVERM
+          # price/OI/options/IV + silver history. Preferred MCX source.
+          UPSTOX_ACCESS_TOKEN: ${{ secrets.UPSTOX_ACCESS_TOKEN }}
+          # Free market-data key (Twelve Data) — gold/USD-INR history.
           TWELVEDATA_KEY: ${{ secrets.TWELVEDATA_KEY }}
           # Optional enhancements — set as repo secrets if you use them.
           KITE_API_KEY: ${{ secrets.KITE_API_KEY }}

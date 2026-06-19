@@ -22,6 +22,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { toRaw } from "./bhavcopy.mjs";
+import * as upstox from "./upstox.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, "../public/data");
@@ -254,6 +255,60 @@ async function fetchMcxReal() {
   return null;
 }
 
+/**
+ * Real MCX data via Upstox (read-only Analytics token). Returns null when no
+ * token / unavailable. `usdInr` is used to express the MCX silver future as an
+ * implied $/oz history for the directional engine.
+ */
+async function fetchUpstox(usdInr) {
+  const token = process.env.UPSTOX_ACCESS_TOKEN;
+  if (!token) return null;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const from = new Date(Date.now() - 200 * 86400000).toISOString().slice(0, 10);
+    const instruments = await upstox.fetchInstruments();
+    const c = upstox.pickContract(instruments, MCX_SYMBOL, today);
+    if (!c) {
+      console.warn(`upstox: no ${MCX_SYMBOL} future in instruments`);
+      return null;
+    }
+    const [{ history: futHist, oiHistory }, q, chain] = await Promise.all([
+      upstox.dailyCandles(token, c.future.key, from, today),
+      upstox.quote(token, c.future.key),
+      upstox.optionChain(token, c.future.key, c.expiry),
+    ]);
+    if (futHist.length < 5) {
+      console.warn("upstox: thin futures history");
+      return null;
+    }
+    const qd = Object.values(q)[0] ?? {};
+    const ltp = Number(qd.last_price) || futHist[futHist.length - 1].v;
+    const oi = Number(qd.oi) || (oiHistory.length ? oiHistory[oiHistory.length - 1].v : null);
+    const prevClose = futHist.length > 1 ? futHist[futHist.length - 2].v : null;
+    const oiChg =
+      oiHistory.length > 1 && oi != null ? oi - oiHistory[oiHistory.length - 2].v : null;
+
+    // ATM IV from the chain (average of nearest CE/PE that report IV).
+    let atmIv = null;
+    if (chain.length) {
+      const atmStrike = chain.reduce((b, o) => (Math.abs(o.strike - ltp) < Math.abs(b - ltp) ? o.strike : b), chain[0].strike);
+      const ivs = chain.filter((o) => o.strike === atmStrike && o.iv != null).map((o) => o.iv);
+      if (ivs.length) atmIv = ivs.reduce((a, b) => a + b, 0) / ivs.length;
+    }
+
+    const dte = Math.max(0, Math.ceil((new Date(c.expiry).getTime() - Date.now()) / 86400000));
+    // MCX future (₹/kg) -> implied $/oz so the engine sees real silver momentum.
+    const mult = PARITY_MULT * (usdInr || 1);
+    const silverUsdHistory = mult > 0 ? futHist.map((p) => ({ t: p.t, v: p.v / mult })) : [];
+
+    console.log(`upstox: ${MCX_SYMBOL} fut=${ltp} oi=${oi} dte=${dte} hist=${futHist.length} chain=${chain.length} atmIv=${atmIv}`);
+    return { silverFut: Math.round(ltp), prevClose, oi, oiChg, expiry: c.expiry, dte, atmIv, chain, silverUsdHistory };
+  } catch (e) {
+    console.warn(`upstox failed: ${e.message}`);
+    return null;
+  }
+}
+
 /** Next monthly expiry estimate: last weekday of the current month (roll if near). */
 function nextMonthlyExpiry(today = new Date()) {
   function lastWeekday(year, monthIdx) {
@@ -317,7 +372,7 @@ async function main() {
     const base = fetched.length > 5 ? fetched : prevLive[prevKey] ?? [];
     return withLatest(base, spot);
   }
-  const xagHistory = buildHistory(xagH, "xagHistory", xagSpot);
+  let xagHistory = buildHistory(xagH, "xagHistory", xagSpot);
   const xauHistory = buildHistory(xauH, "xauHistory", xauSpot);
   const usdInrHistory = buildHistory(inrH, "usdInrHistory", inrSpot);
   // DXY has no spot fallback; if the real symbol is unavailable, drop it
@@ -338,7 +393,6 @@ async function main() {
   }
 
   const last = (h) => (h.length ? h[h.length - 1].v : null);
-  const xagUsd = last(xagHistory);
   const xauUsd = last(xauHistory);
   const usdInr = last(usdInrHistory);
   const dxy = last(dxyHistory);
@@ -347,13 +401,18 @@ async function main() {
   const breakeven10y = nominal10y != null && real10y != null ? round(nominal10y - real10y, 2) : null;
   const real10yHistory = fredReal;
 
-  // 3) MCX: real bhavcopy if reachable, else import-parity estimate.
-  const realMcx = await fetchMcxReal();
+  // 3) MCX: real Upstox data (preferred) -> bhavcopy -> import-parity estimate.
+  const ups = await fetchUpstox(usdInr);
+  if (ups?.silverUsdHistory?.length > 20) {
+    // Real silver history (MCX future expressed as $/oz) -> real momentum/GSR/vol.
+    xagHistory = withLatest(ups.silverUsdHistory, xagSpot);
+  }
+  const realMcx = ups ? null : await fetchMcxReal();
+  const xagUsd = last(xagHistory);
   const fairValue = xagUsd != null && usdInr != null ? xagUsd * PARITY_MULT * usdInr : null;
 
-  const expiry = nextMonthlyExpiry();
-  const expiryIso = expiry.toISOString().slice(0, 10);
-  const dte = Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / 86400000));
+  const expiryIso = ups?.expiry ?? nextMonthlyExpiry().toISOString().slice(0, 10);
+  const dte = ups?.dte ?? Math.max(0, Math.ceil((new Date(expiryIso).getTime() - Date.now()) / 86400000));
   const t = dte / 365;
 
   const xagCloses = xagHistory.map((p) => p.v);
@@ -378,26 +437,37 @@ async function main() {
   }
   const rvClean = rvSeries.filter((x) => Number.isFinite(x));
 
+  const ivRankFrom = (v) => (v != null && rvClean.length ? round(rangeRank(v, rvClean.concat(v)), 1) : null);
   let estimated = true;
   let silverFut, prevClose, oi, oiChg, atmIv, ivRank, chain;
-  if (realMcx && realMcx.silverFut != null) {
+  if (ups) {
+    // Real exchange data from Upstox.
+    estimated = false;
+    silverFut = ups.silverFut;
+    prevClose = ups.prevClose;
+    oi = ups.oi;
+    oiChg = ups.oiChg;
+    chain = ups.chain ?? [];
+    atmIv = ups.atmIv != null ? round(ups.atmIv, 4) : rv20 != null ? round(rv20 * 1.05, 4) : null;
+    ivRank = ivRankFrom(rv20);
+  } else if (realMcx && realMcx.silverFut != null) {
     estimated = false;
     silverFut = realMcx.silverFut;
     prevClose = realMcx.prevClose;
     oi = realMcx.oi;
     oiChg = realMcx.oiChg;
     chain = realMcx.chain ?? [];
-    atmIv = rv20; // refine with Black-76 from chain if option prices present
-    ivRank = rv20 != null && rvClean.length ? rangeRank(rv20, rvClean.concat(rv20)) : null;
+    atmIv = rv20 != null ? round(rv20 * 1.05, 4) : null;
+    ivRank = ivRankFrom(rv20);
   } else {
-    // Parity estimate.
+    // Import-parity estimate (no exchange feed available).
     silverFut = fairValue != null ? Math.round(fairValue) : null;
     prevClose = xagHistory.length > 1 ? Math.round(xagHistory[xagHistory.length - 2].v * PARITY_MULT * usdInr) : null;
     oi = null;
     oiChg = null;
     chain = [];
-    atmIv = rv20 != null ? round(rv20 * 1.05, 4) : null; // options usually a touch above realized
-    ivRank = rv20 != null && rvClean.length ? round(rangeRank(rv20, rvClean.concat(rv20)), 1) : null;
+    atmIv = rv20 != null ? round(rv20 * 1.05, 4) : null;
+    ivRank = ivRankFrom(rv20);
   }
 
   const expectedMove1sd = atmIv != null && silverFut != null ? Math.round(silverFut * atmIv * Math.sqrt(t)) : null;
