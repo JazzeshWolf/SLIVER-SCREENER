@@ -21,6 +21,7 @@ import { readFile, writeFile, appendFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { toRaw } from "./bhavcopy.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, "../public/data");
@@ -94,27 +95,100 @@ async function fetchSpotFx() {
 }
 
 // ---------------------------------------------------------------------------
-// MCX integration point.
-//
-// Return shape (or null to signal "could not refresh -> keep last-good"):
-//   {
-//     symbol, silverFut, prevClose, expiry (ISO), oi, oiChg,
-//     chain: [{ strike, type:'CE'|'PE', ltp, oi }]   // option prices, ₹
-//   }
-//
-// Implement ONE of:
-//   (A) Parse the MCX/NSE daily Bhavcopy CSV (token-free). Recommended.
-//   (B) Use Kite quotes when KITE_API_KEY / KITE_ACCESS_TOKEN secrets are set.
-// Left unimplemented by default so the pipeline runs and stays honest about it.
+// MCX integration — token-free daily Bhavcopy via the public market-data
+// endpoint. Returns the raw shape consumed by main(), or null on failure
+// (which triggers the fail-soft path that preserves the last-good snapshot).
 // ---------------------------------------------------------------------------
+
+const MCX_BHAVCOPY_URL = "https://www.mcxindia.com/backpage.aspx/GetDateWiseBhavCopy";
+const MCX_SYMBOL = (process.env.MCX_SYMBOL || "SILVER").toUpperCase();
+
+// Browser-like headers — the endpoint rejects bare/botty requests.
+const MCX_HEADERS = {
+  "Content-Type": "application/json; charset=UTF-8",
+  Accept: "application/json, text/javascript, */*; q=0.01",
+  "X-Requested-With": "XMLHttpRequest",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+  Referer: "https://www.mcxindia.com/market-data/bhavcopy",
+  Origin: "https://www.mcxindia.com",
+};
+
+/** Recent candidate trading days (today backwards), skipping weekends. */
+function recentTradingDays(count, from = new Date()) {
+  const out = [];
+  const d = new Date(from);
+  while (out.length < count) {
+    const dow = d.getUTCDay();
+    if (dow !== 0 && dow !== 6) out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() - 1);
+  }
+  return out;
+}
+
+// MCX is fronted by bot protection that expects cookies from a prior page
+// visit. We prime once (GET the bhavcopy page) and reuse the Set-Cookie value
+// on every POST. Best-effort: an empty cookie still attempts the request.
+let cookieJar = "";
+async function primeCookies() {
+  try {
+    const res = await fetch("https://www.mcxindia.com/market-data/bhavcopy", {
+      headers: { "User-Agent": MCX_HEADERS["User-Agent"], Accept: "text/html" },
+    });
+    const cookies = res.headers.getSetCookie?.() ?? [];
+    cookieJar = cookies.map((c) => c.split(";")[0]).join("; ");
+    console.log(cookieJar ? "Primed MCX session cookies." : "No cookies returned by MCX.");
+  } catch (e) {
+    console.warn(`Cookie prime failed: ${e.message}`);
+  }
+}
+
+/** Fetch + unwrap the bhavcopy rows for a single ISO date. */
+async function fetchBhavRows(dateIso) {
+  const [y, m, d] = dateIso.split("-");
+  // The endpoint expects a US-style MM/DD/YYYY date string.
+  const res = await fetch(MCX_BHAVCOPY_URL, {
+    method: "POST",
+    headers: cookieJar ? { ...MCX_HEADERS, Cookie: cookieJar } : MCX_HEADERS,
+    body: JSON.stringify({ Date: `${m}/${d}/${y}` }),
+  });
+  if (!res.ok) throw new Error(`bhavcopy ${dateIso} -> ${res.status}`);
+  const j = await res.json();
+  let payload = j?.d ?? j;
+  if (typeof payload === "string") payload = JSON.parse(payload);
+  const rows = payload?.Data ?? payload?.data ?? payload;
+  return Array.isArray(rows) ? rows : [];
+}
+
+/** Walk back day-by-day until a non-empty bhavcopy is found. */
+async function firstNonEmptyBhav(dates) {
+  for (const iso of dates) {
+    try {
+      const rows = await fetchBhavRows(iso);
+      if (rows.length) return { iso, rows };
+    } catch (e) {
+      console.warn(`  bhavcopy ${iso}: ${e.message}`);
+    }
+  }
+  return null;
+}
+
 async function fetchMcxRaw() {
-  // EXAMPLE (B) — Kite, only if secrets are present. Replace instrument tokens.
-  // const key = process.env.KITE_API_KEY, tok = process.env.KITE_ACCESS_TOKEN;
-  // if (key && tok) { ... call https://api.kite.trade/quote ... return mapped; }
+  const today = new Date().toISOString().slice(0, 10);
+  await primeCookies();
+  const current = await firstNonEmptyBhav(recentTradingDays(6));
+  if (!current) {
+    console.warn("MCX bhavcopy unavailable for all recent days.");
+    return null;
+  }
+  // Previous trading day (for OI change). Best-effort; null oiChg if missing.
+  const prevStart = new Date(current.iso);
+  prevStart.setUTCDate(prevStart.getUTCDate() - 1);
+  const previous = await firstNonEmptyBhav(recentTradingDays(5, prevStart));
 
-  // EXAMPLE (A) — Bhavcopy CSV parse goes here.
-
-  return null; // <-- no live source wired yet: triggers fail-soft below.
+  const raw = toRaw(current.rows, MCX_SYMBOL, today, previous?.rows ?? null);
+  if (!raw) console.warn(`No ${MCX_SYMBOL} future found in bhavcopy ${current.iso}.`);
+  return raw;
 }
 
 function daysTo(iso) {

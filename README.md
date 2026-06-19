@@ -64,17 +64,24 @@ Options math (`src/lib/options.ts`) is Black-76: IV solver (Newton + bisection f
 move, probability-of-touch, strike cushion. Basis math (`src/lib/basis.ts`):
 `FV = XAGUSD × 32.1507 × USD-INR × (1 + duty + GST)`.
 
-## Wiring the MCX data source
+## The MCX data source (token-free Bhavcopy)
 
-`scripts/build-data.mjs` has one integration point — `fetchMcxRaw()` — left unimplemented so the
-pipeline runs honestly (it preserves last-good as `stale`). Implement **one**:
+`scripts/build-data.mjs` pulls the **MCX daily Bhavcopy** from the public market-data endpoint
+(`GetDateWiseBhavCopy`) — no login, no token. It primes session cookies, walks back day-by-day to
+the latest available bhavcopy (handles weekends/holidays), then `scripts/bhavcopy.mjs` selects the
+front-month `SILVER` future + its option chain and maps them to the pipeline shape. OI change is
+diffed against the previous trading day. Override the symbol with the `MCX_SYMBOL` env (e.g.
+`SILVERM` for the mini).
 
-- **(A) NSE/MCX daily Bhavcopy CSV** — token-free, recommended as the reliable primary.
-- **(B) Kite Connect quotes** — richer/live, but the access token **expires daily**; set
-  `KITE_API_KEY` / `KITE_ACCESS_TOKEN` repo secrets and treat it as an enhancement, not the base.
+Parsing/selection is split into pure functions in `scripts/bhavcopy.mjs` and unit-tested
+(`bhavcopy.test.mjs`) against a fixture, since MCX field casing varies. Everything downstream (IV,
+IV-rank from `history.jsonl`, expected move, basis) is computed from the selected raw inputs.
 
-Everything downstream (IV, IV-rank from `history.jsonl`, expected move, basis) is already computed
-from the raw inputs the function returns.
+> **Caveat:** MCX sits behind bot protection. From a GitHub Actions runner the browser-like headers
+> + cookie prime usually suffice, but if the endpoint starts returning 403 the builder **fails soft**
+> (keeps the last-good snapshot, flags it `stale`) rather than emitting bad data. If that happens,
+> swap in the Kite path (set `KITE_API_KEY` / `KITE_ACCESS_TOKEN` secrets — note the token expires
+> daily) as a fallback.
 
 ## Deploy
 
