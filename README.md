@@ -1,5 +1,7 @@
 # 🥈 Sliver Screener
 
+**Live:** https://jazzeshwolf.github.io/SLIVER-SCREENER/
+
 A free, mobile-first, **static** dashboard for selling **MCX Silver options**. It answers three
 questions at a glance:
 
