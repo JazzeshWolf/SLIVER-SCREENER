@@ -25,7 +25,8 @@
     "expiry": "2026-06-30",
     "dte": 11,
     "oi": null,
-    "oiChg": null
+    "oiChg": null,
+    "stale": true
   },
   "options": {
     "atmStrike": 249000,
@@ -41,8 +42,20 @@
     "basis": -1079
   },
   "events": [
-    { "name": "US CPI", "date": "2026-07-10", "kind": "us_cpi" },
-    { "name": "FOMC decision", "date": "2026-07-29", "kind": "fomc" },
-    { "name": "US Jobs (NFP)", "date": "2026-07-02", "kind": "us_jobs" }
+    {
+      "name": "US CPI",
+      "date": "2026-07-10",
+      "kind": "us_cpi"
+    },
+    {
+      "name": "FOMC decision",
+      "date": "2026-07-29",
+      "kind": "fomc"
+    },
+    {
+      "name": "US Jobs (NFP)",
+      "date": "2026-07-02",
+      "kind": "us_jobs"
+    }
   ]
 }
