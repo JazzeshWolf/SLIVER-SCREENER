@@ -425,3 +425,5 @@ main().catch((e) => {
   console.error("build-data failed:", e);
   process.exit(1);
 });
+
+// trigger: data refresh with TWELVEDATA_KEY
