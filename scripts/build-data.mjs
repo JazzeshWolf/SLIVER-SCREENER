@@ -298,7 +298,9 @@ async function main() {
   const [xagH, xauH, dxyH, inrH, fredReal, fredNom] = await Promise.all([
     fetchSeries("xag", { td: ["XAG/USD", "XAGUSD", "SILVER", "XAG"], yahoo: "SI=F", stooq: "xagusd" }),
     fetchSeries("xau", { td: ["XAU/USD"], yahoo: "GC=F", stooq: "xauusd" }),
-    fetchSeries("dxy", { td: ["DXY", "USDX", "DX"], yahoo: "DX-Y.NYB", stooq: "^dxy" }),
+    // Only the genuine dollar index — aliases like DX/USDX map to unrelated
+    // tickers on Twelve Data, so we'd rather drop DXY than use bad data.
+    fetchSeries("dxy", { td: ["DXY"], yahoo: "DX-Y.NYB", stooq: "^dxy" }),
     fetchSeries("usdinr", { td: ["USD/INR"], yahoo: "INR=X", stooq: "usdinr" }),
     fredSeries("DFII10"),
     fredSeries("DGS10"),
@@ -318,7 +320,9 @@ async function main() {
   const xagHistory = buildHistory(xagH, "xagHistory", xagSpot);
   const xauHistory = buildHistory(xauH, "xauHistory", xauSpot);
   const usdInrHistory = buildHistory(inrH, "usdInrHistory", inrSpot);
-  const dxyHistory = dxyH.length > 5 ? dxyH : prevLive.dxyHistory ?? [];
+  // DXY has no spot fallback; if the real symbol is unavailable, drop it
+  // entirely (don't carry a previously-stored bad series forward).
+  const dxyHistory = dxyH.length > 5 ? dxyH : [];
 
   // Publish when we have enough to drive the engine. Silver history is ideal,
   // but gold + USD-INR alone still yield a meaningful (if weaker) bias.
