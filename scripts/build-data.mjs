@@ -307,10 +307,18 @@ async function main() {
   // 2) Latest spot/FX ticks (fresher than the daily close).
   const [xagSpot, xauSpot, inrSpot] = await Promise.all([goldApi("XAG"), goldApi("XAU"), frankfurterInr()]);
 
-  const xagHistory = withLatest(xagH, xagSpot);
-  const xauHistory = withLatest(xauH, xauSpot);
-  const usdInrHistory = withLatest(inrH, inrSpot);
-  const dxyHistory = dxyH;
+  // Use the fetched history when a provider returned a real series; otherwise
+  // accumulate day-by-day from the live spot (persisted across runs) so e.g.
+  // silver builds a genuine history even though no free API serves it.
+  const prevLive = prev?.live ?? {};
+  function buildHistory(fetched, prevKey, spot) {
+    const base = fetched.length > 5 ? fetched : prevLive[prevKey] ?? [];
+    return withLatest(base, spot);
+  }
+  const xagHistory = buildHistory(xagH, "xagHistory", xagSpot);
+  const xauHistory = buildHistory(xauH, "xauHistory", xauSpot);
+  const usdInrHistory = buildHistory(inrH, "usdInrHistory", inrSpot);
+  const dxyHistory = dxyH.length > 5 ? dxyH : prevLive.dxyHistory ?? [];
 
   // Publish when we have enough to drive the engine. Silver history is ideal,
   // but gold + USD-INR alone still yield a meaningful (if weaker) bias.
@@ -345,10 +353,25 @@ async function main() {
   const t = dte / 365;
 
   const xagCloses = xagHistory.map((p) => p.v);
-  const rv20 = realizedVol(xagCloses, 20);
-  // Rolling 20d realized-vol series -> IV rank proxy.
-  const rvSeries = [];
-  for (let i = 21; i < xagCloses.length; i++) rvSeries.push(realizedVol(xagCloses.slice(i - 21, i + 1), 20));
+  const xauCloses = xauHistory.map((p) => p.v);
+  const SILVER_GOLD_VOL = 1.6; // silver realized vol ~1.6x gold's, historically
+  function volSeries(closes, scale = 1) {
+    const out = [];
+    for (let i = 21; i < closes.length; i++) {
+      const r = realizedVol(closes.slice(i - 21, i + 1), 20);
+      if (Number.isFinite(r)) out.push(r * scale);
+    }
+    return out;
+  }
+  // Prefer silver's own realized vol; fall back to a gold-derived proxy when
+  // silver history is still too short.
+  let rv20 = realizedVol(xagCloses, 20);
+  let rvSeries = volSeries(xagCloses);
+  if (rv20 == null || rvSeries.length < 5) {
+    const g = realizedVol(xauCloses, 20);
+    if (g != null) rv20 = g * SILVER_GOLD_VOL;
+    rvSeries = volSeries(xauCloses, SILVER_GOLD_VOL);
+  }
   const rvClean = rvSeries.filter((x) => Number.isFinite(x));
 
   let estimated = true;
