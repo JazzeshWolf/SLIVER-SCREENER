@@ -43,6 +43,9 @@ export interface McxData {
   asOf: string;
   stale: boolean; // true if the Action could not refresh and served last-good
   partial: boolean;
+  // When true, MCX price/IV are derived from international parity + realized vol
+  // (no live exchange feed available), and should be labelled as estimates.
+  estimated?: boolean;
   mcx: {
     symbol: string;
     silverFut: number | null; // ₹/kg
@@ -66,6 +69,12 @@ export interface McxData {
     basis: number | null; // futures - fairValue
   };
   events: MarketEvent[];
+}
+
+/** The single server-built data file the client renders (built by the Action). */
+export interface Snapshot {
+  live: LiveInputs;
+  mcx: McxData;
 }
 
 export interface MarketEvent {

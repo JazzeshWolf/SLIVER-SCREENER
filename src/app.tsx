@@ -2,6 +2,7 @@ import { useState } from "preact/hooks";
 import { useDashboard } from "./state/store";
 import { TabBar, type Tab } from "./components/TabBar";
 import { RegimeCard } from "./components/RegimeCard";
+import { DirectionGauges } from "./components/DirectionGauges";
 import { SpotStrip } from "./components/SpotStrip";
 import { SellWindow } from "./components/SellWindow";
 import { ThetaRing } from "./components/ThetaRing";
@@ -18,7 +19,14 @@ export function App() {
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <header className="flex items-center justify-between px-4 pt-4 pb-2">
-        <h1 className="text-lg font-bold tracking-tight">🥈 Sliver Screener</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold tracking-tight">🥈 Sliver Screener</h1>
+          {dash.mcx?.estimated && (
+            <span className="text-[9px] uppercase tracking-wide text-amber-300/80 border border-amber-400/30 rounded px-1 py-0.5">
+              MCX est.
+            </span>
+          )}
+        </div>
         <button
           onClick={dash.refresh}
           className="text-xs text-white/50 flex items-center gap-1 active:text-white"
@@ -38,6 +46,9 @@ export function App() {
           <>
             {tab === "score" && (
               <>
+                {dash.regime && dash.scores && (
+                  <DirectionGauges regime={dash.regime} scores={dash.scores} />
+                )}
                 {dash.regime && dash.scores && (
                   <RegimeCard regime={dash.regime} scores={dash.scores} />
                 )}

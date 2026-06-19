@@ -1,19 +1,11 @@
 // ---------------------------------------------------------------------------
-// Dashboard data hook: fetches live + MCX inputs, computes scores/regime/
+// Dashboard data hook: loads the server-built snapshot, computes scores/regime/
 // premium, manages refresh interval and regime hysteresis.
 // ---------------------------------------------------------------------------
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import {
-  fetchLiveInputs,
-  fetchMcxData,
-  lastGoodLive,
-} from "../lib/fetchers";
-import {
-  deriveRegime,
-  premiumSellScore,
-  scoreAllHorizons,
-} from "../lib/scoring";
+import { fetchSnapshot } from "../lib/fetchers";
+import { deriveRegime, premiumSellScore, scoreAllHorizons } from "../lib/scoring";
 import { basis, fairValueInrPerKg, premiumPct } from "../lib/basis";
 import { cacheGet, cacheSet } from "../lib/cache";
 import type {
@@ -26,7 +18,7 @@ import type {
   RegimeResult,
 } from "../lib/types";
 
-const REFRESH_MS = 10 * 60 * 1000; // 10 minutes
+const REFRESH_MS = 5 * 60 * 1000; // 5 minutes
 
 export interface Dashboard {
   live: LiveInputs | null;
@@ -46,7 +38,7 @@ export interface Dashboard {
 }
 
 export function useDashboard(): Dashboard {
-  const [live, setLive] = useState<LiveInputs | null>(lastGoodLive());
+  const [live, setLive] = useState<LiveInputs | null>(null);
   const [mcx, setMcx] = useState<McxData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -54,10 +46,12 @@ export function useDashboard(): Dashboard {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [liveData, mcxData] = await Promise.all([fetchLiveInputs(), fetchMcxData()]);
-    setLive(liveData);
-    setMcx(mcxData);
-    setLastUpdated(new Date().toISOString());
+    const snap = await fetchSnapshot();
+    if (snap) {
+      setLive(snap.live);
+      setMcx(snap.mcx);
+      setLastUpdated(snap.mcx?.asOf ?? new Date().toISOString());
+    }
     setLoading(false);
   }, []);
 

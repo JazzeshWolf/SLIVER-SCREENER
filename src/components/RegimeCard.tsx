@@ -27,24 +27,6 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-function HorizonChip({ hs, emphasized }: { hs: HorizonScore; emphasized: boolean }) {
-  const tone = hs.score >= 3 ? "text-emerald-300" : hs.score <= -3 ? "text-rose-300" : "text-sky-300";
-  return (
-    <div
-      className={`flex-1 rounded-xl px-2 py-1.5 text-center ${
-        emphasized ? "bg-white/10 ring-1 ring-white/20" : "bg-white/5"
-      }`}
-    >
-      <div className="text-[10px] uppercase tracking-wide text-white/40">{hs.horizon}</div>
-      <div className={`text-lg font-bold tnum ${tone}`}>
-        {hs.score > 0 ? "+" : ""}
-        {hs.score.toFixed(1)}
-      </div>
-      <div className="text-[9px] text-white/30">conf {(hs.confidence * 100).toFixed(0)}%</div>
-    </div>
-  );
-}
-
 export function RegimeCard({
   regime,
   scores,
@@ -78,11 +60,6 @@ export function RegimeCard({
         </div>
       )}
 
-      <div className="mt-3 flex gap-2">
-        {(["1D", "1W", "1M"] as Horizon[]).map((h) => (
-          <HorizonChip key={h} hs={scores[h]} emphasized={h === regime.dteHorizon} />
-        ))}
-      </div>
       <div className="mt-3">
         <ScoreBar score={decision.score} />
       </div>

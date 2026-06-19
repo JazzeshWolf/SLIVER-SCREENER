@@ -6,9 +6,10 @@
 
 export const TROY_OZ_PER_KG = 32.1507;
 
-// Effective Indian import levies on silver. These are config defaults — they
-// step-change with budget/duty notifications and should be reviewed periodically.
-export const IMPORT_DUTY = 0.1075; // ~10.75% (BCD + AIDC)
+// Effective Indian import levies on silver. These step-change with duty
+// notifications. Duty was hiked to 15% on 2026-05-13 (silver moved to the
+// DGFT "Restricted" category), on top of 3% GST.
+export const IMPORT_DUTY = 0.15; // 15% (BCD, post 2026-05-13 hike)
 export const GST = 0.03; // 3%
 
 export function fairValueInrPerKg(

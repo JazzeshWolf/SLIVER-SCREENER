@@ -8,6 +8,12 @@ on:
     # MCX silver has a morning + evening session; widen/narrow as needed.
     - cron: "*/10 3-18 * * 1-5"
   workflow_dispatch: {} # manual trigger for testing
+  push:
+    # Rebuild data on code changes (e.g. fetcher tweaks) — ignore data-only
+    # commits to avoid a self-trigger loop.
+    branches: ["claude/wizardly-pasteur-58a976"]
+    paths-ignore:
+      - "public/data/**"
 
 permissions:
   contents: write
