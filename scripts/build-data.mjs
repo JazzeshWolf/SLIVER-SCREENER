@@ -140,14 +140,16 @@ async function twelveDataHistory(symbol, n = 160) {
 }
 
 // Fetch a daily series, trying providers in order until one returns data:
-// Twelve Data (key) -> Yahoo (keyless) -> stooq (keyless).
+// Twelve Data (key, multiple symbol aliases) -> Yahoo (keyless) -> stooq.
 async function fetchSeries(name, { td, yahoo, stooq }) {
-  let h = await twelveDataHistory(td);
-  if (h.length > 5) {
-    console.log(`${name}: td ${h.length} pts`);
-    return h;
+  for (const sym of Array.isArray(td) ? td : [td]) {
+    const h = await twelveDataHistory(sym);
+    if (h.length > 5) {
+      console.log(`${name}: td ${sym} ${h.length} pts`);
+      return h;
+    }
   }
-  h = await yahooHistory(yahoo);
+  let h = await yahooHistory(yahoo);
   if (h.length > 5) {
     console.log(`${name}: yahoo ${h.length} pts`);
     return h;
@@ -294,10 +296,10 @@ async function main() {
 
   // 1) Histories (server-side, reliable).
   const [xagH, xauH, dxyH, inrH, fredReal, fredNom] = await Promise.all([
-    fetchSeries("xag", { td: "XAG/USD", yahoo: "SI=F", stooq: "xagusd" }),
-    fetchSeries("xau", { td: "XAU/USD", yahoo: "GC=F", stooq: "xauusd" }),
-    fetchSeries("dxy", { td: "DXY", yahoo: "DX-Y.NYB", stooq: "^dxy" }),
-    fetchSeries("usdinr", { td: "USD/INR", yahoo: "INR=X", stooq: "usdinr" }),
+    fetchSeries("xag", { td: ["XAG/USD", "XAGUSD", "SILVER", "XAG"], yahoo: "SI=F", stooq: "xagusd" }),
+    fetchSeries("xau", { td: ["XAU/USD"], yahoo: "GC=F", stooq: "xauusd" }),
+    fetchSeries("dxy", { td: ["DXY", "USDX", "DX"], yahoo: "DX-Y.NYB", stooq: "^dxy" }),
+    fetchSeries("usdinr", { td: ["USD/INR"], yahoo: "INR=X", stooq: "usdinr" }),
     fredSeries("DFII10"),
     fredSeries("DGS10"),
   ]);
@@ -310,7 +312,9 @@ async function main() {
   const usdInrHistory = withLatest(inrH, inrSpot);
   const dxyHistory = dxyH;
 
-  const haveCore = xagHistory.length > 5 && xauHistory.length > 5 && usdInrHistory.length > 5;
+  // Publish when we have enough to drive the engine. Silver history is ideal,
+  // but gold + USD-INR alone still yield a meaningful (if weaker) bias.
+  const haveCore = xagHistory.length > 5 || (xauHistory.length > 5 && usdInrHistory.length > 5);
   if (!haveCore) {
     if (prev) {
       await writeFile(LATEST, JSON.stringify({ ...prev, mcx: { ...prev.mcx, stale: true } }, null, 2) + "\n");
