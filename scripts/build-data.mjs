@@ -403,10 +403,13 @@ async function main() {
   const expectedMove1sd = atmIv != null && silverFut != null ? Math.round(silverFut * atmIv * Math.sqrt(t)) : null;
   const basis = silverFut != null && fairValue != null ? Math.round(silverFut - fairValue) : null;
 
+  // `partial` reflects only CORE data (silver/gold/INR). Missing optional
+  // factors (DXY, real yields) don't mark the whole snapshot as degraded.
+  const corePartial = !(xauHistory.length > 5 && usdInrHistory.length > 5);
   const snapshot = {
     asOf: new Date().toISOString(),
     stale: false,
-    partial: dxy == null || real10y == null,
+    partial: corePartial,
     estimated,
     live: {
       xagUsd: round(xagUsd, 2),
@@ -421,7 +424,7 @@ async function main() {
       real10yHistory,
       usdInrHistory,
       asOf: new Date().toISOString(),
-      partial: dxy == null,
+      partial: corePartial,
     },
     mcx: {
       symbol: MCX_SYMBOL,

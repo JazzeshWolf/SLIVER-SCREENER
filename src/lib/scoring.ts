@@ -179,10 +179,12 @@ function horizonConfidence(
   maxHistory: number,
   stale: boolean,
 ): number {
-  const coverage = clamp(totalWeightPresent, 0, 1); // weight actually backed by data
-  const historyFactor = clamp(maxHistory / MIN_OBS_FOR_FULL_CONFIDENCE, 0.3, 1);
-  const breadth = clamp(presentFactors / 4, 0.3, 1); // want >= ~4 live factors
-  const staleFactor = stale ? 0.6 : 1;
+  // Calibrated so a solid core (e.g. gold momentum + USD-INR + structural bias)
+  // reads as usable confidence, while still shrinking on stale/sparse data.
+  const coverage = clamp(totalWeightPresent / 0.6, 0.4, 1); // weight backed by data
+  const historyFactor = clamp(maxHistory / MIN_OBS_FOR_FULL_CONFIDENCE, 0.4, 1);
+  const breadth = clamp(presentFactors / 3, 0.5, 1); // ~3 live factors = full breadth
+  const staleFactor = stale ? 0.7 : 1;
   return clamp(coverage * historyFactor * breadth * staleFactor, 0, 1);
 }
 
