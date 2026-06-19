@@ -1,5 +1,6 @@
 name: Deploy to GitHub Pages
 
+# Pages build type is set to "workflow" via actions/configure-pages (enablement).
 on:
   push:
     branches: [main]
