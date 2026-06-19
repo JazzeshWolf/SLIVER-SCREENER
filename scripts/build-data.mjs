@@ -98,6 +98,38 @@ async function stooqHistory(symbol, days = 180) {
   }
 }
 
+// Yahoo Finance v8 chart API — keyless daily history (server-side only).
+async function yahooHistory(symbol, range = "6mo") {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=1d`;
+  try {
+    const j = await getJson(url, { headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/124.0" } });
+    const r = j?.chart?.result?.[0];
+    const ts = r?.timestamp ?? [];
+    const closes = r?.indicators?.quote?.[0]?.close ?? [];
+    const out = [];
+    for (let i = 0; i < ts.length; i++) {
+      const v = closes[i];
+      if (Number.isFinite(v) && v > 0) out.push({ t: new Date(ts[i] * 1000).toISOString().slice(0, 10), v });
+    }
+    return out;
+  } catch (e) {
+    console.warn(`yahoo ${symbol}: ${e.message}`);
+    return [];
+  }
+}
+
+// Fetch a daily series trying multiple providers until one returns data.
+async function fetchSeries(name, yahooSym, stooqSym) {
+  let h = await yahooHistory(yahooSym);
+  if (h.length > 5) {
+    console.log(`${name}: yahoo ${h.length} pts`);
+    return h;
+  }
+  h = await stooqHistory(stooqSym);
+  console.log(`${name}: stooq ${h.length} pts`);
+  return h;
+}
+
 async function goldApi(sym) {
   try {
     const j = await getJson(`https://api.gold-api.com/price/${sym}`);
@@ -235,10 +267,10 @@ async function main() {
 
   // 1) Histories (server-side, reliable).
   const [xagH, xauH, dxyH, inrH, fredReal, fredNom] = await Promise.all([
-    stooqHistory("xagusd"),
-    stooqHistory("xauusd"),
-    stooqHistory("^dxy"),
-    stooqHistory("usdinr"),
+    fetchSeries("xag", "SI=F", "xagusd"),
+    fetchSeries("xau", "GC=F", "xauusd"),
+    fetchSeries("dxy", "DX-Y.NYB", "^dxy"),
+    fetchSeries("usdinr", "INR=X", "usdinr"),
     fredSeries("DFII10"),
     fredSeries("DGS10"),
   ]);
