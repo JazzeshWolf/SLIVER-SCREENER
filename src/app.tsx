@@ -3,6 +3,7 @@ import { useDashboard } from "./state/store";
 import { TabBar, type Tab } from "./components/TabBar";
 import { RegimeCard } from "./components/RegimeCard";
 import { DirectionGauges } from "./components/DirectionGauges";
+import { OutlookTab } from "./components/OutlookTab";
 import { SpotStrip } from "./components/SpotStrip";
 import { SellWindow } from "./components/SellWindow";
 import { ThetaRing } from "./components/ThetaRing";
@@ -59,6 +60,8 @@ export function App() {
                 <SpotStrip live={dash.live} mcx={dash.mcx} />
               </>
             )}
+
+            {tab === "outlook" && dash.outlook && <OutlookTab outlook={dash.outlook} />}
 
             {tab === "vol" && dash.mcx && (
               <>

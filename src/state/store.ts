@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { fetchSnapshot } from "../lib/fetchers";
 import { deriveRegime, premiumSellScore, scoreAllHorizons } from "../lib/scoring";
+import { buildOutlook, type Outlook } from "../lib/outlook";
 import { basis, fairValueInrPerKg, premiumPct } from "../lib/basis";
 import { cacheGet, cacheSet } from "../lib/cache";
 import type {
@@ -26,6 +27,7 @@ export interface Dashboard {
   scores: Record<Horizon, HorizonScore> | null;
   regime: RegimeResult | null;
   premium: PremiumSellScore | null;
+  outlook: Outlook | null;
   derived: {
     fairValue: number | null;
     basis: number | null;
@@ -92,5 +94,10 @@ export function useDashboard(): Dashboard {
     };
   }, [live, mcx]);
 
-  return { live, mcx, scores, regime, premium, derived, loading, lastUpdated, refresh: load };
+  const outlook = useMemo(() => {
+    if (!live || !mcx || !scores || !regime) return null;
+    return buildOutlook(live, mcx, scores, regime, premium, derived);
+  }, [live, mcx, scores, regime, premium, derived]);
+
+  return { live, mcx, scores, regime, premium, outlook, derived, loading, lastUpdated, refresh: load };
 }
