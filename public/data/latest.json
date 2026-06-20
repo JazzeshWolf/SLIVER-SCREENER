@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-06-20T04:22:21.525Z",
+  "asOf": "2026-06-20T04:42:41.635Z",
   "stale": false,
   "partial": false,
   "estimated": false,
@@ -1870,7 +1870,7 @@
         "v": 94.33
       }
     ],
-    "asOf": "2026-06-20T04:22:21.525Z",
+    "asOf": "2026-06-20T04:42:41.635Z",
     "partial": false
   },
   "mcx": {
@@ -1897,19 +1897,28 @@
   },
   "events": [
     {
-      "name": "US CPI",
-      "date": "2026-07-10",
-      "kind": "us_cpi"
-    },
-    {
-      "name": "FOMC decision",
-      "date": "2026-07-29",
-      "kind": "fomc"
-    },
-    {
       "name": "US Jobs (NFP)",
       "date": "2026-07-02",
-      "kind": "us_jobs"
+      "kind": "us_jobs",
+      "impact": "twoway",
+      "weight": 2,
+      "effect": "Hot payrolls → hawkish Fed, ↑ yields & USD → silver DOWN. Weak jobs → silver UP."
+    },
+    {
+      "name": "US CPI",
+      "date": "2026-07-10",
+      "kind": "us_cpi",
+      "impact": "twoway",
+      "weight": 3,
+      "effect": "Hot CPI → rate-cut hopes fade, real yields up → silver DOWN (inflation-hedge bid partly offsets)."
+    },
+    {
+      "name": "Fed FOMC",
+      "date": "2026-07-29",
+      "kind": "fomc",
+      "impact": "twoway",
+      "weight": 3,
+      "effect": "Dovish / cut → silver UP. Hawkish hold or hike risk → silver DOWN. Biggest IV-crush event."
     }
   ]
 }
