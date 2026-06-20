@@ -37,6 +37,7 @@ export function App() {
         >
           <span className={dash.loading ? "animate-spin" : ""}>⟳</span>
           {dash.loading ? "…" : timeAgo(dash.lastUpdated)}
+          <span className="text-[8px] text-white/20 ml-1">v{__BUILD_ID__}</span>
         </button>
       </header>
 

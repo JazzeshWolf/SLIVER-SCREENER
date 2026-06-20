@@ -9,5 +9,8 @@ const base = process.env.BASE_PATH ?? "/sliver-screener/";
 
 export default defineConfig({
   base,
+  define: {
+    __BUILD_ID__: JSON.stringify(new Date().toISOString().slice(5, 16).replace("T", " ")),
+  },
   plugins: [preact(), tailwindcss()],
 });
