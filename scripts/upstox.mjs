@@ -62,28 +62,41 @@ function expiryToIso(e) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
-const norm = (r) => ({
-  key: r.instrument_key ?? r.instrumentKey,
-  name: String(r.name ?? r.asset_symbol ?? "").toUpperCase(),
-  type: String(r.instrument_type ?? r.instrumentType ?? "").toUpperCase(),
-  expiry: expiryToIso(r.expiry),
-  strike: Number(r.strike_price ?? r.strikePrice ?? 0) || 0,
-  segment: String(r.segment ?? "").toUpperCase(),
-  tradingSymbol: r.trading_symbol ?? r.tradingsymbol ?? "",
-});
+const norm = (r) => {
+  const type = String(r.instrument_type ?? r.instrumentType ?? "").toUpperCase();
+  const optType = String(r.option_type ?? r.optionType ?? "").toUpperCase();
+  const names = [r.name, r.underlying_symbol, r.underlyingSymbol, r.asset_symbol, r.assetSymbol]
+    .filter(Boolean)
+    .map((x) => String(x).toUpperCase());
+  return {
+    key: r.instrument_key ?? r.instrumentKey,
+    names,
+    tradingSymbol: String(r.trading_symbol ?? r.tradingsymbol ?? "").toUpperCase(),
+    type,
+    optionType: optType === "CE" || optType === "PE" ? optType : type === "CE" || type === "PE" ? type : null,
+    isFuture: type.includes("FUT"),
+    isOption: type.includes("OPT") || optType === "CE" || optType === "PE" || type === "CE" || type === "PE",
+    expiry: expiryToIso(r.expiry),
+    strike: Number(r.strike_price ?? r.strikePrice ?? 0) || 0,
+  };
+};
+
+function matchesSymbol(r, sym) {
+  return r.names.includes(sym) || r.tradingSymbol.startsWith(sym);
+}
 
 /** Front-month future + option instrument keys for `symbol` (e.g. SILVERM). */
 export function pickContract(instruments, symbol, todayIso) {
   const sym = symbol.toUpperCase();
-  const rows = instruments.map(norm).filter((r) => r.name === sym && r.key);
-  const futs = rows.filter((r) => r.type === "FUT" && r.expiry);
+  const rows = instruments.map(norm).filter((r) => r.key && matchesSymbol(r, sym));
+  const futs = rows.filter((r) => r.isFuture && r.expiry);
   if (!futs.length) return null;
   const expiries = [...new Set(futs.map((f) => f.expiry))].sort();
   const expiry = expiries.find((e) => e >= todayIso) ?? expiries[0];
   const future = futs.find((f) => f.expiry === expiry);
   if (!future) return null;
   const options = rows.filter(
-    (r) => (r.type === "CE" || r.type === "PE") && r.expiry === expiry && r.strike > 0,
+    (r) => r.isOption && r.expiry === expiry && r.optionType && r.strike > 0,
   );
   return { future, options, expiry };
 }

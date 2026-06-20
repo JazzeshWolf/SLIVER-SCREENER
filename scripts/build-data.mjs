@@ -269,7 +269,11 @@ async function fetchUpstox(usdInr) {
     const instruments = await upstox.fetchInstruments();
     const c = upstox.pickContract(instruments, MCX_SYMBOL, today);
     if (!c) {
-      console.warn(`upstox: no ${MCX_SYMBOL} future in instruments`);
+      const sample = instruments
+        .filter((i) => JSON.stringify(i).toUpperCase().includes("SILVER"))
+        .slice(0, 4)
+        .map((i) => ({ name: i.name, ts: i.trading_symbol, it: i.instrument_type, us: i.underlying_symbol, ot: i.option_type }));
+      console.warn(`upstox: no ${MCX_SYMBOL} future. silver samples: ${JSON.stringify(sample)}`);
       return null;
     }
     const [{ history: futHist, oiHistory }, q, chain] = await Promise.all([
