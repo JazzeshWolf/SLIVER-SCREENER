@@ -1,4 +1,5 @@
 import type { Horizon, HorizonScore, RegimeResult } from "../lib/types";
+import type { Outlook } from "../lib/outlook";
 import { BiasGauge } from "./BiasGauge";
 import { Card, Pill } from "./ui";
 
@@ -18,9 +19,13 @@ const HORIZON_LABEL: Record<Horizon, string> = {
 export function DirectionGauges({
   scores,
   regime,
+  outlook,
+  onOpenOutlook,
 }: {
   scores: Record<Horizon, HorizonScore>;
   regime: RegimeResult;
+  outlook?: Outlook | null;
+  onOpenOutlook?: () => void;
 }) {
   const warming = Object.values(scores).every((s) => s.confidence < 0.25);
 
@@ -53,6 +58,24 @@ export function DirectionGauges({
         <p className="mt-2 text-[10px] text-white/30 text-center">
           {regime.dteHorizon} drives the play. Needle left = bearish, right = bullish.
         </p>
+      )}
+
+      {outlook && (
+        <button
+          onClick={onOpenOutlook}
+          className="mt-3 w-full rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/10 px-3 py-2 flex items-center justify-between gap-3 text-left transition-colors"
+        >
+          <span className="text-[11px] text-white/55 leading-snug">
+            This is the <span className="text-white/85 font-medium">momentum core</span>. Full weighted
+            read — adding CoT positioning, basis &amp; structural deficit — in Outlook.
+          </span>
+          <span className="flex flex-col items-end shrink-0">
+            <Pill tone={outlook.leanTone}>{outlook.leanLabel}</Pill>
+            <span className="text-[10px] text-white/35 mt-1 tnum">
+              bias {outlook.netBias >= 0 ? "+" : ""}{outlook.netBias} · open →
+            </span>
+          </span>
+        </button>
       )}
     </Card>
   );

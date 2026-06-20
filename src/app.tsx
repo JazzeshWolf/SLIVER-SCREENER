@@ -49,7 +49,12 @@ export function App() {
             {tab === "score" && (
               <>
                 {dash.regime && dash.scores && (
-                  <DirectionGauges regime={dash.regime} scores={dash.scores} />
+                  <DirectionGauges
+                    regime={dash.regime}
+                    scores={dash.scores}
+                    outlook={dash.outlook}
+                    onOpenOutlook={() => setTab("outlook")}
+                  />
                 )}
                 {dash.regime && dash.scores && (
                   <RegimeCard regime={dash.regime} scores={dash.scores} />
