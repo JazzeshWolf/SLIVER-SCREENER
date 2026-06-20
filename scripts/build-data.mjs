@@ -201,6 +201,13 @@ function withLatest(hist, value) {
   return [...filtered, { t: today, v: value }];
 }
 
+/** Union of date-keyed series (later lists win on conflict), sorted ascending. */
+function mergeByDate(...lists) {
+  const m = new Map();
+  for (const list of lists) for (const p of list || []) if (p && p.t && Number.isFinite(p.v)) m.set(p.t, p.v);
+  return [...m.entries()].map(([t, v]) => ({ t, v })).sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
+}
+
 // --- MCX integration (token-free bhavcopy, best-effort) --------------------
 const MCX_BHAVCOPY_URL = "https://www.mcxindia.com/backpage.aspx/GetDateWiseBhavCopy";
 const MCX_HEADERS = {
@@ -333,11 +340,20 @@ function nextMonthlyExpiry(today = new Date()) {
 }
 
 function builtinEvents() {
-  // Lightweight static calendar; refine as needed. Dates in 2026.
+  // Static calendar with silver-impact metadata (direction / weight / mechanism).
   return [
-    { name: "US CPI", date: "2026-07-10", kind: "us_cpi" },
-    { name: "FOMC decision", date: "2026-07-29", kind: "fomc" },
-    { name: "US Jobs (NFP)", date: "2026-07-02", kind: "us_jobs" },
+    {
+      name: "US Jobs (NFP)", date: "2026-07-02", kind: "us_jobs", impact: "twoway", weight: 2,
+      effect: "Hot payrolls → hawkish Fed, ↑ yields & USD → silver DOWN. Weak jobs → silver UP.",
+    },
+    {
+      name: "US CPI", date: "2026-07-10", kind: "us_cpi", impact: "twoway", weight: 3,
+      effect: "Hot CPI → rate-cut hopes fade, real yields up → silver DOWN (inflation-hedge bid partly offsets).",
+    },
+    {
+      name: "Fed FOMC", date: "2026-07-29", kind: "fomc", impact: "twoway", weight: 3,
+      effect: "Dovish / cut → silver UP. Hawkish hold or hike risk → silver DOWN. Biggest IV-crush event.",
+    },
   ];
 }
 
@@ -405,18 +421,22 @@ async function main() {
   const breakeven10y = nominal10y != null && real10y != null ? round(nominal10y - real10y, 2) : null;
   const real10yHistory = fredReal;
 
-  // 3) MCX: real Upstox data (preferred) -> bhavcopy -> import-parity estimate.
+  // 3) MCX: real Upstox data (preferred) -> reuse last-good real -> parity.
   const ups = await fetchUpstox(usdInr);
-  if (ups?.silverUsdHistory?.length > 20) {
-    // Real silver history (MCX future expressed as $/oz) -> real momentum/GSR/vol.
-    xagHistory = withLatest(ups.silverUsdHistory, xagSpot);
-  }
-  const realMcx = ups ? null : await fetchMcxReal();
+  const prevReal = prev && prev.estimated === false ? prev : null;
+
+  // Persist silver history: union of prior real silver + Upstox silver + today's
+  // spot, so a transient Upstox hiccup never wipes the accumulated real history.
+  const realSilver = ups?.silverUsdHistory?.length ? ups.silverUsdHistory : prevReal?.live?.xagHistory ?? [];
+  xagHistory = mergeByDate(prevLive.xagHistory ?? [], realSilver, [
+    { t: new Date().toISOString().slice(0, 10), v: xagSpot },
+  ]);
+
   const xagUsd = last(xagHistory);
   const fairValue = xagUsd != null && usdInr != null ? xagUsd * PARITY_MULT * usdInr : null;
 
-  const expiryIso = ups?.expiry ?? nextMonthlyExpiry().toISOString().slice(0, 10);
-  const dte = ups?.dte ?? Math.max(0, Math.ceil((new Date(expiryIso).getTime() - Date.now()) / 86400000));
+  const expiryIso = ups?.expiry ?? prevReal?.mcx?.expiry ?? nextMonthlyExpiry().toISOString().slice(0, 10);
+  const dte = Math.max(0, Math.ceil((new Date(expiryIso).getTime() - Date.now()) / 86400000));
   const t = dte / 365;
 
   const xagCloses = xagHistory.map((p) => p.v);
@@ -454,14 +474,16 @@ async function main() {
     chain = ups.chain ?? [];
     atmIv = ups.atmIv != null ? round(ups.atmIv, 4) : rv20 != null ? round(rv20 * 1.05, 4) : null;
     ivRank = ivRankFrom(rv20);
-  } else if (realMcx && realMcx.silverFut != null) {
+  } else if (prevReal) {
+    // Upstox hiccup: keep last-good real MCX rather than reverting to a worse
+    // parity estimate. dte already recomputed from the persisted expiry.
     estimated = false;
-    silverFut = realMcx.silverFut;
-    prevClose = realMcx.prevClose;
-    oi = realMcx.oi;
-    oiChg = realMcx.oiChg;
-    chain = realMcx.chain ?? [];
-    atmIv = rv20 != null ? round(rv20 * 1.05, 4) : null;
+    silverFut = prevReal.mcx.silverFut;
+    prevClose = prevReal.mcx.prevClose;
+    oi = prevReal.mcx.oi;
+    oiChg = prevReal.mcx.oiChg;
+    chain = prevReal.options?.chain ?? [];
+    atmIv = prevReal.options?.atmIv ?? (rv20 != null ? round(rv20 * 1.05, 4) : null);
     ivRank = ivRankFrom(rv20);
   } else {
     // Import-parity estimate (no exchange feed available).
@@ -519,7 +541,7 @@ async function main() {
       chain,
     },
     basis: { fairValue: round(fairValue, 0), basis },
-    events: prev?.events?.length ? prev.events : builtinEvents(),
+    events: builtinEvents(),
   };
 
   await writeFile(LATEST, JSON.stringify(snapshot, null, 2) + "\n");

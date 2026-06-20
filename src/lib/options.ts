@@ -118,3 +118,18 @@ export function cushionSigma(F: number, strike: number, vol: number, t: number):
   if (em <= 0) return 0;
   return Math.abs(strike - F) / em;
 }
+
+/**
+ * Probability the future FINISHES above `level` at expiry (risk-neutral GBM,
+ * drift≈0). For a sold call this is the chance of finishing ITM.
+ */
+export function probabilityAbove(F: number, level: number, vol: number, t: number): number {
+  if (F <= 0 || level <= 0 || vol <= 0 || t <= 0) return F > level ? 1 : 0;
+  const d2 = (Math.log(F / level) - (vol * vol) / 2 * t) / (vol * Math.sqrt(t));
+  return normCdf(d2);
+}
+
+/** Probability the future finishes below `level` at expiry. */
+export function probabilityBelow(F: number, level: number, vol: number, t: number): number {
+  return 1 - probabilityAbove(F, level, vol, t);
+}

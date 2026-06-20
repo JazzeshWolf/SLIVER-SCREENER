@@ -81,6 +81,12 @@ export interface MarketEvent {
   name: string;
   date: string; // ISO date
   kind: "fomc" | "us_cpi" | "us_jobs" | "rbi" | "mcx_expiry" | "other";
+  /** Net directional lean for silver: "up", "down", or "twoway" (data-dependent). */
+  impact?: "up" | "down" | "twoway";
+  /** Importance 1 (minor) … 3 (major mover). */
+  weight?: 1 | 2 | 3;
+  /** One-line mechanism: how this event moves silver. */
+  effect?: string;
 }
 
 /** One factor's contribution within a horizon's directional score. */

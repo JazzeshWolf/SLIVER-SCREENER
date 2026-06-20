@@ -62,11 +62,7 @@ export function App() {
 
             {tab === "vol" && dash.mcx && (
               <>
-                <div className="flex gap-3">
-                  {dash.premium && <SellWindow premium={dash.premium} />}
-                  <ThetaRing mcx={dash.mcx} />
-                </div>
-                <ExpectedMoveCone mcx={dash.mcx} />
+                <ExpectedMoveCone mcx={dash.mcx} events={dash.mcx.events} />
                 <EventRadar events={dash.mcx.events} />
               </>
             )}
