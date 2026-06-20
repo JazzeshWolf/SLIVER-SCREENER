@@ -70,6 +70,8 @@ export interface McxData {
   };
   /** CFTC Commitments of Traders — COMEX silver speculative net positioning. */
   cot?: CotData | null;
+  /** Silver-relevant news headlines with auto-tagged impact + source links. */
+  news?: NewsItem[];
   events: MarketEvent[];
 }
 
@@ -79,6 +81,15 @@ export interface CotData {
   asOf: string; // ISO report date (weekly, ~3-day lag)
   source: string; // "managed money" | "non-commercial"
   history: Point[]; // net position history
+}
+
+export interface NewsItem {
+  title: string;
+  url: string; // links back to the original publisher
+  source: string;
+  publishedAt: string; // ISO
+  snippet: string;
+  impact: "up" | "down" | "twoway"; // auto-tagged silver impact
 }
 
 /** The single server-built data file the client renders (built by the Action). */

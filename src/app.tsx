@@ -5,6 +5,7 @@ import { RegimeCard } from "./components/RegimeCard";
 import { DirectionGauges } from "./components/DirectionGauges";
 import { OutlookTab } from "./components/OutlookTab";
 import { CotCard } from "./components/CotCard";
+import { NewsTab } from "./components/NewsTab";
 import { SpotStrip } from "./components/SpotStrip";
 import { SellWindow } from "./components/SellWindow";
 import { ThetaRing } from "./components/ThetaRing";
@@ -83,6 +84,8 @@ export function App() {
                 {dash.mcx && dash.derived && <BasisPanel mcx={dash.mcx} derived={dash.derived} />}
               </>
             )}
+
+            {tab === "news" && <NewsTab news={dash.mcx?.news ?? []} />}
           </>
         )}
       </main>

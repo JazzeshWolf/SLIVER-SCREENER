@@ -238,6 +238,78 @@ async function fetchCot() {
   return null;
 }
 
+// --- News (Google News RSS, silver-relevant, keyword-tagged impact) --------
+function stripTags(s) {
+  return String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+function decodeEntities(s) {
+  return String(s || "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#0?39;|&#x27;|&apos;/g, "'").replace(/&nbsp;/g, " ");
+}
+const BULL_KW = [/rate cut/i, /dovish/i, /weaker dollar/i, /dollar (falls|drops|weakens|slips)/i, /inflation/i, /safe[- ]?haven/i, /deficit/i, /shortage/i, /squeeze/i, /supply (crunch|tight|deficit)/i, /record high/i, /rally|rallies|surge|soar|jump|spike/i, /solar/i, /import dut|tariff/i, /geopolit|war|conflict|tension/i, /stimulus/i, /yields? (fall|drop|ease)/i, /buying|inflows/i, /bull/i];
+const BEAR_KW = [/rate hike/i, /hawkish/i, /stronger dollar/i, /dollar (rises|gains|strengthens|jumps)/i, /yields? (rise|jump|climb)/i, /(strong|robust|hot) jobs|jobs beat/i, /sell[- ]?off/i, /plunge|plummet|tumble|slump|crash|sink/i, /(falls|drops|slips|declines|slides)/i, /glut|oversupply|surplus/i, /profit[- ]?taking/i, /correction/i, /demand (cut|weak|soft|slump)/i, /outflows/i, /bear/i];
+function tagImpact(text) {
+  let b = 0, r = 0;
+  for (const re of BULL_KW) if (re.test(text)) b++;
+  for (const re of BEAR_KW) if (re.test(text)) r++;
+  return b > r ? "up" : r > b ? "down" : "twoway";
+}
+async function fetchNews(prevNews) {
+  const queries = [
+    `https://news.google.com/rss/search?q=${encodeURIComponent("silver price OR silver MCX OR silver demand OR silver squeeze")}&hl=en-IN&gl=IN&ceid=IN:en`,
+    `https://news.google.com/rss/search?q=${encodeURIComponent("silver price forecast OR silver Fed OR silver dollar OR silver rally")}&hl=en-US&gl=US&ceid=US:en`,
+  ];
+  const items = [];
+  const seen = new Set();
+  for (const url of queries) {
+    try {
+      const xml = await getText(url, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/rss+xml,application/xml" } });
+      for (const block of xml.split("<item>").slice(1)) {
+        const get = (tag) => {
+          const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`));
+          return m ? m[1] : "";
+        };
+        let title = decodeEntities(stripTags(get("title")));
+        const link = decodeEntities(stripTags(get("link")));
+        const pub = get("pubDate");
+        const desc = decodeEntities(stripTags(get("description")));
+        const srcM = block.match(/<source[^>]*>([\s\S]*?)<\/source>/);
+        let source = srcM ? decodeEntities(stripTags(srcM[1])) : "";
+        if (!source && / - [^-]{2,40}$/.test(title)) {
+          const i = title.lastIndexOf(" - ");
+          source = title.slice(i + 3);
+          title = title.slice(0, i);
+        } else if (source && title.endsWith(" - " + source)) {
+          title = title.slice(0, -(source.length + 3));
+        }
+        if (!title || !link) continue;
+        const text = `${title} ${desc}`;
+        if (!/silver|bullion|precious metal|MCX/i.test(text)) continue;
+        const key = title.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 50);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push({
+          title,
+          url: link,
+          source: source || "News",
+          publishedAt: pub ? new Date(pub).toISOString() : new Date().toISOString(),
+          snippet: desc.slice(0, 200),
+          impact: tagImpact(text),
+        });
+      }
+    } catch (e) {
+      console.warn(`news ${url.slice(0, 48)}: ${e.message}`);
+    }
+  }
+  items.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
+  const out = items.slice(0, 15);
+  console.log(`news: ${out.length} items`);
+  // NOTE: hook point — if a NEWS_AI_KEY is configured, an LLM could rewrite
+  // `snippet`/`impact` per item here (cache by url to stay cheap). Rule-based for now.
+  return out.length ? out : prevNews ?? [];
+}
+
 /** Append/replace today's point with a fresher live value. */
 function withLatest(hist, value) {
   if (value == null || !Number.isFinite(value)) return hist;
@@ -426,12 +498,13 @@ async function main() {
     fredSeries("DGS10"),
   ]);
 
-  // 2) Latest spot/FX ticks (fresher than the daily close) + CFTC positioning.
-  const [xagSpot, xauSpot, inrSpot, cotNew] = await Promise.all([
+  // 2) Latest spot/FX ticks + CFTC positioning + silver news.
+  const [xagSpot, xauSpot, inrSpot, cotNew, news] = await Promise.all([
     goldApi("XAG"),
     goldApi("XAU"),
     frankfurterInr(),
     fetchCot(),
+    fetchNews(prev?.news),
   ]);
 
   // Use the fetched history when a provider returned a real series; otherwise
@@ -592,6 +665,7 @@ async function main() {
     },
     basis: { fairValue: round(fairValue, 0), basis },
     cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
+    news: news ?? prev?.news ?? [],
     events: builtinEvents(),
   };
 
