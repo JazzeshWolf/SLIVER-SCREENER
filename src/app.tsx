@@ -67,16 +67,11 @@ export function App() {
               </>
             )}
 
-            {tab === "corr" && (
-              <CorrelationPanel live={dash.live} gsr={dash.derived?.gsr ?? null} />
-            )}
-
-            {tab === "basis" && dash.mcx && dash.derived && (
-              <BasisPanel mcx={dash.mcx} derived={dash.derived} />
-            )}
-
-            {tab === "basis" && !dash.mcx && (
-              <div className="text-center text-white/40 py-12">MCX snapshot unavailable.</div>
+            {tab === "context" && (
+              <>
+                <CorrelationPanel live={dash.live} gsr={dash.derived?.gsr ?? null} />
+                {dash.mcx && dash.derived && <BasisPanel mcx={dash.mcx} derived={dash.derived} />}
+              </>
             )}
           </>
         )}

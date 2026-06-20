@@ -44,6 +44,36 @@ export function Pill({
   );
 }
 
+/** Highlighted "what this means for silver" explainer block. */
+export function Implication({
+  children,
+  tone = "neutral",
+  label = "What it means",
+}: {
+  children: ComponentChildren;
+  tone?: "bull" | "bear" | "neutral" | "warn";
+  label?: string;
+}) {
+  const border: Record<string, string> = {
+    bull: "border-emerald-400/60",
+    bear: "border-rose-400/60",
+    neutral: "border-sky-400/60",
+    warn: "border-amber-400/60",
+  };
+  const lab: Record<string, string> = {
+    bull: "text-emerald-300",
+    bear: "text-rose-300",
+    neutral: "text-sky-300",
+    warn: "text-amber-300",
+  };
+  return (
+    <div className={`mt-2 rounded-lg bg-white/[0.04] border-l-2 ${border[tone]} px-2.5 py-2 text-xs leading-snug text-white/75`}>
+      <span className={`font-semibold ${lab[tone]}`}>{label} · </span>
+      {children}
+    </div>
+  );
+}
+
 // --- formatting helpers ----------------------------------------------------
 
 export function fmt(n: number | null | undefined, digits = 2): string {

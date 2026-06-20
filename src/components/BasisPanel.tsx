@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 import type { McxData } from "../lib/types";
-import { Card, SectionTitle, Pill, fmtInt, pct } from "./ui";
+import { Card, SectionTitle, Pill, Implication, fmtInt, pct } from "./ui";
 
 export function BasisPanel({
   mcx,
@@ -13,9 +13,37 @@ export function BasisPanel({
   const fv = derived.fairValue;
   const fut = mcx.mcx.silverFut;
   const pp = derived.premiumPct;
+  const dte = mcx.mcx.dte;
 
   const tone = b === null ? "neutral" : b >= 0 ? "bull" : "bear";
-  const backwardation = b !== null && b < 0;
+
+  // --- Basis implication ---
+  let bTone: "bull" | "bear" | "neutral" | "warn" = "neutral";
+  let bText = "Waiting on price + fair value.";
+  if (pp != null) {
+    if (pp > 0.5) {
+      bTone = "bull";
+      bText = `MCX trades ~${pp.toFixed(1)}% ABOVE landed-import fair value — a domestic PREMIUM. Local tightness (15% duty + import curbs) is making physical silver scarce, so buyers pay up. Supportive for MCX vs global; and for a short-call seller a rich premium that deflates into expiry is a tailwind.`;
+    } else if (pp < -0.5) {
+      bTone = "bear";
+      bText = `MCX trades ~${Math.abs(pp).toFixed(1)}% BELOW fair value — a DISCOUNT. Weak local demand or ample supply; MCX may lag global silver. A soft local signal.`;
+    } else {
+      bTone = "neutral";
+      bText = `MCX is trading right on import-parity fair value — cleanly tracking global silver with no domestic premium or discount distorting the price.`;
+    }
+  }
+
+  // --- Convergence implication ---
+  let cText = "Expiry data unavailable.";
+  let cTone: "bull" | "bear" | "neutral" | "warn" = "neutral";
+  if (dte != null && pp != null) {
+    if (dte <= 5) {
+      cTone = "warn";
+      cText = `Only ${dte} days to expiry. The ${pct(pp)} gap should be collapsing toward the structural duty/GST premium now. If it's still wide, watch for a last-minute squeeze near busy strikes — risk if you're short, edge if you're positioned for it.`;
+    } else {
+      cText = `~${dte} days left. The ₹${fmtInt(b)} (${pct(pp)}) gap should narrow smoothly toward the local premium as expiry nears. Smooth narrowing = orderly market. Sudden widening = physical stress/squeeze — the early-warning sign for short calls.`;
+    }
+  }
 
   return (
     <div className="space-y-3">
@@ -25,43 +53,24 @@ export function BasisPanel({
           <Metric label="MCX futures" value={`₹${fmtInt(fut)}`} />
           <Metric label="Theoretical FV" value={`₹${fmtInt(fv)}`} />
           <Metric label="Basis (fut − FV)" value={`₹${fmtInt(b)}`} pill={<Pill tone={tone}>{pct(pp)}</Pill>} />
-          <Metric label="DTE to expiry" value={`${mcx.mcx.dte ?? "—"}`} />
+          <Metric label="DTE to expiry" value={`${dte ?? "—"}`} />
         </div>
-        <p className="text-xs text-white/40 mt-2">
-          FV = spot × 32.1507 × USD-INR × (1 + duty + GST). Basis captures local premium + cost of
-          carry. As expiry nears it should converge toward the duty/GST-driven local premium.
+        <Implication tone={bTone}>{bText}</Implication>
+        <p className="text-[10px] text-white/30 mt-2">
+          FV = spot × 32.1507 × USD-INR × (1 + 15% duty + 3% GST). Basis = how far MCX sits above/below
+          that landed-import cost.
         </p>
-        {backwardation && (
-          <div className="mt-2 text-xs text-rose-300/90">
-            ⚠ Futures below fair value (backwardation/discount) — possible local tightness or stress;
-            relevant if you're short calls.
-          </div>
-        )}
       </Card>
 
       <Card>
         <SectionTitle>Convergence into expiry</SectionTitle>
-        <p className="text-sm text-white/60">
-          {mcx.mcx.dte === null
-            ? "Expiry data unavailable."
-            : mcx.mcx.dte <= 5
-              ? "Inside the roll window — basis should be near the local premium; watch for last-minute squeezes."
-              : `~${mcx.mcx.dte} days to expiry. Track the basis daily; smooth narrowing = healthy convergence, sudden widening = stress.`}
-        </p>
+        <Implication tone={cTone} label="What to watch">{cText}</Implication>
       </Card>
     </div>
   );
 }
 
-function Metric({
-  label,
-  value,
-  pill,
-}: {
-  label: string;
-  value: string;
-  pill?: ComponentChildren;
-}) {
+function Metric({ label, value, pill }: { label: string; value: string; pill?: ComponentChildren }) {
   return (
     <div>
       <div className="text-[10px] uppercase text-white/40">{label}</div>
