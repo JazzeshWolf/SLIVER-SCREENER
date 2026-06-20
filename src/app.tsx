@@ -4,6 +4,7 @@ import { TabBar, type Tab } from "./components/TabBar";
 import { RegimeCard } from "./components/RegimeCard";
 import { DirectionGauges } from "./components/DirectionGauges";
 import { OutlookTab } from "./components/OutlookTab";
+import { CotCard } from "./components/CotCard";
 import { SpotStrip } from "./components/SpotStrip";
 import { SellWindow } from "./components/SellWindow";
 import { ThetaRing } from "./components/ThetaRing";
@@ -73,6 +74,7 @@ export function App() {
             {tab === "context" && (
               <>
                 <CorrelationPanel live={dash.live} gsr={dash.derived?.gsr ?? null} />
+                {dash.mcx && <CotCard mcx={dash.mcx} />}
                 {dash.mcx && dash.derived && <BasisPanel mcx={dash.mcx} derived={dash.derived} />}
               </>
             )}

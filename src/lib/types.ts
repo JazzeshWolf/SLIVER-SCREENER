@@ -68,7 +68,17 @@ export interface McxData {
     fairValue: number | null; // ₹/kg theoretical
     basis: number | null; // futures - fairValue
   };
+  /** CFTC Commitments of Traders — COMEX silver speculative net positioning. */
+  cot?: CotData | null;
   events: MarketEvent[];
+}
+
+export interface CotData {
+  net: number; // speculative net position (contracts)
+  percentile: number; // 0..100 vs trailing history (extreme = crowded)
+  asOf: string; // ISO report date (weekly, ~3-day lag)
+  source: string; // "managed money" | "non-commercial"
+  history: Point[]; // net position history
 }
 
 /** The single server-built data file the client renders (built by the Action). */

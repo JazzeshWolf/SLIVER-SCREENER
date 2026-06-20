@@ -104,13 +104,27 @@ export function buildOutlook(
   add("Inventory & ETF flows", 4, null, "neutral",
     "Watch COMEX/LBMA stocks & SLV holdings — the most timely surprise signal (a sudden draw is bullish, a build bearish). Not yet wired live — the next data add.");
 
-  // 6) Positioning — CoT / MCX OI as a contrarian override.
+  // 6) Positioning — CoT extremes (contrarian override) + MCX OI.
   const pos = liveStance(["mcxPositioning"]);
   const oiChg = mcx.mcx.oiChg;
-  add("Positioning · MCX OI / CoT", 10, pos, "neutral",
-    oiChg == null ? "Positioning data pending."
-      : oiChg > 0 ? "Open interest is rising — fresh conviction behind the current move (confirms the trend)."
-        : "Open interest is falling — the move is being driven by position-covering, which can exhaust. Watch for a turn.");
+  const cot = mcx.cot ?? null;
+  const oiTxt = oiChg == null ? "" : oiChg > 0 ? "Rising OI = fresh conviction behind the move. " : "Falling OI = covering-driven move (can exhaust). ";
+  let posStance: Stance | null = pos;
+  let posNote: string;
+  if (cot) {
+    if (cot.percentile >= 80) {
+      posStance = "down";
+      posNote = `${oiTxt}Speculators (${cot.source}) sit at the ${cot.percentile}th percentile net long — a crowded one-sided book. Contrarian caution for bulls, and tailwind-risk for short calls.`;
+    } else if (cot.percentile <= 20) {
+      posStance = "up";
+      posNote = `${oiTxt}Speculators (${cot.source}) are at the ${cot.percentile}th percentile (lightly long / crowded short) — a contrarian positive and potential squeeze fuel.`;
+    } else {
+      posNote = `${oiTxt}Speculator positioning (${cot.source}) is mid-range (${cot.percentile}th pctile) — no crowding extreme to fade.`;
+    }
+  } else {
+    posNote = oiChg == null ? "Positioning data pending." : `${oiTxt}(CoT positioning pending.)`;
+  }
+  add("Positioning · CoT + MCX OI", 10, posStance, "neutral", posNote);
 
   // 7) India local — duty, INR, basis premium.
   const inr = liveStance(["usdInr"]);
@@ -155,9 +169,15 @@ export function buildOutlook(
     ? `Premium-sell window ${premium.score}/100 (${premium.band}). The research found news-driven vol-timing has no edge, so the seller's job is to sell when implied > realized — exactly what this score measures.`
     : "Sell premium when implied vol is rich vs realized.";
 
-  const positioning = oiChg == null ? "Positioning unavailable."
-    : oiChg > 0 ? "Rising OI = fresh conviction behind the move."
-      : "Falling OI = covering-driven move; watch for exhaustion. (CoT extremes are a contrarian flag for sellers.)";
+  const cotTxt = cot
+    ? cot.percentile >= 80
+      ? ` Specs are crowded long (CoT ${cot.percentile}th pctile) — a contrarian red flag; fade-risk is elevated for bulls.`
+      : cot.percentile <= 20
+        ? ` Specs are crowded short (CoT ${cot.percentile}th pctile) — contrarian fuel for a bounce/squeeze.`
+        : ` CoT net positioning is mid-range (${cot.percentile}th pctile) — no extreme to fade.`
+    : "";
+  const positioning =
+    (oiChg == null ? "OI change pending." : oiChg > 0 ? "Rising OI = fresh conviction behind the move." : "Falling OI = covering-driven move; watch for exhaustion.") + cotTxt;
 
   const topDrivers = [...drivers].filter((d) => d.stance !== "neutral").sort((a, b) => b.weight - a.weight).slice(0, 2);
   const driverTxt = topDrivers.map((d) => `${d.category.split(" · ")[0].toLowerCase()} (${d.stance === "up" ? "↑" : "↓"})`).join(" and ");

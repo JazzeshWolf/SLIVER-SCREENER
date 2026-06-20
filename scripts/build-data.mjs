@@ -193,6 +193,51 @@ async function fredSeries(id) {
   }
 }
 
+// --- CFTC Commitments of Traders (silver positioning, weekly) --------------
+// Free Socrata JSON API. Managed-money net (disaggregated) preferred; legacy
+// non-commercial net as fallback. COMEX silver contract code = 084691.
+async function fetchCot() {
+  const SILVER = "084691";
+  const sources = [
+    { id: "72hh-3qpy", long: "m_money_positions_long_all", short: "m_money_positions_short_all", label: "managed money" },
+    { id: "6dca-aqww", long: "noncomm_positions_long_all", short: "noncomm_positions_short_all", label: "non-commercial" },
+  ];
+  for (const s of sources) {
+    try {
+      const q = `cftc_contract_market_code=${SILVER}&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=170`;
+      const url = `https://publicreporting.cftc.gov/resource/${s.id}.json?${q}`;
+      const j = await getJson(url, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
+      if (!Array.isArray(j) || !j.length) {
+        console.warn(`cot ${s.id}: empty`);
+        continue;
+      }
+      const rows = j
+        .map((r) => ({
+          t: String(r.report_date_as_yyyy_mm_dd || "").slice(0, 10),
+          net: Number(r[s.long]) - Number(r[s.short]),
+        }))
+        .filter((r) => r.t && Number.isFinite(r.net))
+        .reverse();
+      if (rows.length < 6) continue;
+      const nets = rows.map((r) => r.net);
+      const latest = nets[nets.length - 1];
+      const below = nets.filter((x) => x <= latest).length;
+      const percentile = Math.round((below / nets.length) * 100);
+      console.log(`cot: ${s.label} net=${latest} pctile=${percentile} n=${rows.length} asOf=${rows[rows.length - 1].t}`);
+      return {
+        net: Math.round(latest),
+        percentile,
+        asOf: rows[rows.length - 1].t,
+        source: s.label,
+        history: rows.slice(-78).map((r) => ({ t: r.t, v: Math.round(r.net) })),
+      };
+    } catch (e) {
+      console.warn(`cot ${s.id}: ${e.message}`);
+    }
+  }
+  return null;
+}
+
 /** Append/replace today's point with a fresher live value. */
 function withLatest(hist, value) {
   if (value == null || !Number.isFinite(value)) return hist;
@@ -381,8 +426,13 @@ async function main() {
     fredSeries("DGS10"),
   ]);
 
-  // 2) Latest spot/FX ticks (fresher than the daily close).
-  const [xagSpot, xauSpot, inrSpot] = await Promise.all([goldApi("XAG"), goldApi("XAU"), frankfurterInr()]);
+  // 2) Latest spot/FX ticks (fresher than the daily close) + CFTC positioning.
+  const [xagSpot, xauSpot, inrSpot, cotNew] = await Promise.all([
+    goldApi("XAG"),
+    goldApi("XAU"),
+    frankfurterInr(),
+    fetchCot(),
+  ]);
 
   // Use the fetched history when a provider returned a real series; otherwise
   // accumulate day-by-day from the live spot (persisted across runs) so e.g.
@@ -541,6 +591,7 @@ async function main() {
       chain,
     },
     basis: { fairValue: round(fairValue, 0), basis },
+    cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
     events: builtinEvents(),
   };
 
