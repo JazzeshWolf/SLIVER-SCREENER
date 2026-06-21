@@ -1,7 +1,7 @@
 # Sliver Screener — Backlog
 
 ## 🔴 Next up
-- [ ] **Full-fledged audit — the Good, the Bad & the Ugly.** End-to-end review of the whole
+- [x] **Full-fledged audit — the Good, the Bad & the Ugly.** End-to-end review of the whole
   system: data sources (are they live, accurate, fresh?), the scoring/outlook math, the options
   math (Black-76, prob-of-touch), the UI, and the failure modes. Output a plain-English report:
   - **Good** — what is solid and trustworthy.
