@@ -718,3 +718,5 @@ main().catch((e) => {
 // trigger: data refresh with TWELVEDATA_KEY
 
 // trigger: upstox token added
+
+// trigger: FRED_KEY added (real 10y yields)
