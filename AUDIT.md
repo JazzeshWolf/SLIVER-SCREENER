@@ -16,7 +16,8 @@ Severity key: 🔴 could mislead a real trade · 🟡 weak/approximate, know the
 | U1 (symptom) — proxy could masquerade as live IV | Added `ivEstimated` flag through the snapshot + types; `SpotStrip` shows **"ATM IV\*"** and `SellWindow` warns when IV is a proxy. | **Fixed** |
 | U3 — confidence overstated when macro missing | `scoring.ts` now caps horizon confidence (×0.6 floor) when DXY/real-yield are absent. With the live data this drops 1M confidence ~1.0 → ~0.6. All 38 tests pass. | **Fixed** |
 | U4 — IV Rank ≠ Percentile (duplicate) | `ivPercentile` now a true share-at-or-below percentile, distinct from the min-max `ivRank`. | **Fixed** |
-| U2 — real yields missing | Needs the free `FRED_KEY` GitHub secret (user action — can't be set from code). DXY still needs a keyed source. | **Pending user** |
+| U2 — real yields missing | `FRED_KEY` added → real 10y yield + breakeven now live (2.23% / 2.26%). | **Fixed** |
+| U2 — Dollar (DXY) missing | Added Fed Broad USD Index via FRED (`DTWEXBGS`) as the dollar source — ICE DXY free feeds block GitHub IPs. Live at 119.5 (broad-index scale), labelled "USD idx" in the UI. Direction is what the engine uses. | **Fixed** |
 | B5 — data URL pinned to dev branch | Reviewed: that branch **is** the deploy branch, so the pin is correct. No change. | **No action** |
 
 Verified: `npm test` (38 pass), `npm run build` (clean), both data scripts `node --check` clean, IV solver round-trip exact.
