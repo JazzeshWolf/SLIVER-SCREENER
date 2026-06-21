@@ -62,7 +62,7 @@ export function App() {
                   <RegimeCard regime={dash.regime} scores={dash.scores} />
                 )}
                 <div className="flex gap-3">
-                  {dash.premium && <SellWindow premium={dash.premium} />}
+                  {dash.premium && <SellWindow premium={dash.premium} ivEstimated={dash.mcx?.options.ivEstimated} />}
                   {dash.mcx && <ThetaRing mcx={dash.mcx} />}
                 </div>
                 <SpotStrip live={dash.live} mcx={dash.mcx} />

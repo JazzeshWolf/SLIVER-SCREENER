@@ -7,7 +7,7 @@ const BAND = {
   red: { ring: "stroke-rose-400", text: "text-rose-300", dot: "🔴", label: "AVOID" },
 };
 
-export function SellWindow({ premium }: { premium: PremiumSellScore }) {
+export function SellWindow({ premium, ivEstimated }: { premium: PremiumSellScore; ivEstimated?: boolean }) {
   const b = BAND[premium.band];
   const r = 34;
   const c = 2 * Math.PI * r;
@@ -56,6 +56,11 @@ export function SellWindow({ premium }: { premium: PremiumSellScore }) {
       {premium.confidence < 0.75 && (
         <div className="mt-1 text-[10px] text-amber-300/70">
           partial inputs · confidence {(premium.confidence * 100).toFixed(0)}%
+        </div>
+      )}
+      {ivEstimated && (
+        <div className="mt-1 text-[10px] text-amber-300/70">
+          IV rank is from realized vol (no live option price) — treat as a proxy.
         </div>
       )}
     </Card>

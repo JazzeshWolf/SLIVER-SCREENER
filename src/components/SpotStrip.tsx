@@ -46,12 +46,17 @@ export function SpotStrip({ live, mcx }: { live: LiveInputs; mcx: McxData | null
           sub={mcx?.mcx.silverFut && mcx.mcx.prevClose ? `${arrow(mcx.mcx.silverFut - mcx.mcx.prevClose)} prev ${fmtInt(mcx.mcx.prevClose)}` : undefined}
         />
         <Cell label="MCX OI" value={fmtInt(mcx?.mcx.oi ?? null)} sub={mcx?.mcx.oiChg != null ? `${arrow(mcx.mcx.oiChg)} ${fmtInt(Math.abs(mcx.mcx.oiChg))}` : undefined} />
-        <Cell label="ATM IV" value={mcx?.options.atmIv == null ? "—" : `${(mcx.options.atmIv * 100).toFixed(0)}%`} sub={mcx?.options.ivRank != null ? `rank ${mcx.options.ivRank.toFixed(0)}` : undefined} />
+        <Cell
+          label={mcx?.options.ivEstimated ? "ATM IV*" : "ATM IV"}
+          value={mcx?.options.atmIv == null ? "—" : `${(mcx.options.atmIv * 100).toFixed(0)}%`}
+          sub={mcx?.options.ivRank != null ? `rank ${mcx.options.ivRank.toFixed(0)}${mcx.options.ivEstimated ? "*" : ""}` : undefined}
+        />
       </div>
-      {(live.partial || mcx?.stale) && (
+      {(live.partial || mcx?.stale || mcx?.options.ivEstimated) && (
         <div className="mt-2 text-[10px] text-amber-300/70">
           {live.partial && "Some live feeds fell back to cache. "}
-          {mcx?.stale && "MCX snapshot is stale."}
+          {mcx?.stale && "MCX snapshot is stale. "}
+          {mcx?.options.ivEstimated && "*IV is estimated from realized vol (no live option price)."}
         </div>
       )}
     </Card>

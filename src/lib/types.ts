@@ -58,6 +58,10 @@ export interface McxData {
   options: {
     atmStrike: number | null;
     atmIv: number | null; // fraction
+    // true when atmIv is a realized-vol proxy (no traded option price), and/or
+    // ivRank/ivPercentile are ranked against realized-vol history rather than a
+    // real ATM-IV history. The UI labels these so a proxy never reads as live IV.
+    ivEstimated?: boolean;
     ivRank: number | null; // 0..100
     ivPercentile: number | null; // 0..100
     rv20: number | null; // realized vol, fraction

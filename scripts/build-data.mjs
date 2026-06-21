@@ -400,7 +400,7 @@ async function fetchUpstox(usdInr) {
       console.warn(`upstox: no ${MCX_SYMBOL} future. silver samples: ${JSON.stringify(sample)}`);
       return null;
     }
-    const [{ history: futHist, oiHistory }, q, chain] = await Promise.all([
+    const [{ history: futHist, oiHistory }, q, chainRaw] = await Promise.all([
       upstox.dailyCandles(token, c.future.key, from, today),
       upstox.quote(token, c.future.key),
       upstox.optionChain(token, c.future.key, c.expiry),
@@ -416,12 +416,24 @@ async function fetchUpstox(usdInr) {
     const oiChg =
       oiHistory.length > 1 && oi != null ? oi - oiHistory[oiHistory.length - 2].v : null;
 
-    // ATM IV from the chain (average of nearest CE/PE that report IV).
+    // ATM IV from the chain greeks (average of nearest CE/PE that report IV).
+    let chain = chainRaw;
     let atmIv = null;
-    if (chain.length) {
-      const atmStrike = chain.reduce((b, o) => (Math.abs(o.strike - ltp) < Math.abs(b - ltp) ? o.strike : b), chain[0].strike);
-      const ivs = chain.filter((o) => o.strike === atmStrike && o.iv != null).map((o) => o.iv);
-      if (ivs.length) atmIv = ivs.reduce((a, b) => a + b, 0) / ivs.length;
+    const atmIvFromChain = (rows) => {
+      if (!rows.length) return null;
+      const k = rows.reduce((b, o) => (Math.abs(o.strike - ltp) < Math.abs(b - ltp) ? o.strike : b), rows[0].strike);
+      const ivs = rows.filter((o) => o.strike === k && o.iv != null).map((o) => o.iv);
+      return ivs.length ? ivs.reduce((a, b) => a + b, 0) / ivs.length : null;
+    };
+    atmIv = atmIvFromChain(chain);
+
+    // The /option/chain endpoint can return no greeks (off-hours, or when it
+    // wants a different underlying key). Fall back to solving Black-76 IV from
+    // real option LTPs so IV stays a TRADED number, not a realized-vol proxy.
+    if (atmIv == null && c.options?.length) {
+      const fb = await upstox.ivFromOptionQuotes(token, c.options, ltp, c.expiry);
+      if (fb.atmIv != null) atmIv = fb.atmIv;
+      if ((!chain || !chain.length) && fb.chain.length) chain = fb.chain;
     }
 
     const dte = Math.max(0, Math.ceil((new Date(c.expiry).getTime() - Date.now()) / 86400000));
@@ -585,7 +597,18 @@ async function main() {
   const rvClean = rvSeries.filter((x) => Number.isFinite(x));
 
   const ivRankFrom = (v) => (v != null && rvClean.length ? round(rangeRank(v, rvClean.concat(v)), 1) : null);
+  // True percentile (share of the sample at-or-below), distinct from the
+  // min-max range rank above — the two answer different questions.
+  const ivPctileFrom = (v) =>
+    v != null && rvClean.length
+      ? round((rvClean.concat(v).filter((x) => x <= v).length / (rvClean.length + 1)) * 100, 1)
+      : null;
   let estimated = true;
+  // `ivEstimated` is true whenever ATM IV is a realized-vol proxy rather than a
+  // real traded option price, AND whenever IV rank/percentile are ranked against
+  // realized-vol history (we don't yet accumulate a real ATM-IV history). The UI
+  // must label these so a proxy never reads as live market implied vol.
+  let ivEstimated = true;
   let silverFut, prevClose, oi, oiChg, atmIv, ivRank, chain;
   if (ups) {
     // Real exchange data from Upstox.
@@ -595,7 +618,15 @@ async function main() {
     oi = ups.oi;
     oiChg = ups.oiChg;
     chain = ups.chain ?? [];
-    atmIv = ups.atmIv != null ? round(ups.atmIv, 4) : rv20 != null ? round(rv20 * 1.05, 4) : null;
+    // atmIv is real only when it came from option prices (chain greeks or solved
+    // from option LTPs); otherwise it falls back to a realized-vol proxy.
+    if (ups.atmIv != null) {
+      atmIv = round(ups.atmIv, 4);
+      ivEstimated = false;
+    } else {
+      atmIv = rv20 != null ? round(rv20 * 1.05, 4) : null;
+      ivEstimated = true;
+    }
     ivRank = ivRankFrom(rv20);
   } else if (prevReal) {
     // Upstox hiccup: keep last-good real MCX rather than reverting to a worse
@@ -607,6 +638,8 @@ async function main() {
     oiChg = prevReal.mcx.oiChg;
     chain = prevReal.options?.chain ?? [];
     atmIv = prevReal.options?.atmIv ?? (rv20 != null ? round(rv20 * 1.05, 4) : null);
+    // Carry the prior flag; default to "estimated" when the field predates this.
+    ivEstimated = prevReal.options?.ivEstimated ?? true;
     ivRank = ivRankFrom(rv20);
   } else {
     // Import-parity estimate (no exchange feed available).
@@ -657,8 +690,9 @@ async function main() {
     options: {
       atmStrike: silverFut != null ? Math.round(silverFut / 1000) * 1000 : null,
       atmIv,
+      ivEstimated,
       ivRank,
-      ivPercentile: ivRank,
+      ivPercentile: ivPctileFrom(rv20),
       rv20: round(rv20, 4),
       expectedMove1sd,
       chain,

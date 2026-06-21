@@ -178,6 +178,7 @@ function horizonConfidence(
   totalWeightPresent: number,
   maxHistory: number,
   stale: boolean,
+  macroCoverage: number,
 ): number {
   // Calibrated so a solid core (e.g. gold momentum + USD-INR + structural bias)
   // reads as usable confidence, while still shrinking on stale/sparse data.
@@ -185,7 +186,26 @@ function horizonConfidence(
   const historyFactor = clamp(maxHistory / MIN_OBS_FOR_FULL_CONFIDENCE, 0.4, 1);
   const breadth = clamp(presentFactors / 3, 0.5, 1); // ~3 live factors = full breadth
   const staleFactor = stale ? 0.7 : 1;
-  return clamp(coverage * historyFactor * breadth * staleFactor, 0, 1);
+  // The dollar (DXY) and real yields are silver's two biggest macro drivers. If
+  // they're missing, the read is flying half-blind on momentum alone — cap
+  // confidence accordingly rather than letting momentum + deficit bias mask it.
+  const macroFactor = clamp(0.6 + 0.4 * macroCoverage, 0.6, 1);
+  return clamp(coverage * historyFactor * breadth * staleFactor * macroFactor, 0, 1);
+}
+
+/** Fraction of the macro-pillar weight (DXY + real yields) actually backed by data. */
+const MACRO_PILLAR_KEYS = ["dxy", "real10y"];
+function macroCoverageOf(horizon: Horizon, contributions: FactorContribution[]): number {
+  let nominal = 0;
+  let present = 0;
+  for (const cfg of FACTOR_CONFIG) {
+    if (!MACRO_PILLAR_KEYS.includes(cfg.key)) continue;
+    const w = cfg.weights[horizon];
+    if (w <= 0) continue;
+    nominal += w;
+    if (contributions.find((c) => c.key === cfg.key)?.present) present += w;
+  }
+  return nominal > 0 ? present / nominal : 1;
 }
 
 export function scoreHorizon(
@@ -237,8 +257,9 @@ export function scoreHorizon(
     live.real10yHistory.length,
   );
   const stale = live.partial || mcx.stale;
+  const macroCoverage = macroCoverageOf(horizon, contributions);
   const confidence = present.length
-    ? horizonConfidence(present.length, presentWeight, maxHistory, stale)
+    ? horizonConfidence(present.length, presentWeight, maxHistory, stale, macroCoverage)
     : 0;
 
   const score = clamp(rawScore * confidence, -10, 10);

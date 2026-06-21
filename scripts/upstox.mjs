@@ -138,6 +138,77 @@ export async function quote(token, instrumentKeys) {
   }
 }
 
+// --- Black-76 implied-vol solver (for when the option-chain endpoint returns
+// no greeks — e.g. off-hours or wrong-underlying). Solves IV from option LTPs.
+function normCdf(x) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(x));
+  const d = 0.3989422804014327 * Math.exp(-(x * x) / 2);
+  const p = d * t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  return x >= 0 ? 1 - p : p;
+}
+function b76(F, K, t, vol, type) {
+  if (t <= 0 || vol <= 0 || F <= 0 || K <= 0) return type === "CE" ? Math.max(F - K, 0) : Math.max(K - F, 0);
+  const sT = Math.sqrt(t);
+  const d1 = (Math.log(F / K) + ((vol * vol) / 2) * t) / (vol * sT);
+  const d2 = d1 - vol * sT;
+  return type === "CE" ? F * normCdf(d1) - K * normCdf(d2) : K * normCdf(-d2) - F * normCdf(-d1);
+}
+function impliedVolB76(price, F, K, t, type) {
+  if (!(price > 0) || t <= 0 || F <= 0 || K <= 0) return null;
+  const intrinsic = type === "CE" ? Math.max(F - K, 0) : Math.max(K - F, 0);
+  if (price < intrinsic - 1e-6) return null;
+  let lo = 0.001, hi = 5, flo = b76(F, K, t, lo, type) - price;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    const fm = b76(F, K, t, mid, type) - price;
+    if (Math.abs(fm) < 1e-4) return mid;
+    if (Math.sign(fm) === Math.sign(flo)) { lo = mid; flo = fm; } else hi = mid;
+  }
+  return null;
+}
+
+/**
+ * Fallback IV + chain built directly from option LTPs (real traded prices),
+ * for when /option/chain returns no greeks. Quotes a window of strikes around
+ * ATM, solves Black-76 IV per leg. Returns { atmIv, chain } — null/[] on failure
+ * so the caller is never worse off than the empty-chain case.
+ */
+export async function ivFromOptionQuotes(token, options, F, expiryIso) {
+  try {
+    if (!Array.isArray(options) || !options.length || !(F > 0)) return { atmIv: null, chain: [] };
+    const t = Math.max((new Date(expiryIso).getTime() - Date.now()) / (365 * 86400000), 0.5 / 365);
+    const strikes = [...new Set(options.map((o) => o.strike).filter((s) => s > 0))].sort((a, b) => a - b);
+    if (!strikes.length) return { atmIv: null, chain: [] };
+    const atm = strikes.reduce((b, s) => (Math.abs(s - F) < Math.abs(b - F) ? s : b), strikes[0]);
+    const idx = strikes.indexOf(atm);
+    const wanted = new Set(strikes.slice(Math.max(0, idx - 6), idx + 7));
+    const sel = options.filter((o) => wanted.has(o.strike) && (o.optionType === "CE" || o.optionType === "PE"));
+    if (!sel.length) return { atmIv: null, chain: [] };
+    const q = await quote(token, sel.map((o) => o.key));
+    const byKey = new Map();
+    for (const v of Object.values(q)) {
+      const k = v?.instrument_token ?? v?.instrument_key;
+      if (k) byKey.set(k, v);
+    }
+    const chain = [];
+    const atmIvs = [];
+    for (const o of sel) {
+      const v = byKey.get(o.key);
+      const ltp = Number(v?.last_price ?? v?.ltp);
+      if (!Number.isFinite(ltp) || ltp <= 0) continue;
+      const iv = impliedVolB76(ltp, F, o.strike, t, o.optionType);
+      chain.push({ strike: o.strike, type: o.optionType, ltp, iv, oi: Number(v?.oi ?? 0) || 0 });
+      if (o.strike === atm && iv != null) atmIvs.push(iv);
+    }
+    const atmIv = atmIvs.length ? atmIvs.reduce((a, b) => a + b, 0) / atmIvs.length : null;
+    if (chain.length) console.log(`upstox: solved IV from ${chain.length} option LTPs, atmIv=${atmIv}`);
+    return { atmIv, chain };
+  } catch (e) {
+    console.warn(`upstox ivFromOptionQuotes: ${e.message}`);
+    return { atmIv: null, chain: [] };
+  }
+}
+
 /** Option chain with IV for the underlying future at a given expiry. */
 export async function optionChain(token, underlyingKey, expiryIso) {
   const url = `${BASE}/option/chain?instrument_key=${encodeURIComponent(underlyingKey)}&expiry_date=${expiryIso}`;
