@@ -37,7 +37,7 @@ export function SpotStrip({ live, mcx }: { live: LiveInputs; mcx: McxData | null
         <Cell label="Silver $/oz" value={fmt(live.xagUsd)} dir={dirOf(live.xagHistory)} />
         <Cell label="Gold $/oz" value={fmt(live.xauUsd, 0)} dir={dirOf(live.xauHistory)} />
         <Cell label="GSR" value={fmt(gsr, 1)} />
-        <Cell label="DXY" value={fmt(live.dxy, 1)} dir={dirOf(live.dxyHistory)} />
+        <Cell label={live.usdBroad ? "USD idx" : "DXY"} value={fmt(live.dxy, 1)} dir={dirOf(live.dxyHistory)} />
         <Cell label="USD-INR" value={fmt(live.usdInr, 2)} dir={dirOf(live.usdInrHistory)} />
         <Cell label="Real 10y" value={live.real10y == null ? "—" : `${fmt(live.real10y)}%`} />
         <Cell

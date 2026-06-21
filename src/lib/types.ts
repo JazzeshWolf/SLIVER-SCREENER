@@ -17,7 +17,8 @@ export interface LiveInputs {
   xagUsd: number | null; // silver spot, $/oz
   xauUsd: number | null; // gold spot, $/oz
   usdInr: number | null; // ₹ per $
-  dxy: number | null; // US dollar index
+  dxy: number | null; // dollar index (ICE DXY, or Fed Broad USD when usdBroad)
+  usdBroad?: boolean; // true when `dxy` is the Fed Broad USD Index (~120 scale), not ICE DXY (~97)
   real10y: number | null; // 10y TIPS real yield, % (FRED DFII10)
   breakeven10y: number | null; // 10y breakeven inflation, % (DGS10 - DFII10)
   // Short history for momentum/z-scores (oldest -> newest). May be empty.

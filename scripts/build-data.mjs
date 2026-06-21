@@ -499,7 +499,7 @@ async function main() {
   const prev = await loadLatest();
 
   // 1) Histories (server-side, reliable).
-  const [xagH, xauH, dxyH, inrH, fredReal, fredNom] = await Promise.all([
+  const [xagH, xauH, dxyH, inrH, fredReal, fredNom, fredUsd] = await Promise.all([
     fetchSeries("xag", { td: ["XAG/USD", "XAGUSD", "SILVER", "XAG"], yahoo: "SI=F", stooq: "xagusd" }),
     fetchSeries("xau", { td: ["XAU/USD"], yahoo: "GC=F", stooq: "xauusd" }),
     // Only the genuine dollar index — aliases like DX/USDX map to unrelated
@@ -508,6 +508,11 @@ async function main() {
     fetchSeries("usdinr", { td: ["USD/INR"], yahoo: "INR=X", stooq: "usdinr" }),
     fredSeries("DFII10"),
     fredSeries("DGS10"),
+    // Dollar-index fallback: the Fed's daily Broad USD Index. Different scale
+    // from ICE DXY (~120 vs ~97) but tracks its DIRECTION closely — and the
+    // engine only uses dollar momentum, so direction is what matters. Never
+    // IP-blocked (FRED), so this is the reliable source when DXY is unavailable.
+    fredSeries("DTWEXBGS"),
   ]);
 
   // 2) Latest spot/FX ticks + CFTC positioning + silver news.
@@ -530,9 +535,11 @@ async function main() {
   let xagHistory = buildHistory(xagH, "xagHistory", xagSpot);
   const xauHistory = buildHistory(xauH, "xauHistory", xauSpot);
   const usdInrHistory = buildHistory(inrH, "usdInrHistory", inrSpot);
-  // DXY has no spot fallback; if the real symbol is unavailable, drop it
-  // entirely (don't carry a previously-stored bad series forward).
-  const dxyHistory = dxyH.length > 5 ? dxyH : [];
+  // Dollar index: prefer genuine ICE DXY if a provider served it; otherwise use
+  // the Fed Broad USD Index (FRED, reliable). `usdBroad` flags which one, so the
+  // UI can label the value honestly (the two are on different scales).
+  const dxyHistory = dxyH.length > 5 ? dxyH : fredUsd.length > 5 ? fredUsd : [];
+  const usdBroad = !(dxyH.length > 5) && fredUsd.length > 5;
 
   // Publish when we have enough to drive the engine. Silver history is ideal,
   // but gold + USD-INR alone still yield a meaningful (if weaker) bias.
@@ -668,6 +675,7 @@ async function main() {
       xauUsd: round(xauUsd, 2),
       usdInr: round(usdInr, 3),
       dxy: round(dxy, 2),
+      usdBroad, // true when `dxy` is the Fed Broad USD Index, not ICE DXY
       real10y: round(real10y, 2),
       breakeven10y,
       xagHistory,

@@ -39,7 +39,7 @@ interface FactorConfig {
 export const FACTOR_CONFIG: FactorConfig[] = [
   {
     key: "dxy",
-    label: "Dollar (DXY, inverse)",
+    label: "Dollar (USD index, inverse)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
     weights: { "1D": 0.24, "1W": 0.18, "1M": 0.14 },
   },
