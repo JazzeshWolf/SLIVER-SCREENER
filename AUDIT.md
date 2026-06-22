@@ -12,7 +12,7 @@ Severity key: 🔴 could mislead a real trade · 🟡 weak/approximate, know the
 
 | Finding | What changed | Status |
 |---|---|---|
-| U1 — IV was a realized-vol proxy | `fetchUpstox` now solves **Black-76 IV from real option LTPs** (`upstox.ivFromOptionQuotes`) when the chain endpoint returns no greeks. Solver round-trip-verified to recover IV exactly (ATM + OTM, CE/PE). | **Fixed in code** — takes effect on the next Action run during market hours |
+| U1 — IV was a realized-vol proxy | Root cause found: options match the FUTURE's expiry, but MCX silver options expire on a different date, so zero matched. Fixed `pickContract` to use the options' own expiry → **verified live: 308 options found, real ATM IV 59.5% solved from 17 option LTPs (IV/RV 1.72).** | **Fixed & verified live** |
 | U1 (symptom) — proxy could masquerade as live IV | Added `ivEstimated` flag through the snapshot + types; `SpotStrip` shows **"ATM IV\*"** and `SellWindow` warns when IV is a proxy. | **Fixed** |
 | U3 — confidence overstated when macro missing | `scoring.ts` now caps horizon confidence (×0.6 floor) when DXY/real-yield are absent. With the live data this drops 1M confidence ~1.0 → ~0.6. All 38 tests pass. | **Fixed** |
 | U4 — IV Rank ≠ Percentile (duplicate) | `ivPercentile` now a true share-at-or-below percentile, distinct from the min-max `ivRank`. | **Fixed** |
