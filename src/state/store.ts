@@ -73,7 +73,8 @@ export function useDashboard(): Dashboard {
   const regime = useMemo(() => {
     if (!scores || !mcx) return null;
     const prev = cacheGet<Regime>("regime")?.value;
-    const r = deriveRegime(scores, mcx.mcx.dte, prev);
+    // Decision horizon keys off the contract being sold — the option DTE.
+    const r = deriveRegime(scores, mcx.mcx.optionDte ?? mcx.mcx.dte, prev);
     cacheSet("regime", r.regime);
     return r;
   }, [scores, mcx]);

@@ -4,7 +4,9 @@ import { Card } from "./ui";
 
 /** Theta decay countdown ring: arc = DTE, color = theta sweet-spot vs gamma risk. */
 export function ThetaRing({ mcx }: { mcx: McxData }) {
-  const dte = mcx.mcx.dte;
+  // Theta clock tracks the OPTION the seller trades (expires before the future).
+  const dte = mcx.mcx.optionDte ?? mcx.mcx.dte;
+  const expiry = mcx.mcx.optionExpiry ?? mcx.mcx.expiry;
   const zone = thetaZone(dte);
   const maxDte = 45; // ring fills relative to a typical monthly cycle
   const frac = dte === null ? 0 : Math.min(1, dte / maxDte);
@@ -62,7 +64,7 @@ export function ThetaRing({ mcx }: { mcx: McxData }) {
         <div>
           <div className={`text-base font-bold ${textTone}`}>{label}</div>
           <div className="text-xs text-white/50 mt-0.5">
-            {dte ?? "—"} DTE · expiry {mcx.mcx.expiry ?? "—"}
+            {dte ?? "—"} DTE · expiry {expiry ?? "—"}
           </div>
           <div className="text-[11px] text-white/40 mt-1">
             theta favorability {zone === null ? "—" : `${Math.round(zone * 100)}%`}

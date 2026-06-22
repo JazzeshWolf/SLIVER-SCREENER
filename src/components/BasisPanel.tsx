@@ -53,7 +53,7 @@ export function BasisPanel({
           <Metric label="MCX futures" value={`₹${fmtInt(fut)}`} />
           <Metric label="Theoretical FV" value={`₹${fmtInt(fv)}`} />
           <Metric label="Basis (fut − FV)" value={`₹${fmtInt(b)}`} pill={<Pill tone={tone}>{pct(pp)}</Pill>} />
-          <Metric label="DTE to expiry" value={`${dte ?? "—"}`} />
+          <Metric label="Future DTE" value={`${dte ?? "—"}`} />
         </div>
         <Implication tone={bTone}>{bText}</Implication>
         <p className="text-[10px] text-white/30 mt-2">

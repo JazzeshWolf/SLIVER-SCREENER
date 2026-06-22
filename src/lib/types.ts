@@ -51,8 +51,14 @@ export interface McxData {
     symbol: string;
     silverFut: number | null; // ₹/kg
     prevClose: number | null;
-    expiry: string | null; // ISO date
-    dte: number | null;
+    expiry: string | null; // future expiry — drives basis convergence
+    dte: number | null; // days to FUTURE expiry
+    // Option expiry/DTE — the contract an options seller actually trades (MCX
+    // silver options expire before the future). Drives theta, expected move,
+    // the premium-sell read, and the regime decision horizon. Falls back to the
+    // future's expiry when no live option contract is available.
+    optionExpiry?: string | null;
+    optionDte?: number | null;
     oi: number | null;
     oiChg: number | null;
   };

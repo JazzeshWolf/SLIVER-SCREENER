@@ -366,7 +366,9 @@ function ivRvComponent(iv: number | null, rv: number | null): number | null {
 export function premiumSellScore(mcx: McxData, events: { date: string }[], today: Date): PremiumSellScore {
   const ivRank = mcx.options.ivRank; // 0..100
   const ivRv = ivRvComponent(mcx.options.atmIv, mcx.options.rv20);
-  const theta = thetaZone(mcx.mcx.dte);
+  // Theta is about the OPTION the seller holds — use the option DTE, not the
+  // future's (MCX silver options expire before the future).
+  const theta = thetaZone(mcx.mcx.optionDte ?? mcx.mcx.dte);
 
   // Event clear: 1 if no flagged event within 3 sessions, else 0.
   const horizonMs = 3 * 24 * 3600 * 1000;

@@ -444,7 +444,7 @@ async function fetchUpstox(usdInr) {
     const silverUsdHistory = mult > 0 ? futHist.map((p) => ({ t: p.t, v: p.v / mult })) : [];
 
     console.log(`upstox: ${MCX_SYMBOL} fut=${ltp} oi=${oi} dte=${dte} hist=${futHist.length} opts=${c.options?.length ?? 0} optExp=${optExpiry} chain=${chain.length} atmIv=${atmIv}`);
-    return { silverFut: Math.round(ltp), prevClose, oi, oiChg, expiry: c.expiry, dte, atmIv, chain, silverUsdHistory };
+    return { silverFut: Math.round(ltp), prevClose, oi, oiChg, expiry: c.expiry, optionExpiry: optExpiry, dte, atmIv, chain, silverUsdHistory };
   } catch (e) {
     console.warn(`upstox failed: ${e.message}`);
     return null;
@@ -579,9 +579,16 @@ async function main() {
   const xagUsd = last(xagHistory);
   const fairValue = xagUsd != null && usdInr != null ? xagUsd * PARITY_MULT * usdInr : null;
 
+  // Future expiry/DTE — drives the futures contract + basis convergence.
   const expiryIso = ups?.expiry ?? prevReal?.mcx?.expiry ?? nextMonthlyExpiry().toISOString().slice(0, 10);
   const dte = Math.max(0, Math.ceil((new Date(expiryIso).getTime() - Date.now()) / 86400000));
-  const t = dte / 365;
+  // Option expiry/DTE — the contract an OPTIONS SELLER actually trades (MCX
+  // silver options expire before the future). Drives theta, expected move,
+  // the premium-sell read and the regime decision horizon. Falls back to the
+  // future's expiry when there's no live option contract (parity estimate).
+  const optionExpiryIso = ups?.optionExpiry ?? prevReal?.mcx?.optionExpiry ?? expiryIso;
+  const optionDte = Math.max(0, Math.ceil((new Date(optionExpiryIso).getTime() - Date.now()) / 86400000));
+  const t = optionDte / 365; // expected move is over the OPTION tenor
 
   const xagCloses = xagHistory.map((p) => p.v);
   const xauCloses = xauHistory.map((p) => p.v);
@@ -692,8 +699,10 @@ async function main() {
       symbol: MCX_SYMBOL,
       silverFut,
       prevClose,
-      expiry: expiryIso,
+      expiry: expiryIso, // future expiry (basis convergence)
       dte,
+      optionExpiry: optionExpiryIso, // option expiry (what a seller trades)
+      optionDte,
       oi,
       oiChg,
     },

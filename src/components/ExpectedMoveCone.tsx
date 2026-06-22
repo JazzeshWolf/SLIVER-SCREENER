@@ -22,7 +22,8 @@ const KIND_ICON: Record<string, string> = {
 export function ExpectedMoveCone({ mcx, events = [] }: { mcx: McxData; events?: MarketEvent[] }) {
   const F = mcx.mcx.silverFut;
   const iv = mcx.options.atmIv;
-  const dte = mcx.mcx.dte;
+  // Cone runs to the OPTION expiry (the contract being sold), not the future's.
+  const dte = mcx.mcx.optionDte ?? mcx.mcx.dte;
   const tYears = dte != null ? dte / 365 : null;
   const ready = F !== null && iv !== null && tYears !== null && tYears > 0 && dte! > 0;
 
