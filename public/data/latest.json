@@ -1,11 +1,11 @@
 {
-  "asOf": "2026-06-22T04:44:40.335Z",
+  "asOf": "2026-06-22T10:20:35.071Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
     "xagUsd": 65.63,
-    "xauUsd": 4177.3,
+    "xauUsd": 4211.43,
     "usdInr": 94.33,
     "dxy": 119.51,
     "usdBroad": true,
@@ -1232,7 +1232,7 @@
       },
       {
         "t": "2026-06-22",
-        "v": 4177.299805
+        "v": 4211.43457
       }
     ],
     "dxyHistory": [
@@ -3417,153 +3417,167 @@
         "v": 94.33
       }
     ],
-    "asOf": "2026-06-22T04:44:40.335Z",
+    "asOf": "2026-06-22T10:20:35.071Z",
     "partial": false
   },
   "mcx": {
     "symbol": "SILVERM",
-    "silverFut": 239118,
+    "silverFut": 241995,
     "prevClose": 242470,
     "expiry": "2026-06-30",
     "dte": 8,
     "optionExpiry": "2026-07-28",
     "optionDte": 36,
-    "oi": 62513,
-    "oiChg": -5640
+    "oi": 60132,
+    "oiChg": -8021
   },
   "options": {
-    "atmStrike": 239000,
-    "atmIv": 0.5918,
+    "atmStrike": 242000,
+    "atmIv": 0.4041,
     "ivEstimated": false,
     "ivRank": 3.2,
     "ivPercentile": 10.4,
     "rv20": 0.3459,
-    "expectedMove1sd": 44442,
+    "expectedMove1sd": 30711,
     "chain": [
-      {
-        "strike": 235000,
-        "type": "PE",
-        "ltp": 7279,
-        "iv": 0.3104538785442711,
-        "oi": 192
-      },
       {
         "strike": 236000,
         "type": "PE",
         "ltp": 8979,
-        "iv": 0.352729012709111,
+        "iv": 0.3944898896012454,
         "oi": 2
+      },
+      {
+        "strike": 237000,
+        "type": "PE",
+        "ltp": 7410,
+        "iv": 0.32548855477757754,
+        "oi": 13
       },
       {
         "strike": 238000,
         "type": "PE",
         "ltp": 9000,
-        "iv": 0.32048399507440617,
+        "iv": 0.3642558936122804,
         "oi": 1
-      },
-      {
-        "strike": 235000,
-        "type": "CE",
-        "ltp": 17221.5,
-        "iv": 0.5094453898873181,
-        "oi": 24
       },
       {
         "strike": 236000,
         "type": "CE",
         "ltp": 15100,
-        "iv": 0.4546639777142555,
+        "iv": 0.39881958964094516,
         "oi": 9
-      },
-      {
-        "strike": 233000,
-        "type": "CE",
-        "ltp": 23947,
-        "iv": 0.7048075367435814,
-        "oi": 1
       },
       {
         "strike": 238000,
         "type": "CE",
         "ltp": 15000,
-        "iv": 0.48472097400203357,
+        "iv": 0.43208040249906476,
         "oi": 2
       },
       {
         "strike": 245000,
         "type": "CE",
-        "ltp": 11800,
-        "iv": 0.4816398439519108,
-        "oi": 416
+        "ltp": 13353.5,
+        "iv": 0.4887807236583903,
+        "oi": 400
+      },
+      {
+        "strike": 247000,
+        "type": "CE",
+        "ltp": 12404,
+        "iv": 0.48561219249852006,
+        "oi": 5
+      },
+      {
+        "strike": 241000,
+        "type": "CE",
+        "ltp": 15335,
+        "iv": 0.49365343911573284,
+        "oi": 3
       },
       {
         "strike": 242000,
         "type": "CE",
-        "ltp": 19717.5,
-        "iv": 0.704346382174641,
-        "oi": 1
+        "ltp": 15165.5,
+        "iv": 0.5038069591410459,
+        "oi": 44
       },
       {
         "strike": 243000,
         "type": "CE",
-        "ltp": 11664,
-        "iv": 0.44914394094981247,
-        "oi": 3
+        "ltp": 14354,
+        "iv": 0.49224138952419155,
+        "oi": 67
       },
       {
         "strike": 239000,
         "type": "CE",
         "ltp": 17711,
-        "iv": 0.5918187034251169,
+        "iv": 0.5405093681933358,
         "oi": 2
       },
       {
         "strike": 240000,
         "type": "CE",
-        "ltp": 14350,
-        "iv": 0.49451150450389836,
-        "oi": 868
+        "ltp": 16225,
+        "iv": 0.5071978363404053,
+        "oi": 880
       },
       {
         "strike": 241000,
         "type": "PE",
-        "ltp": 5128,
-        "iv": 0.1373300275923684,
-        "oi": 1
+        "ltp": 8700,
+        "iv": 0.30564473641850054,
+        "oi": 9
       },
       {
         "strike": 242000,
         "type": "PE",
-        "ltp": 6287.5,
-        "iv": 0.15661416319385169,
+        "ltp": 9171.5,
+        "iv": 0.3043498796429486,
         "oi": 1
       },
       {
         "strike": 244000,
         "type": "PE",
-        "ltp": 11600,
-        "iv": 0.296584677696228,
-        "oi": 1
+        "ltp": 10767,
+        "iv": 0.32171398423891506,
+        "oi": 21
       },
       {
         "strike": 240000,
         "type": "PE",
-        "ltp": 9301,
-        "iv": 0.2958789601754397,
-        "oi": 1130
+        "ltp": 8340,
+        "iv": 0.3101025794371963,
+        "oi": 1312
       },
       {
         "strike": 245000,
         "type": "PE",
-        "ltp": 11700,
-        "iv": 0.27898934402037406,
-        "oi": 178
+        "ltp": 10475,
+        "iv": 0.2933282519243657,
+        "oi": 194
+      },
+      {
+        "strike": 247000,
+        "type": "PE",
+        "ltp": 12077.5,
+        "iv": 0.3076230286229402,
+        "oi": 8
+      },
+      {
+        "strike": 248000,
+        "type": "PE",
+        "ltp": 12200,
+        "iv": 0.29102823350206014,
+        "oi": 3
       }
     ]
   },
   "basis": {
     "fairValue": 234854,
-    "basis": 4264
+    "basis": 7141
   },
   "cot": {
     "net": 10403,
@@ -3887,6 +3901,22 @@
   },
   "news": [
     {
+      "title": "Silver and Gold All-Time Highs: Key Drivers in 2026",
+      "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxOdHVnd3RUT0prUlliZl82VGtyVENtdktYc0ZoUmVNLTFOUWF6RUYyRExvbnBnazdKN3ZjSDc1d3lKNXNQTHYyLWxPY0RtUjZQcm5wa2g2dFBrMHliNkI0aWdCcE40aVNBRWFEUnhkTGFnN2dieEswU1BBdi1YTGFaMm1iOVF5ZnNUNFE?oc=5",
+      "source": "Discovery Alert",
+      "publishedAt": "2026-06-22T09:56:15.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiigFBVV95cUxOdHVnd3RUT0prUlliZl82VGtyVENtdktYc0ZoUmVNLTFOUWF6RUYyRExvbnBnazdKN3ZjSDc1d3lKNXNQTHYyLWxPY0RtUjZQcm5wa2g2dFBrMHliNkI0aWdCcE40aVNBRWFEUnhkTG",
+      "impact": "twoway"
+    },
+    {
+      "title": "Silver – Summer Rally Despite the Interest Rate Shock?",
+      "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQOTl6c2xVRDFjajdocnY5elhwdXVfb1k0Y3d0dndlMjE2bmlBa3ZYS1Bnb0o3d19JenJqcGR5R0hBTGRWV2Q0el8zNHZQd2ZwQ19EX0hvdmM3SzNLVWI3X1hVSS1yTXR2RVpfLVpRMzhZV0lxR2dJN2hJeFJ5UXhpN3pLODlPNDlBV0dCTU44bTNhQlpTcnh5SDdtQ3NaSHRuTjVpLUNIaUlnY2lKc1E?oc=5",
+      "source": "SMM Metal",
+      "publishedAt": "2026-06-22T08:07:18.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMirgFBVV95cUxQOTl6c2xVRDFjajdocnY5elhwdXVfb1k0Y3d0dndlMjE2bmlBa3ZYS1Bnb0o3d19JenJqcGR5R0hBTGRWV2Q0el8zNHZQd2ZwQ19EX0hvdmM3SzNLVWI3X1hVSS1yTXR2RVpfLVpRMz",
+      "impact": "up"
+    },
+    {
       "title": "Gold and Silver Price Forecast: Dollar Breakout Keeps Metals Under Pressure",
       "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxNcGduZDlFRmJPZUFieVVMekgxSko3T0g3WGphbzgzaWpsckNINENTWE9zTkNKdml0al9kRGF1am5zLTRfRkJaNUlIQ1g1YWJhSkpmWDB2UU5OWTczME1QNk1zUFN4ZzVLTDJiMUw1MGdSVUg3eWExbEc0TmlkVDlGRERDQ05XMjZ0WG9qY1pRVl8xSXZRTmJvVnhxcWEzTktxdVYzZlNHOHVOV1VIeUNiWVpQQ1EyckZsMzBmMngxQXd5Zlk?oc=5",
       "source": "FXEmpire",
@@ -3900,14 +3930,6 @@
       "source": "TradingKey",
       "publishedAt": "2026-06-22T01:00:27.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMijgFBVV95cUxPYVVPa09jZHFTd0ZVTzViQUJyLXc2TUNoZVR5VnlSWUoyUWI2U1hXakNUZVV5UXBLdnRnUUhKMUlHUkJxeXVxN1JNSlh1YXFvRmJ4TVg1UW82aE9UM1FtdUYxSUJ3azZ5QWFraEpRVU",
-      "impact": "twoway"
-    },
-    {
-      "title": "Silver and Gold All-Time Highs: Key Drivers in 2026",
-      "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxOdHVnd3RUT0prUlliZl82VGtyVENtdktYc0ZoUmVNLTFOUWF6RUYyRExvbnBnazdKN3ZjSDc1d3lKNXNQTHYyLWxPY0RtUjZQcm5wa2g2dFBrMHliNkI0aWdCcE40aVNBRWFEUnhkTGFnN2dieEswU1BBdi1YTGFaMm1iOVF5ZnNUNFE?oc=5",
-      "source": "Discovery Alert",
-      "publishedAt": "2026-06-21T20:48:18.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiigFBVV95cUxOdHVnd3RUT0prUlliZl82VGtyVENtdktYc0ZoUmVNLTFOUWF6RUYyRExvbnBnazdKN3ZjSDc1d3lKNXNQTHYyLWxPY0RtUjZQcm5wa2g2dFBrMHliNkI0aWdCcE40aVNBRWFEUnhkTG",
       "impact": "twoway"
     },
     {
@@ -3927,6 +3949,14 @@
       "impact": "twoway"
     },
     {
+      "title": "SILVER CRASHED 25%… But The REAL Story Starts NOW Jeremy Clarkson Kristin Scott Thomas (yFWqIHiHZG)",
+      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTFBIZEZyMWhBV3BaOXVKSXd1UUpNeU10S1p4ellXUldLY1VaeDhsczFYS0VneHVSdlRscGc3NlNBYTVJcjZvMXpzd0FqaGdpSGVHX1dqbGpVMm44YTZ3LUZoM1ZCVnY?oc=5",
+      "source": "Fathom Journal",
+      "publishedAt": "2026-06-21T11:05:22.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiZEFVX3lxTFBIZEZyMWhBV3BaOXVKSXd1UUpNeU10S1p4ellXUldLY1VaeDhsczFYS0VneHVSdlRscGc3NlNBYTVJcjZvMXpzd0FqaGdpSGVHX1dqbGpVMm44YTZ3LUZoM1ZCVnY?oc=5\" target=\"",
+      "impact": "down"
+    },
+    {
       "title": "Gold And Silver Plunge On Expectations For Interest Rate Hikes",
       "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPUzhxRWpWTVZhMndkYTcwRlRURFlIN25DeFVzdk1aT3BUa3EtTVUwQlpWaXo0MjBvdHhhdGRSa2pWX194WXBPTzYtb3M2YkJDZEl0THhpQnFHVVd3RVlpSlpMM2d6YS1UYmZYal9rSTNOa3JnTjBkdG5naHJOUHNDQUR5dDJUcjd1eXd2Mmp1VVZnTFBSU2tpbXR5VnNrYTIxR2otNA?oc=5",
       "source": "InsuranceNewsNet",
@@ -3940,6 +3970,14 @@
       "source": "FXEmpire",
       "publishedAt": "2026-06-21T08:25:00.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiugFBVV95cUxPemFwMUlGV0ZfaWtIU3hsbFRlWmtCMUhNYmRkRTBTYl9RS3c5NlRvNTlPN1JibllodlFpTVdDUUlaeGVqQWF0TS1lcU90ZjhXSGRlck53M3FzR1cwejBCS2dBY043STJucWhiZ01hZE",
+      "impact": "up"
+    },
+    {
+      "title": "Solar Is Using 19% Less Silver. The Deficit Is Getting Worse. Here’s Why That’s Bullish.",
+      "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxNaVlHX1VHTnNRaEdJbmFSTGN5TmtPU0hIaHp6eExJT2llQXlrRnBfMHZlWllwdG1oT3VFaVBnYk9SbnIwczNJS1QyWk9UMzViVmxsMnZXblhaREtGclhkVzFYdmRsVF93b0YtYi1ST1FxMC1DSVQ2NG9VQnJrZ2VwTzVvbVFTYXJpRXpj?oc=5",
+      "source": "GoldSilver",
+      "publishedAt": "2026-06-19T18:57:39.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiiwFBVV95cUxNaVlHX1VHTnNRaEdJbmFSTGN5TmtPU0hIaHp6eExJT2llQXlrRnBfMHZlWllwdG1oT3VFaVBnYk9SbnIwczNJS1QyWk9UMzViVmxsMnZXblhaREtGclhkVzFYdmRsVF93b0YtYi1ST1",
       "impact": "up"
     },
     {
@@ -3975,36 +4013,12 @@
       "impact": "twoway"
     },
     {
-      "title": "Gold, Silver Prices Today: Check 24K, 22K Rates In Mumbai, Delhi, Chennai, Kolkata, Bangalore, Hyderabad",
-      "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxPMW5jQmhrcWp5eWZmLWtEY0t6UmJwdngxcmFlR2VMUVN6STF1NmxrdnlVU0tRLXpoUGZCX3pUQmtzWFBsOWRJRXBwM1Y0TU5kTFF2aW9fS1pVdmh6X3o0M2tQSlUyVFpiY2xUbGcyNlYteFl1ZlQzNFdKOFlucWdHSzBPTUJhSEY2SWRQR19JajBlQWwzQmdublpHQVJDUmFHbzM2a0FHSXFwNW9IMjNwSEFoMWdIaEtOaDZzVENWRVZKZktKZEZ0VnJLUTVKcUxhZ3NxblRyaE1Sd9IB4gFBVV95cUxNdlNkUTdMaG1vT1JxOXJIajltNVpUSnJmWXRxM201UGJBZndtck1yQXgxZzJELVRHTlZ3d0dISFh5MFkxVkJkWENLOEl0U0phS2tFaEF6aFBWOGNMV0VlYXlFalFXenFIaVhNZ2pPWm83b2NLUW5UVVozUTktUFBicFlrTzlkeHZZbDNiSERZZ2luNTU1WENlM0lBT2ZSb25iV1FIVXJEXzR1RVU2UkFCRGY5WlhHWkhrUVNPbXRWNURFbUphUV80TXU1NjhxaGJhTU9zeEFNaEJsSEROdHB1ZDln?oc=5",
-      "source": "NDTV Profit",
-      "publishedAt": "2026-06-19T04:18:42.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMi2gFBVV95cUxPMW5jQmhrcWp5eWZmLWtEY0t6UmJwdngxcmFlR2VMUVN6STF1NmxrdnlVU0tRLXpoUGZCX3pUQmtzWFBsOWRJRXBwM1Y0TU5kTFF2aW9fS1pVdmh6X3o0M2tQSlUyVFpiY2xUbGcyNl",
-      "impact": "twoway"
-    },
-    {
       "title": "2026 Silver Price Forecast: US-Iran Conflict May End, Can Silver Return Above $100 This Year?",
       "url": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxNQWZEUE91R0laNm4zUlJzeWRDemxWbUJhNEdkQ3pYRWc5eTRmUl9GbGlIV3MzNHVUVzFoRkpqamhiMzNTSHVNVGxJSnJBMEdLS3Fqb0xBTWMwWm9DdzhIYS13dWhCdC1JVjR6VUFDM01BU0hvNFRoYWxBT0RHV1p6U1JRNVdFbEY1WmVUd3BULVItcDZFcWEyWFFFMnUxTXlCWFVrNFpscGtzQmdHMkFtQW5KVWc2WUJTUkNlZ0MyYi1jVXRfZ3pPZTByeG5aeGFqdVJMNTVtMHppdDlFcGFZOGd5WDN6cGhN?oc=5",
       "source": "TradingKey",
       "publishedAt": "2026-06-19T04:10:31.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMi6AFBVV95cUxNQWZEUE91R0laNm4zUlJzeWRDemxWbUJhNEdkQ3pYRWc5eTRmUl9GbGlIV3MzNHVUVzFoRkpqamhiMzNTSHVNVGxJSnJBMEdLS3Fqb0xBTWMwWm9DdzhIYS13dWhCdC1JVjR6VUFDM0",
       "impact": "up"
-    },
-    {
-      "title": "Gold and Silver Price Forecast – Fed Hawkish Signal Pressures Metals",
-      "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQQ3BiUHdUeHRBdTktWmNHWFAtX1hwU3RWSmt2OUdGNXFOVllMaTBYWnBhSkJCWEFSLTI2ZldXc0otLWp0VzRIRmJ1T2NEeEMxTFhWZU5uRG9pSlg1QldMbW1LVS1tdnFYYmpmTzBjaHZMejBNQUs0Z3lrTmV6ZE05WXp5ME10T3dwQVBmVjNBTVEyQ1otUjh3NEhuamI5aEZEc25LOFdsZFl3REFrblhHWkZ6ZEZ5Y2ZN?oc=5",
-      "source": "FXEmpire",
-      "publishedAt": "2026-06-19T01:34:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiuAFBVV95cUxQQ3BiUHdUeHRBdTktWmNHWFAtX1hwU3RWSmt2OUdGNXFOVllMaTBYWnBhSkJCWEFSLTI2ZldXc0otLWp0VzRIRmJ1T2NEeEMxTFhWZU5uRG9pSlg1QldMbW1LVS1tdnFYYmpmTzBjaH",
-      "impact": "down"
-    },
-    {
-      "title": "Gold, silver sink as dollar tests yearly highs following hawkish Fed - Kitco PM Report",
-      "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxOVEpYZTN3eWdvZFM5dXdRTl9xMkR6OVJZVWlNeGdCODNUZUtMZ3d2M25tYi1KWFhvUWZDTzRUVVZzcnRLZlFqQkF5aVJzOFpBYWNrUGwwUG9DNmNweUE3UVpiYmJaSHNUMWR1WHBoUnhwSG1iVXRmOWpvY25wVHRGV01VYlNNV0JCWkhfNVpJcWV0Qm1FVW1RaFZFTnUyMlFCdXNsMXphV01NdGNMVmgwRV9BYWl4SlRpajJv?oc=5",
-      "source": "KITCO",
-      "publishedAt": "2026-06-18T18:21:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiuwFBVV95cUxOVEpYZTN3eWdvZFM5dXdRTl9xMkR6OVJZVWlNeGdCODNUZUtMZ3d2M25tYi1KWFhvUWZDTzRUVVZzcnRLZlFqQkF5aVJzOFpBYWNrUGwwUG9DNmNweUE3UVpiYmJaSHNUMWR1WHBoUn",
-      "impact": "down"
     }
   ],
   "events": [
