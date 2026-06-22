@@ -400,10 +400,12 @@ async function fetchUpstox(usdInr) {
       console.warn(`upstox: no ${MCX_SYMBOL} future. silver samples: ${JSON.stringify(sample)}`);
       return null;
     }
+    // MCX options expire before the future — use the options' own expiry.
+    const optExpiry = c.optionExpiry ?? c.expiry;
     const [{ history: futHist, oiHistory }, q, chainRaw] = await Promise.all([
       upstox.dailyCandles(token, c.future.key, from, today),
       upstox.quote(token, c.future.key),
-      upstox.optionChain(token, c.future.key, c.expiry),
+      upstox.optionChain(token, c.future.key, optExpiry),
     ]);
     if (futHist.length < 5) {
       console.warn("upstox: thin futures history");
@@ -431,7 +433,7 @@ async function fetchUpstox(usdInr) {
     // wants a different underlying key). Fall back to solving Black-76 IV from
     // real option LTPs so IV stays a TRADED number, not a realized-vol proxy.
     if (atmIv == null && c.options?.length) {
-      const fb = await upstox.ivFromOptionQuotes(token, c.options, ltp, c.expiry);
+      const fb = await upstox.ivFromOptionQuotes(token, c.options, ltp, optExpiry);
       if (fb.atmIv != null) atmIv = fb.atmIv;
       if ((!chain || !chain.length) && fb.chain.length) chain = fb.chain;
     }
@@ -441,7 +443,7 @@ async function fetchUpstox(usdInr) {
     const mult = PARITY_MULT * (usdInr || 1);
     const silverUsdHistory = mult > 0 ? futHist.map((p) => ({ t: p.t, v: p.v / mult })) : [];
 
-    console.log(`upstox: ${MCX_SYMBOL} fut=${ltp} oi=${oi} dte=${dte} hist=${futHist.length} chain=${chain.length} atmIv=${atmIv}`);
+    console.log(`upstox: ${MCX_SYMBOL} fut=${ltp} oi=${oi} dte=${dte} hist=${futHist.length} opts=${c.options?.length ?? 0} optExp=${optExpiry} chain=${chain.length} atmIv=${atmIv}`);
     return { silverFut: Math.round(ltp), prevClose, oi, oiChg, expiry: c.expiry, dte, atmIv, chain, silverUsdHistory };
   } catch (e) {
     console.warn(`upstox failed: ${e.message}`);

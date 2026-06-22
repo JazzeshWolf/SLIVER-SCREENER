@@ -95,10 +95,14 @@ export function pickContract(instruments, symbol, todayIso) {
   const expiry = expiries.find((e) => e >= todayIso) ?? expiries[0];
   const future = futs.find((f) => f.expiry === expiry);
   if (!future) return null;
-  const options = rows.filter(
-    (r) => r.isOption && r.expiry === expiry && r.optionType && r.strike > 0,
-  );
-  return { future, options, expiry };
+  // MCX silver OPTIONS expire a few days BEFORE the future, so they do NOT share
+  // the future's expiry — pick the options' own nearest expiry independently.
+  const optRows = rows.filter((r) => r.isOption && r.expiry && r.optionType && r.strike > 0);
+  const optExpiries = [...new Set(optRows.map((r) => r.expiry))].sort();
+  const optionExpiry =
+    optExpiries.find((e) => e >= todayIso) ?? optExpiries[optExpiries.length - 1] ?? expiry;
+  const options = optRows.filter((r) => r.expiry === optionExpiry);
+  return { future, options, expiry, optionExpiry };
 }
 
 /** Daily candles for an instrument: returns { history:[{t,v}], oiHistory:[{t,v}] }. */
