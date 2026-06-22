@@ -5,8 +5,12 @@ name: Refresh MCX data
 on:
   schedule:
     # Every 10 min, ~09:00–23:30 IST (03:30–18:00 UTC), Mon–Fri.
-    # MCX silver has a morning + evening session; widen/narrow as needed.
-    - cron: "*/10 3-18 * * 1-5"
+    # Offset off the top of the hour (:03/:13/… not :00/:10/…): GitHub delays or
+    # drops scheduled runs that land on :00 (platform-wide load spike), so this
+    # offset meaningfully improves how often the auto-refresh actually fires.
+    # NOTE: markets are closed weekends, so Sat/Sun the app intentionally shows
+    # Friday's last data — that is not a fault.
+    - cron: "3,13,23,33,43,53 3-18 * * 1-5"
   workflow_dispatch: {} # manual trigger for testing
   push:
     # Rebuild data on code changes (e.g. fetcher tweaks) — ignore data-only
