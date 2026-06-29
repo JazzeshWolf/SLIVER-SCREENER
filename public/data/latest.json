@@ -1,11 +1,11 @@
 {
-  "asOf": "2026-06-29T16:30:04.198Z",
+  "asOf": "2026-06-29T18:31:40.875Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
-    "xagUsd": 58.14,
-    "xauUsd": 4024.8,
+    "xagUsd": 58.39,
+    "xauUsd": 4021.2,
     "usdInr": 94.55,
     "dxy": 120.4,
     "usdBroad": true,
@@ -610,7 +610,7 @@
       },
       {
         "t": "2026-06-29",
-        "v": 58.141998
+        "v": 58.387001
       }
     ],
     "xauHistory": [
@@ -1252,7 +1252,7 @@
       },
       {
         "t": "2026-06-29",
-        "v": 4024.800049
+        "v": 4021.199951
       }
     ],
     "dxyHistory": [
@@ -3433,12 +3433,12 @@
         "v": 94.55
       }
     ],
-    "asOf": "2026-06-29T16:30:04.198Z",
+    "asOf": "2026-06-29T18:31:40.875Z",
     "partial": false
   },
   "mcx": {
     "symbol": "SILVERM",
-    "silverFut": 221162,
+    "silverFut": 222980,
     "prevClose": 219204,
     "expiry": "2026-06-30",
     "dte": 1,
@@ -3448,194 +3448,201 @@
     "oiChg": -15094
   },
   "options": {
-    "atmStrike": 221000,
-    "atmIv": 0.424,
+    "atmStrike": 223000,
+    "atmIv": 0.4108,
     "ivEstimated": false,
-    "ivRank": 11,
+    "ivRank": 10.6,
     "ivPercentile": 25.4,
-    "rv20": 0.4487,
-    "expectedMove1sd": 26432,
+    "rv20": 0.4432,
+    "expectedMove1sd": 25820,
     "chain": [
       {
         "strike": 224000,
         "type": "PE",
-        "ltp": 9634.5,
-        "iv": 0.3291357086235657,
-        "oi": 1
+        "ltp": 8863,
+        "iv": 0.3366069834269584,
+        "oi": 3
       },
       {
         "strike": 225000,
         "type": "PE",
-        "ltp": 10024.5,
-        "iv": 0.3212045642193406,
-        "oi": 846
+        "ltp": 9399.5,
+        "iv": 0.33616248688660566,
+        "oi": 765
       },
       {
         "strike": 226000,
         "type": "PE",
-        "ltp": 10444,
-        "iv": 0.3135736973080784,
-        "oi": 67
+        "ltp": 9709.5,
+        "iv": 0.32575070689432317,
+        "oi": 51
       },
       {
         "strike": 227000,
         "type": "PE",
-        "ltp": 10930,
-        "iv": 0.30775640458799913,
-        "oi": 97
+        "ltp": 10194,
+        "iv": 0.32158476579748085,
+        "oi": 61
+      },
+      {
+        "strike": 228000,
+        "type": "PE",
+        "ltp": 10981,
+        "iv": 0.32904760916158554,
+        "oi": 76
+      },
+      {
+        "strike": 229000,
+        "type": "PE",
+        "ltp": 11450.5,
+        "iv": 0.32265405480191117,
+        "oi": 29
       },
       {
         "strike": 225000,
         "type": "CE",
-        "ltp": 10500,
-        "iv": 0.4976177053991705,
-        "oi": 1079
+        "ltp": 10940,
+        "iv": 0.48014258607663207,
+        "oi": 1023
       },
       {
         "strike": 226000,
         "type": "CE",
-        "ltp": 9863,
-        "iv": 0.48863176512718204,
-        "oi": 42
+        "ltp": 9942,
+        "iv": 0.45757181398570546,
+        "oi": 31
       },
       {
         "strike": 224000,
         "type": "CE",
-        "ltp": 11187,
-        "iv": 0.5080939665809275,
-        "oi": 56
+        "ltp": 11035.5,
+        "iv": 0.46567629406973715,
+        "oi": 43
       },
       {
         "strike": 227000,
         "type": "CE",
-        "ltp": 9507.5,
-        "iv": 0.4906160817835481,
-        "oi": 172
+        "ltp": 9451,
+        "iv": 0.45493465903960173,
+        "oi": 151
       },
       {
-        "strike": 216000,
-        "type": "PE",
-        "ltp": 6353,
-        "iv": 0.3580251298137009,
-        "oi": 85
+        "strike": 228000,
+        "type": "CE",
+        "ltp": 9093,
+        "iv": 0.45713987847417603,
+        "oi": 38
       },
       {
-        "strike": 215000,
-        "type": "PE",
-        "ltp": 6099,
-        "iv": 0.3650207382887601,
-        "oi": 656
+        "strike": 229000,
+        "type": "CE",
+        "ltp": 8499,
+        "iv": 0.44917045971192426,
+        "oi": 149
       },
       {
         "strike": 217000,
         "type": "PE",
-        "ltp": 6790,
-        "iv": 0.35811141821555803,
-        "oi": 42
+        "ltp": 6241,
+        "iv": 0.3653946546968072,
+        "oi": 41
       },
       {
         "strike": 219000,
         "type": "PE",
-        "ltp": 7336.5,
-        "iv": 0.34254756790585816,
-        "oi": 30
+        "ltp": 6840,
+        "iv": 0.354401184540242,
+        "oi": 27
       },
       {
         "strike": 218000,
         "type": "PE",
-        "ltp": 7002.5,
-        "iv": 0.34812628488056363,
-        "oi": 84
+        "ltp": 6605.5,
+        "iv": 0.3629372695824132,
+        "oi": 86
       },
       {
         "strike": 221000,
         "type": "PE",
-        "ltp": 8000,
-        "iv": 0.3290772425746545,
-        "oi": 26
+        "ltp": 7625,
+        "iv": 0.3484620153885334,
+        "oi": 28
       },
       {
         "strike": 220000,
         "type": "PE",
-        "ltp": 7797,
-        "iv": 0.3414427188057453,
-        "oi": 2300
+        "ltp": 7124.5,
+        "iv": 0.3473435716982931,
+        "oi": 2123
       },
       {
         "strike": 223000,
         "type": "PE",
-        "ltp": 9000,
-        "iv": 0.3262539860699326,
-        "oi": 20
+        "ltp": 8546.5,
+        "iv": 0.3451880190744995,
+        "oi": 19
       },
       {
         "strike": 222000,
         "type": "PE",
-        "ltp": 8400,
-        "iv": 0.3239946769271045,
-        "oi": 28
-      },
-      {
-        "strike": 215000,
-        "type": "CE",
-        "ltp": 16600,
-        "iv": 0.5491406991686673,
-        "oi": 120
+        "ltp": 8278.5,
+        "iv": 0.3550218055136502,
+        "oi": 27
       },
       {
         "strike": 217000,
         "type": "CE",
         "ltp": 16588.5,
-        "iv": 0.5927511666044593,
+        "iv": 0.5490462353900075,
         "oi": 31
       },
       {
         "strike": 219000,
         "type": "CE",
-        "ltp": 14144,
-        "iv": 0.5335327688660473,
-        "oi": 23
+        "ltp": 14070,
+        "iv": 0.4888120238054543,
+        "oi": 22
       },
       {
         "strike": 218000,
         "type": "CE",
-        "ltp": 14577.5,
-        "iv": 0.530668789114803,
-        "oi": 8
+        "ltp": 14648,
+        "iv": 0.490705964371562,
+        "oi": 14
       },
       {
         "strike": 221000,
         "type": "CE",
-        "ltp": 12817.5,
-        "iv": 0.5189404475595805,
-        "oi": 92
+        "ltp": 12750,
+        "iv": 0.4767691444046796,
+        "oi": 87
       },
       {
         "strike": 220000,
         "type": "CE",
-        "ltp": 13400,
-        "iv": 0.5231589047443124,
-        "oi": 862
+        "ltp": 13417,
+        "iv": 0.48332051705755297,
+        "oi": 808
       },
       {
         "strike": 223000,
         "type": "CE",
-        "ltp": 11615,
-        "iv": 0.5075097716599704,
-        "oi": 65
+        "ltp": 11769.5,
+        "iv": 0.47649033425934617,
+        "oi": 60
       },
       {
         "strike": 222000,
         "type": "CE",
-        "ltp": 12071,
-        "iv": 0.5075547548551113,
-        "oi": 14
+        "ltp": 12395.5,
+        "iv": 0.4824189908821136,
+        "oi": 13
       }
     ]
   },
   "basis": {
-    "fairValue": 208557,
-    "basis": 12605
+    "fairValue": 209435,
+    "basis": 13545
   },
   "cot": {
     "net": 11741,
@@ -4039,14 +4046,6 @@
       "impact": "twoway"
     },
     {
-      "title": "Silver Weekly Price Analysis – Silver Has a Bad Week, Again",
-      "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxObGM2alJJLXdBRVdJcFRBRUtqcHg5UEl6ODlpcnY0UGx6LUtxSzR2dW5sa1QtQjhLV3BDWHBwanZlYkYyZUZRMHIzcHQ2YlpFYlhyYnJwR3k4T1pCR0ZIS0JGYnp3YmVVMDhjcDhxMlhOTXAwbGpoMkpWYno5dm9jczRINlFWTGJoV09naHhLVXNscFk5RHdBTXdBQkxxSWsyeFdXR2cyR3BSUjA?oc=5",
-      "source": "FXEmpire",
-      "publishedAt": "2026-06-26T13:56:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiqwFBVV95cUxObGM2alJJLXdBRVdJcFRBRUtqcHg5UEl6ODlpcnY0UGx6LUtxSzR2dW5sa1QtQjhLV3BDWHBwanZlYkYyZUZRMHIzcHQ2YlpFYlhyYnJwR3k4T1pCR0ZIS0JGYnp3YmVVMDhjcDhxMl",
-      "impact": "twoway"
-    },
-    {
       "title": "Gold and silver prices fall: What’s behind the decline?",
       "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNZzhDSjZGcWRWYUNvRXVEdlF1NktfR2pmcmo3THBNODBod2IzekFWNC1Pa1c0cFBSLS1KNm9iaXRsUTY2b3d6Y0w0VF9oY2lOYjNlbXJrZ3I3Vk1XNE1FdDk3WXh6VEVNdXFRZm9ZeElsakZKNUk4TW1KTkUycHNmVFhHOFBXY1hoOWp6OVFDWTgyUQ?oc=5",
       "source": "Economy Middle East",
@@ -4076,6 +4075,14 @@
       "source": "KITCO",
       "publishedAt": "2026-06-25T13:05:00.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMijgFBVV95cUxPQk5zekhaRDdIcHI4cFF1ejlZaTYwMWNDTmtZZXozV09oNHBkc0FoTVBYRUwtdUZzVFUxUjA4UXhzaGN6d21ZTkRncVg5ZTNqdDgxTlBNOEY1b2VkUGhkWXcwNloyRHdTNS0zWENZdT",
+      "impact": "up"
+    },
+    {
+      "title": "Gold hovers around $4,000, silver holds below $60 — has the shimmer worn off the precious metal rally?",
+      "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPY0ZsN0JtalpwaXZ3WjlYWHdSLXhMQ1JZeUVDQ0Z0bzhzYkNUQkFGM19YMFF5NGJNcG1GZ05NWnFsWmc1a0xVTTBYMFhLOTg1d2h1eDNNSGtKX3ZsZ1JQYzlDbk82RHY3ejJoZWFsVTNGYWxyZlZaVktYZkFXQ1NFTUZITEJod1NUb3fSAY8BQVVfeXFMTXFhc3VjRDNYbTd3WG93eldkUWVGR2ZyRlB1S2sxZFRLdkF5UFlhWGtiTWVMenJSTEJRTXhrQi1ZRzVmSGREZU9jUUlacmhuVldqajdBbWp0UGw5QmcyR2Y3eV94REFUYXVrd2Y1dXBKcVFYSHJMM2pLQnVlTDRMNFVTenZudHNiTkg4NDNYYTg?oc=5",
+      "source": "CNBC",
+      "publishedAt": "2026-06-25T08:46:28.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiigFBVV95cUxPY0ZsN0JtalpwaXZ3WjlYWHdSLXhMQ1JZeUVDQ0Z0bzhzYkNUQkFGM19YMFF5NGJNcG1GZ05NWnFsWmc1a0xVTTBYMFhLOTg1d2h1eDNNSGtKX3ZsZ1JQYzlDbk82RHY3ejJoZWFsVT",
       "impact": "up"
     }
   ],
