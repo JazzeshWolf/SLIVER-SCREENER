@@ -1,16 +1,16 @@
 {
-  "asOf": "2026-07-01T18:17:08.601Z",
+  "asOf": "2026-07-01T20:19:54.103Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
-    "xagUsd": 59.96,
-    "xauUsd": 4069.5,
+    "xagUsd": 59.32,
+    "xauUsd": 4037.5,
     "usdInr": 95.25,
     "dxy": 120.89,
     "usdBroad": true,
-    "real10y": 2.16,
-    "breakeven10y": 2.22,
+    "real10y": 2.2,
+    "breakeven10y": 2.24,
     "xagHistory": [
       {
         "t": "2025-12-02",
@@ -618,7 +618,7 @@
       },
       {
         "t": "2026-07-01",
-        "v": 59.960999
+        "v": 59.32
       }
     ],
     "xauHistory": [
@@ -1260,7 +1260,7 @@
       },
       {
         "t": "2026-07-01",
-        "v": 4069.5
+        "v": 4037.5
       }
     ],
     "dxyHistory": [
@@ -2031,10 +2031,6 @@
     ],
     "real10yHistory": [
       {
-        "t": "2025-09-23",
-        "v": 1.75
-      },
-      {
         "t": "2025-09-24",
         "v": 1.78
       },
@@ -2793,6 +2789,10 @@
       {
         "t": "2026-06-29",
         "v": 2.16
+      },
+      {
+        "t": "2026-06-30",
+        "v": 2.2
       }
     ],
     "usdInrHistory": [
@@ -3437,7 +3437,7 @@
         "v": 95.25
       }
     ],
-    "asOf": "2026-07-01T18:17:08.601Z",
+    "asOf": "2026-07-01T20:19:54.103Z",
     "partial": false
   },
   "mcx": {
@@ -3453,200 +3453,200 @@
   },
   "options": {
     "atmStrike": 233000,
-    "atmIv": 0.3762,
+    "atmIv": 0.3768,
     "ivEstimated": false,
-    "ivRank": 13.8,
-    "ivPercentile": 47,
-    "rv20": 0.4854,
-    "expectedMove1sd": 23847,
+    "ivRank": 15.1,
+    "ivPercentile": 56.8,
+    "rv20": 0.5035,
+    "expectedMove1sd": 23885,
     "chain": [
       {
         "strike": 227000,
         "type": "PE",
         "ltp": 6890,
-        "iv": 0.3911917489226907,
+        "iv": 0.39182880445197216,
         "oi": 109
       },
       {
         "strike": 228000,
         "type": "PE",
         "ltp": 7200,
-        "iv": 0.3862356827985495,
+        "iv": 0.3868646746873855,
         "oi": 133
       },
       {
         "strike": 229000,
         "type": "PE",
         "ltp": 7500,
-        "iv": 0.38028924147225907,
+        "iv": 0.3809085495434701,
         "oi": 65
       },
       {
         "strike": 230000,
         "type": "PE",
         "ltp": 7960,
-        "iv": 0.38028606629744166,
+        "iv": 0.38090536505728956,
         "oi": 1868
       },
       {
         "strike": 227000,
         "type": "CE",
         "ltp": 12953,
-        "iv": 0.3910657196231186,
+        "iv": 0.39170257030241185,
         "oi": 39
       },
       {
         "strike": 228000,
         "type": "CE",
         "ltp": 12350,
-        "iv": 0.38972406393662085,
+        "iv": 0.39035873575694857,
         "oi": 39
       },
       {
         "strike": 229000,
         "type": "CE",
         "ltp": 11771.5,
-        "iv": 0.3887387634273618,
+        "iv": 0.3893718336932361,
         "oi": 72
       },
       {
         "strike": 230000,
         "type": "CE",
         "ltp": 11200,
-        "iv": 0.38737999345548446,
+        "iv": 0.3880108476169407,
         "oi": 1782
       },
       {
         "strike": 231000,
         "type": "PE",
         "ltp": 8419.5,
-        "iv": 0.3795755953257904,
+        "iv": 0.38019373947661367,
         "oi": 125
       },
       {
         "strike": 234000,
         "type": "PE",
         "ltp": 9831.5,
-        "iv": 0.3747525839246809,
+        "iv": 0.37536286928504703,
         "oi": 34
       },
       {
         "strike": 235000,
         "type": "PE",
         "ltp": 10452,
-        "iv": 0.3778117950260639,
+        "iv": 0.3784270712770522,
         "oi": 659
       },
       {
         "strike": 232000,
         "type": "PE",
         "ltp": 8815.5,
-        "iv": 0.3756306361537426,
+        "iv": 0.3762423554640264,
         "oi": 26
       },
       {
         "strike": 233000,
         "type": "PE",
         "ltp": 9386,
-        "iv": 0.3780421860832721,
+        "iv": 0.37865783478878445,
         "oi": 12
       },
       {
         "strike": 236000,
         "type": "PE",
         "ltp": 10745.5,
-        "iv": 0.36705634193308645,
+        "iv": 0.36765410351008176,
         "oi": 22
       },
       {
         "strike": 237000,
         "type": "PE",
         "ltp": 10850,
-        "iv": 0.34789299798943096,
+        "iv": 0.3484595478773116,
         "oi": 21
       },
       {
         "strike": 238000,
         "type": "PE",
         "ltp": 11836,
-        "iv": 0.3636812614612281,
+        "iv": 0.3642735246783122,
         "oi": 11
       },
       {
         "strike": 231000,
         "type": "CE",
         "ltp": 10700,
-        "iv": 0.38826220786385235,
+        "iv": 0.3888945052865891,
         "oi": 59
       },
       {
         "strike": 232000,
         "type": "CE",
         "ltp": 10065,
-        "iv": 0.38302538086380805,
+        "iv": 0.3836491444222628,
         "oi": 98
       },
       {
         "strike": 235000,
         "type": "CE",
         "ltp": 8500,
-        "iv": 0.3770894101653247,
+        "iv": 0.3777035038731992,
         "oi": 963
       },
       {
         "strike": 236000,
         "type": "CE",
         "ltp": 8080.5,
-        "iv": 0.3778775751506909,
+        "iv": 0.3784929538266734,
         "oi": 112
       },
       {
         "strike": 233000,
         "type": "CE",
         "ltp": 9360,
-        "iv": 0.37434650606848296,
+        "iv": 0.374956139633432,
         "oi": 108
       },
       {
         "strike": 234000,
         "type": "CE",
         "ltp": 9049.5,
-        "iv": 0.3808501952309161,
+        "iv": 0.38147041581571095,
         "oi": 142
       },
       {
         "strike": 237000,
         "type": "CE",
         "ltp": 7671,
-        "iv": 0.37841045980528004,
+        "iv": 0.37902670443803077,
         "oi": 56
       },
       {
         "strike": 238000,
         "type": "CE",
         "ltp": 7382.5,
-        "iv": 0.38320191034115836,
+        "iv": 0.3838259578961879,
         "oi": 47
       },
       {
         "strike": 239000,
         "type": "CE",
         "ltp": 6951,
-        "iv": 0.3815626029660925,
+        "iv": 0.38218398281559346,
         "oi": 41
       },
       {
         "strike": 239000,
         "type": "PE",
         "ltp": 12162.5,
-        "iv": 0.35195417694002384,
+        "iv": 0.3525273378957062,
         "oi": 38
       }
     ]
   },
   "basis": {
-    "fairValue": 216674,
-    "basis": 16392
+    "fairValue": 214357,
+    "basis": 18709
   },
   "cot": {
     "net": 11741,
@@ -3986,6 +3986,14 @@
       "impact": "twoway"
     },
     {
+      "title": "Is Silver Set for a Relief Rally? Why Sellers Are Waiting Near $60",
+      "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxQNDFqclJhVEtETHZicW55UHJDN0lhVjZ6VXdqenBDYl92LU1OV3hMZDRUd1Rad0w5VlZCQW82VXZQQm0wa1ZJb2RJQXZnbzlVZF9wTkJOdHpQRG5hYjVic0RuQXFvSDF4d3M4dXoyRWpuLThnZjlRaFBMT3dhQXZrb29EOVI5R203RXdUVEhWZmFPc3BRNy1jRGNzeE92SUxmbjZYWnQxTThTN0x5cFR1Q0lIZEJIUQ?oc=5",
+      "source": "FXEmpire",
+      "publishedAt": "2026-07-01T13:20:00.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMitgFBVV95cUxQNDFqclJhVEtETHZicW55UHJDN0lhVjZ6VXdqenBDYl92LU1OV3hMZDRUd1Rad0w5VlZCQW82VXZQQm0wa1ZJb2RJQXZnbzlVZF9wTkJOdHpQRG5hYjVic0RuQXFvSDF4d3M4dXoyRW",
+      "impact": "up"
+    },
+    {
       "title": "Silver price crash: It was being called the 'new gold'. So what went wrong?",
       "url": "https://news.google.com/rss/articles/CBMi7AFBVV95cUxNZ1Q0c3phWFA1b1pQbllTLU5USkNtaUE4Ukt4cnRsT0w3V043a1FjcVd2T25NVWNkOFBSQVhJTXhCRVVvcTlmZWJZdHU1UkxIcGpGallDQWVCb2o5dVlwdzExbFo2aVE2UTd1SGtpS1hNWjlidW9oWkUxXzdkbUYzS3J3VHRHaWlwdjRxWTgyQm4wVzc1RHNHc19hRHp5MU5NOUZzbGNzZG10Yktab0R1bVZWek5lRndyMVNwMmgxdWZBTWtuSHk4UnB3c01SamNXWFBWWnlxOEhSU0FEdVRjcXRIZzBfelJiS0lVaQ?oc=5",
       "source": "The Times of India",
@@ -4080,14 +4088,6 @@
       "publishedAt": "2026-06-30T07:02:18.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiwwFBVV95cUxNSXY5X2ozVDJCVW9QdGJNXzFRaS1pbk80ZlpZWGEwWmNXVXg0NDdHaDBvMHJiNFhDQ1dHbWM3RjVPd2VpSmNpaXFGbV9jeFVPc1hYc3g0M2VPOHktNFRmT1F2TDkxbWpqWGRobUZlVz",
       "impact": "down"
-    },
-    {
-      "title": "Are gold and silver worth investing in?",
-      "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxQSjdaOHYtcGZQcndBUDNMTWgyVUZOZVVxQjJTS2NNTkVBb3BLY0g4OFctbGFpdVhyb0FmVWV1cWZaTG9oSW92R3pZSm9EQUtHRms3QlZoX1BwcFYyVmk1Sm1TN05FOEpRZnNzN1pVQlJjMFZSNDkwLXYtNVZ0M0VLdGZLeG5IYWdIQnZCaW9DMXVGN0MwTGFr0gGkAUFVX3lxTE5xUzJRYWJ3U1B3S1RRX2cxemVlcVRXVndkMkdjVnR5Ylhac095QnNVRXVGeGM5NWJKNWplYUZ6a3loWWlSdWM0TGVVQlh2emxNdG1kSEtZa0tfTUtvUUZoQWg1YzB5LVFtTG1wTm5FZmg1YkdoRlFreE5KU2FXVTRHWk5RaWhtNnk5YmdWRnlaVEVmalI0OEZ5eEVEQWlHWnJwTVpC?oc=5",
-      "source": "The New Indian Express",
-      "publishedAt": "2026-06-29T13:48:42.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMilwFBVV95cUxQSjdaOHYtcGZQcndBUDNMTWgyVUZOZVVxQjJTS2NNTkVBb3BLY0g4OFctbGFpdVhyb0FmVWV1cWZaTG9oSW92R3pZSm9EQUtHRms3QlZoX1BwcFYyVmk1Sm1TN05FOEpRZnNzN1pVQl",
-      "impact": "twoway"
     }
   ],
   "events": [
