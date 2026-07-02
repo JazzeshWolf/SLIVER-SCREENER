@@ -1,11 +1,11 @@
 {
-  "asOf": "2026-07-02T16:21:26.456Z",
+  "asOf": "2026-07-02T18:11:01.828Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
-    "xagUsd": 61.1,
-    "xauUsd": 4124.2,
+    "xagUsd": 60.91,
+    "xauUsd": 4123.7,
     "usdInr": 95.39,
     "dxy": 120.89,
     "usdBroad": true,
@@ -622,7 +622,7 @@
       },
       {
         "t": "2026-07-02",
-        "v": 61.101002
+        "v": 60.91
       }
     ],
     "xauHistory": [
@@ -1264,7 +1264,7 @@
       },
       {
         "t": "2026-07-02",
-        "v": 4124.200195
+        "v": 4123.700195
       }
     ],
     "dxyHistory": [
@@ -3441,216 +3441,216 @@
         "v": 95.39
       }
     ],
-    "asOf": "2026-07-02T16:21:26.456Z",
+    "asOf": "2026-07-02T18:11:01.828Z",
     "partial": false
   },
   "mcx": {
     "symbol": "SILVERM",
-    "silverFut": 236855,
+    "silverFut": 236098,
     "prevClose": 231662,
     "expiry": "2026-08-31",
     "dte": 60,
     "optionExpiry": "2026-07-28",
     "optionDte": 26,
-    "oi": 95281,
-    "oiChg": 880
+    "oi": 93468,
+    "oiChg": -933
   },
   "options": {
-    "atmStrike": 237000,
-    "atmIv": 0.363,
+    "atmStrike": 236000,
+    "atmIv": 0.3644,
     "ivEstimated": false,
-    "ivRank": 12.4,
+    "ivRank": 12.7,
     "ivPercentile": 39.1,
-    "rv20": 0.4671,
-    "expectedMove1sd": 22947,
+    "rv20": 0.4714,
+    "expectedMove1sd": 22962,
     "chain": [
+      {
+        "strike": 230000,
+        "type": "PE",
+        "ltp": 6280,
+        "iv": 0.3683591971695423,
+        "oi": 1772
+      },
+      {
+        "strike": 230000,
+        "type": "CE",
+        "ltp": 12150,
+        "iv": 0.35866597506776454,
+        "oi": 1588
+      },
       {
         "strike": 231000,
         "type": "PE",
-        "ltp": 6359.5,
-        "iv": 0.3657208038121461,
-        "oi": 140
+        "ltp": 6678,
+        "iv": 0.36739431647956367,
+        "oi": 122
       },
       {
         "strike": 234000,
         "type": "PE",
-        "ltp": 7696.5,
-        "iv": 0.36610079122893513,
-        "oi": 166
+        "ltp": 7916,
+        "iv": 0.36209873012267046,
+        "oi": 76
       },
       {
         "strike": 235000,
         "type": "PE",
-        "ltp": 8188,
-        "iv": 0.3666514466200024,
-        "oi": 1101
+        "ltp": 8554,
+        "iv": 0.3680788134038447,
+        "oi": 807
       },
       {
         "strike": 232000,
         "type": "PE",
-        "ltp": 6782.5,
-        "iv": 0.36563998118042934,
-        "oi": 25
+        "ltp": 7148.5,
+        "iv": 0.3687285370426252,
+        "oi": 27
       },
       {
         "strike": 233000,
         "type": "PE",
-        "ltp": 6986.5,
-        "iv": 0.3558200872950256,
-        "oi": 30
-      },
-      {
-        "strike": 236000,
-        "type": "PE",
-        "ltp": 8647,
-        "iv": 0.3651760285468771,
-        "oi": 91
-      },
-      {
-        "strike": 237000,
-        "type": "PE",
-        "ltp": 8958.5,
-        "iv": 0.3570737785343081,
+        "ltp": 7500,
+        "iv": 0.36442640329338605,
         "oi": 44
       },
       {
+        "strike": 236000,
+        "type": "PE",
+        "ltp": 8910,
+        "iv": 0.3618987825671211,
+        "oi": 56
+      },
+      {
+        "strike": 237000,
+        "type": "PE",
+        "ltp": 9435,
+        "iv": 0.36185520073212674,
+        "oi": 45
+      },
+      {
         "strike": 238000,
         "type": "PE",
-        "ltp": 9656.5,
-        "iv": 0.36381473053991786,
-        "oi": 88
+        "ltp": 9951,
+        "iv": 0.36073682687710973,
+        "oi": 51
       },
       {
         "strike": 231000,
         "type": "CE",
-        "ltp": 12708,
-        "iv": 0.38647801102325313,
-        "oi": 53
+        "ltp": 11735.5,
+        "iv": 0.36569639872945836,
+        "oi": 51
       },
       {
         "strike": 232000,
         "type": "CE",
-        "ltp": 12100,
-        "iv": 0.38485844373796124,
-        "oi": 59
+        "ltp": 11135,
+        "iv": 0.3641065160697326,
+        "oi": 53
       },
       {
         "strike": 235000,
         "type": "CE",
-        "ltp": 10110,
-        "iv": 0.36936635144799945,
-        "oi": 968
+        "ltp": 9500.5,
+        "iv": 0.36193394227419046,
+        "oi": 911
       },
       {
         "strike": 236000,
         "type": "CE",
-        "ltp": 9679.5,
-        "iv": 0.37233466502279045,
-        "oi": 132
+        "ltp": 9130,
+        "iv": 0.3668308765869587,
+        "oi": 146
       },
       {
         "strike": 233000,
         "type": "CE",
-        "ltp": 11200,
-        "iv": 0.3705764282625168,
-        "oi": 75
+        "ltp": 10400.5,
+        "iv": 0.35631266771443193,
+        "oi": 57
       },
       {
         "strike": 234000,
         "type": "CE",
-        "ltp": 10752,
-        "iv": 0.37427900799736386,
-        "oi": 106
+        "ltp": 9577,
+        "iv": 0.344276054861024,
+        "oi": 101
       },
       {
         "strike": 237000,
         "type": "CE",
-        "ltp": 9110,
-        "iv": 0.36899804979190226,
-        "oi": 192
+        "ltp": 8415,
+        "iv": 0.3570912233730778,
+        "oi": 177
       },
       {
         "strike": 238000,
         "type": "CE",
-        "ltp": 8634,
-        "iv": 0.3687370476284996,
-        "oi": 314
+        "ltp": 8000,
+        "iv": 0.35875721711479136,
+        "oi": 232
       },
       {
         "strike": 241000,
         "type": "CE",
-        "ltp": 7380,
-        "iv": 0.3708493675934151,
-        "oi": 65
+        "ltp": 6957.5,
+        "iv": 0.3678206279277801,
+        "oi": 46
       },
       {
         "strike": 242000,
         "type": "CE",
-        "ltp": 6985.5,
-        "iv": 0.3711632303651423,
-        "oi": 125
-      },
-      {
-        "strike": 243000,
-        "type": "CE",
-        "ltp": 6617.5,
-        "iv": 0.37190229187719515,
-        "oi": 112
+        "ltp": 6557,
+        "iv": 0.367341530362144,
+        "oi": 138
       },
       {
         "strike": 239000,
         "type": "CE",
-        "ltp": 8248,
-        "iv": 0.37140528856031596,
-        "oi": 125
+        "ltp": 7505.5,
+        "iv": 0.35649432309716944,
+        "oi": 102
       },
       {
         "strike": 240000,
         "type": "CE",
-        "ltp": 7720,
-        "iv": 0.3676742532998323,
-        "oi": 4155
+        "ltp": 7196,
+        "iv": 0.36103019533865144,
+        "oi": 3850
       },
       {
         "strike": 241000,
         "type": "PE",
-        "ltp": 11320,
-        "iv": 0.3625405822359026,
-        "oi": 36
+        "ltp": 11758,
+        "iv": 0.36366630741208794,
+        "oi": 17
       },
       {
         "strike": 242000,
         "type": "PE",
-        "ltp": 11578,
-        "iv": 0.34860194189753374,
-        "oi": 30
-      },
-      {
-        "strike": 243000,
-        "type": "PE",
-        "ltp": 12450,
-        "iv": 0.3590432342551649,
-        "oi": 4
+        "ltp": 12367,
+        "iv": 0.36354539005085823,
+        "oi": 29
       },
       {
         "strike": 239000,
         "type": "PE",
-        "ltp": 10150,
-        "iv": 0.3616310575995594,
-        "oi": 33
+        "ltp": 10529,
+        "iv": 0.3614161234050989,
+        "oi": 32
       },
       {
         "strike": 240000,
         "type": "PE",
-        "ltp": 10680,
-        "iv": 0.3602105439789593,
-        "oi": 1564
+        "ltp": 10952.5,
+        "iv": 0.35510849895980207,
+        "oi": 1376
       }
     ]
   },
   "basis": {
-    "fairValue": 221118,
-    "basis": 15737
+    "fairValue": 220427,
+    "basis": 15671
   },
   "cot": {
     "net": 11741,
@@ -4062,14 +4062,6 @@
       "impact": "twoway"
     },
     {
-      "title": "Is Silver Set for a Relief Rally? Why Sellers Are Waiting Near $60",
-      "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxQNDFqclJhVEtETHZicW55UHJDN0lhVjZ6VXdqenBDYl92LU1OV3hMZDRUd1Rad0w5VlZCQW82VXZQQm0wa1ZJb2RJQXZnbzlVZF9wTkJOdHpQRG5hYjVic0RuQXFvSDF4d3M4dXoyRWpuLThnZjlRaFBMT3dhQXZrb29EOVI5R203RXdUVEhWZmFPc3BRNy1jRGNzeE92SUxmbjZYWnQxTThTN0x5cFR1Q0lIZEJIUQ?oc=5",
-      "source": "FXEmpire",
-      "publishedAt": "2026-07-01T13:20:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMitgFBVV95cUxQNDFqclJhVEtETHZicW55UHJDN0lhVjZ6VXdqenBDYl92LU1OV3hMZDRUd1Rad0w5VlZCQW82VXZQQm0wa1ZJb2RJQXZnbzlVZF9wTkJOdHpQRG5hYjVic0RuQXFvSDF4d3M4dXoyRW",
-      "impact": "up"
-    },
-    {
       "title": "Silver price crash: It was being called the 'new gold'. So what went wrong?",
       "url": "https://news.google.com/rss/articles/CBMi7AFBVV95cUxNZ1Q0c3phWFA1b1pQbllTLU5USkNtaUE4Ukt4cnRsT0w3V043a1FjcVd2T25NVWNkOFBSQVhJTXhCRVVvcTlmZWJZdHU1UkxIcGpGallDQWVCb2o5dVlwdzExbFo2aVE2UTd1SGtpS1hNWjlidW9oWkUxXzdkbUYzS3J3VHRHaWlwdjRxWTgyQm4wVzc1RHNHc19hRHp5MU5NOUZzbGNzZG10Yktab0R1bVZWek5lRndyMVNwMmgxdWZBTWtuSHk4UnB3c01SamNXWFBWWnlxOEhSU0FEdVRjcXRIZzBfelJiS0lVaQ?oc=5",
       "source": "The Times of India",
@@ -4091,6 +4083,14 @@
       "source": "富途牛牛",
       "publishedAt": "2026-07-01T07:30:31.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMikgFBVV95cUxPcDRmRU9lUG01MjV4c0J2UEJYOXBNM2xzaUJ0Q0pnaEY1dk5LdWY4X0dRdm5ya2xxM0tlUlBUbzMyejdGMm9iVW1FdVRhV1VIcUJfOEhLS3dHc0hTYlhCU0o1WXhDY3hHb2dNb2ExRG",
+      "impact": "down"
+    },
+    {
+      "title": "Silver Price Forecast: $55.60 Year-to-Date Low Exposed as Ascending Trendline Rejections Fuel Bearish Continuation",
+      "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxPV051cm1kbV9NOXlLLV92c3pZRENUa2VsZURHMmZRSmZYOENJakpzXzFEQ3RFVHNmbjhWZEM3dkRWNEkzenlEWG5DRWZab3ZrUVFxbEZLbDdpLWJhN3c1XzdwbXdvVk8xeDROY0stb09XMExzenZUMzlSQXRiem9GZkxiczR4VUx5R3NsQjZTZEJBZ21MNEQ4a3JOUFg4Rm1qTFpXVEhFWEJFX0pyV3gtZXdWZkVFMGtzdTdzRzBZWVA2TXZmcHJZaGV5bTBYU0EtMHEwNUtPX3R2Qlh5Wm5jNHo4R2l5SUp3SzFj?oc=5",
+      "source": "FXLeaders",
+      "publishedAt": "2026-07-01T07:01:43.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMi6wFBVV95cUxPV051cm1kbV9NOXlLLV92c3pZRENUa2VsZURHMmZRSmZYOENJakpzXzFEQ3RFVHNmbjhWZEM3dkRWNEkzenlEWG5DRWZab3ZrUVFxbEZLbDdpLWJhN3c1XzdwbXdvVk8xeDROY0stb0",
       "impact": "down"
     }
   ],
