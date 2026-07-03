@@ -185,7 +185,7 @@ export async function ivFromOptionQuotes(token, options, F, expiryIso) {
     if (!strikes.length) return { atmIv: null, chain: [] };
     const atm = strikes.reduce((b, s) => (Math.abs(s - F) < Math.abs(b - F) ? s : b), strikes[0]);
     const idx = strikes.indexOf(atm);
-    const wanted = new Set(strikes.slice(Math.max(0, idx - 6), idx + 7));
+    const wanted = new Set(strikes.slice(Math.max(0, idx - 10), idx + 11));
     const sel = options.filter((o) => wanted.has(o.strike) && (o.optionType === "CE" || o.optionType === "PE"));
     if (!sel.length) return { atmIv: null, chain: [] };
     const q = await quote(token, sel.map((o) => o.key));

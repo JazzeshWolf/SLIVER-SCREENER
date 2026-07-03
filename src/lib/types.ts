@@ -71,6 +71,10 @@ export interface McxData {
     ivEstimated?: boolean;
     ivRank: number | null; // 0..100
     ivPercentile: number | null; // 0..100
+    // true while ivRank/ivPercentile are ranked against realized-vol history;
+    // flips false once ≥20 days of real ATM IV accumulate in ivHistory.
+    ivRankEstimated?: boolean;
+    ivHistory?: Point[]; // daily real ATM IV (accumulated server-side)
     rv20: number | null; // realized vol, fraction
     expectedMove1sd: number | null; // ₹/kg over the option's tenor
     chain: OptionQuote[];
@@ -79,11 +83,38 @@ export interface McxData {
     fairValue: number | null; // ₹/kg theoretical
     basis: number | null; // futures - fairValue
   };
+  /** Gamma-exposure read (pinning vs ranging) from the option chain. */
+  gex?: GexData | null;
   /** CFTC Commitments of Traders — COMEX silver speculative net positioning. */
   cot?: CotData | null;
   /** Silver-relevant news headlines with auto-tagged impact + source links. */
   news?: NewsItem[];
+  /** Recent macro prints (actual vs prior) that move silver. */
+  prints?: EconPrint[];
   events: MarketEvent[];
+}
+
+/** Gamma exposure summary — EXPERIMENTAL (thin MCX OI, crude dealer assumption). */
+export interface GexData {
+  netPct: number; // -100..+100; + = long-gamma tilt (pinning), − = short-gamma (volatile)
+  regime: "pinning" | "balanced" | "volatile";
+  pinStrike: number | null; // strike with the largest gamma×OI concentration
+  maxPain: number | null; // strike minimizing total option payout
+  callWall: number | null; // biggest call-OI strike (resistance magnet)
+  putWall: number | null; // biggest put-OI strike (support magnet)
+  coverage: number; // # of option rows backing the estimate
+}
+
+/** A recent macro release: what actually printed vs the prior reading. */
+export interface EconPrint {
+  kind: MarketEvent["kind"];
+  name: string;
+  period: string; // e.g. "May 26"
+  actual: number;
+  prior: number;
+  unit: string; // "%", "k"
+  impact: "up" | "down" | "twoway";
+  note: string;
 }
 
 export interface CotData {
@@ -98,6 +129,7 @@ export interface NewsItem {
   title: string;
   url: string; // links back to the original publisher
   source: string;
+  trusted?: boolean; // from the reputable-source whitelist (Reuters, Bloomberg, …)
   publishedAt: string; // ISO
   snippet: string;
   impact: "up" | "down" | "twoway"; // auto-tagged silver impact

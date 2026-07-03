@@ -19,14 +19,15 @@ export function NewsTab({ news }: { news: NewsItem[] }) {
   return (
     <div className="space-y-2">
       <p className="text-[11px] text-white/35 px-1 leading-snug">
-        Silver-relevant headlines, newest first — tap to read the full story at the source. Impact is
-        auto-tagged from keywords (a quick lean, not gospel).
+        Silver headlines, trusted outlets first (Reuters, Bloomberg, Zee Business, ET, Mint…) — the ✓
+        marks whitelisted sources. Tap to read at the source. Impact is keyword-tagged (a lean, not gospel).
       </p>
       {news.map((n, i) => (
         <a key={n.url + i} href={n.url} target="_blank" rel="noopener noreferrer" className="block">
           <Card className="hover:bg-[#141a24] active:bg-[#141a24] transition-colors">
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[11px] text-white/45 truncate">
+                {n.trusted && <span className="text-emerald-300/90 mr-1" title="trusted source">✓</span>}
                 {n.source} · {timeAgo(n.publishedAt)}
               </span>
               <ImpactChip impact={n.impact} />

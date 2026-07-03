@@ -11,6 +11,8 @@ import { SellWindow } from "./components/SellWindow";
 import { ThetaRing } from "./components/ThetaRing";
 import { ExpectedMoveCone } from "./components/ExpectedMoveCone";
 import { EventRadar } from "./components/EventRadar";
+import { GexCard } from "./components/GexCard";
+import { PositionsPanel } from "./components/PositionsPanel";
 import { CorrelationPanel } from "./components/CorrelationPanel";
 import { BasisPanel } from "./components/BasisPanel";
 import { timeAgo } from "./components/ui";
@@ -62,9 +64,15 @@ export function App() {
                   <RegimeCard regime={dash.regime} scores={dash.scores} />
                 )}
                 <div className="flex gap-3">
-                  {dash.premium && <SellWindow premium={dash.premium} ivEstimated={dash.mcx?.options.ivEstimated} />}
+                  {dash.premium && (
+                    <SellWindow
+                      premium={dash.premium}
+                      ivEstimated={dash.mcx?.options.ivRankEstimated ?? dash.mcx?.options.ivEstimated}
+                    />
+                  )}
                   {dash.mcx && <ThetaRing mcx={dash.mcx} />}
                 </div>
+                {dash.mcx && <PositionsPanel mcx={dash.mcx} />}
                 <SpotStrip live={dash.live} mcx={dash.mcx} />
               </>
             )}
@@ -74,7 +82,8 @@ export function App() {
             {tab === "vol" && dash.mcx && (
               <>
                 <ExpectedMoveCone mcx={dash.mcx} events={dash.mcx.events} />
-                <EventRadar events={dash.mcx.events} />
+                <GexCard gex={dash.mcx.gex} fut={dash.mcx.mcx.silverFut} />
+                <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} />
               </>
             )}
 

@@ -1,4 +1,4 @@
-import type { MarketEvent } from "../lib/types";
+import type { EconPrint, MarketEvent } from "../lib/types";
 import { Card, SectionTitle, Pill } from "./ui";
 
 const KIND_LABEL: Record<MarketEvent["kind"], string> = {
@@ -29,7 +29,7 @@ function WeightBars({ weight = 1 }: { weight?: number }) {
   );
 }
 
-export function EventRadar({ events }: { events: MarketEvent[] }) {
+export function EventRadar({ events, prints = [] }: { events: MarketEvent[]; prints?: EconPrint[] }) {
   const today = new Date();
   const upcoming = events
     .map((e) => ({ ...e, days: Math.ceil((new Date(e.date).getTime() - today.getTime()) / 86400000) }))
@@ -39,7 +39,36 @@ export function EventRadar({ events }: { events: MarketEvent[] }) {
 
   return (
     <Card>
-      <SectionTitle>IV-crush / event radar</SectionTitle>
+      {prints.length > 0 && (
+        <>
+          <SectionTitle>Recent prints — what actually happened</SectionTitle>
+          <div className="space-y-2 mb-4">
+            {prints.map((p) => {
+              const dir = p.actual > p.prior ? "▲" : p.actual < p.prior ? "▼" : "→";
+              return (
+                <div key={p.name} className="rounded-xl bg-white/5 p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-white/90 font-medium">
+                      {KIND_ICON[p.kind]} {p.name}
+                      <span className="text-white/40 text-xs ml-1.5">{p.period}</span>
+                    </span>
+                    <span className="text-xs tnum text-white/80">
+                      <span className="font-semibold">{p.actual}{p.unit}</span>
+                      <span className="text-white/40"> {dir} prior {p.prior}{p.unit}</span>
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-start gap-2">
+                    <ImpactChip impact={p.impact} />
+                    <p className="text-[11px] text-white/55 leading-snug flex-1">{p.note}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <SectionTitle>Upcoming — IV-crush / event radar</SectionTitle>
       {upcoming.length === 0 ? (
         <p className="text-sm text-white/40">No events scheduled in the feed.</p>
       ) : (

@@ -238,6 +238,75 @@ async function fetchCot() {
   return null;
 }
 
+// --- Recent macro prints (FRED) — "what actually happened" for the radar ----
+// CPI YoY, monthly payrolls change, Fed target rate: the three US prints that
+// move silver hardest, each with the prior reading + a silver-impact read.
+async function fetchEconPrints() {
+  if (!process.env.FRED_KEY) return [];
+  const [cpi, payems, fed] = await Promise.all([
+    fredSeries("CPIAUCSL"), // CPI index, monthly SA
+    fredSeries("PAYEMS"), // total nonfarm payrolls, thousands
+    fredSeries("DFEDTARU"), // Fed funds target upper bound, daily
+  ]);
+  const prints = [];
+  const monthOf = (t) => new Date(t + "T00:00:00Z").toLocaleString("en", { month: "short", year: "2-digit", timeZone: "UTC" });
+
+  if (cpi.length >= 14) {
+    const yoy = (i) => (cpi[i].v / cpi[i - 12].v - 1) * 100;
+    const a = yoy(cpi.length - 1);
+    const p = yoy(cpi.length - 2);
+    const cooling = a < p - 0.01;
+    const hot = a > p + 0.01;
+    prints.push({
+      kind: "us_cpi", name: "US CPI (YoY)", period: monthOf(cpi[cpi.length - 1].t),
+      actual: round(a, 1), prior: round(p, 1), unit: "%",
+      impact: cooling ? "up" : hot ? "down" : "twoway",
+      note: cooling
+        ? "Inflation cooled vs the prior month → rate-cut hopes build → supportive for silver."
+        : hot
+          ? "Inflation ran hotter → cuts get pushed out, real yields firm → a silver headwind."
+          : "Inflation flat vs prior — little new pressure either way.",
+    });
+  }
+  if (payems.length >= 3) {
+    const a = payems[payems.length - 1].v - payems[payems.length - 2].v;
+    const p = payems[payems.length - 2].v - payems[payems.length - 3].v;
+    const weak = a < p - 10;
+    const strong = a > p + 10;
+    prints.push({
+      kind: "us_jobs", name: "US payrolls (chg)", period: monthOf(payems[payems.length - 1].t),
+      actual: Math.round(a), prior: Math.round(p), unit: "k",
+      impact: weak ? "up" : strong ? "down" : "twoway",
+      note: weak
+        ? "Job growth slowed vs prior → dovish tilt → silver supportive."
+        : strong
+          ? "Jobs came in stronger → hawkish risk, USD/yields firm → silver headwind."
+          : "Payrolls roughly in line with the prior month.",
+    });
+  }
+  if (fed.length >= 2) {
+    const cur = fed[fed.length - 1].v;
+    let i = fed.length - 1;
+    while (i > 0 && fed[i - 1].v === cur) i--;
+    const prevRate = i > 0 ? fed[i - 1].v : cur;
+    const changedAt = fed[i]?.t ?? fed[fed.length - 1].t;
+    const cutLast = prevRate > cur;
+    const hikeLast = prevRate < cur;
+    prints.push({
+      kind: "fomc", name: "Fed target rate", period: monthOf(changedAt),
+      actual: round(cur, 2), prior: round(prevRate, 2), unit: "%",
+      impact: cutLast ? "up" : hikeLast ? "down" : "twoway",
+      note: cutLast
+        ? `Last move was a CUT (${prevRate}% → ${cur}%) — easing bias supports silver.`
+        : hikeLast
+          ? `Last move was a HIKE (${prevRate}% → ${cur}%) — tightening pressures silver.`
+          : `On hold at ${cur}% — watch the next FOMC for the turn.`,
+    });
+  }
+  console.log(`prints: ${prints.length} recent macro prints`);
+  return prints;
+}
+
 // --- News (Google News RSS, silver-relevant, keyword-tagged impact) --------
 function stripTags(s) {
   return String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -255,10 +324,21 @@ function tagImpact(text) {
   for (const re of BEAR_KW) if (re.test(text)) r++;
   return b > r ? "up" : r > b ? "down" : "twoway";
 }
+// Reputable outlets the user trusts. Trusted items rank first; others only fill
+// leftover slots. Matching is against the RSS <source> name.
+const TRUSTED_SOURCES = [
+  /reuters/i, /bloomberg/i, /zee\s*business/i, /economic times/i, /livemint|^mint$|\bmint\b/i,
+  /moneycontrol/i, /business standard/i, /ndtv profit/i, /cnbc/i, /kitco/i,
+  /financial express/i, /businessline|hindu business/i, /forbes/i, /cme group/i,
+  /marketwatch/i, /wall street journal|wsj/i, /financial times/i, /investing\.com/i,
+];
+const isTrusted = (source) => TRUSTED_SOURCES.some((re) => re.test(source || ""));
 async function fetchNews(prevNews) {
   const queries = [
     `https://news.google.com/rss/search?q=${encodeURIComponent("silver price OR silver MCX OR silver demand OR silver squeeze")}&hl=en-IN&gl=IN&ceid=IN:en`,
     `https://news.google.com/rss/search?q=${encodeURIComponent("silver price forecast OR silver Fed OR silver dollar OR silver rally")}&hl=en-US&gl=US&ceid=US:en`,
+    // Targeted pull from the most-trusted outlets so they're well represented.
+    `https://news.google.com/rss/search?q=${encodeURIComponent('silver (source:Reuters OR source:Bloomberg OR source:"Zee Business" OR source:"The Economic Times" OR source:Mint)')}&hl=en-IN&gl=IN&ceid=IN:en`,
   ];
   const items = [];
   const seen = new Set();
@@ -293,6 +373,7 @@ async function fetchNews(prevNews) {
           title,
           url: link,
           source: source || "News",
+          trusted: isTrusted(source),
           publishedAt: pub ? new Date(pub).toISOString() : new Date().toISOString(),
           snippet: desc.slice(0, 200),
           impact: tagImpact(text),
@@ -303,8 +384,12 @@ async function fetchNews(prevNews) {
     }
   }
   items.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
-  const out = items.slice(0, 15);
-  console.log(`news: ${out.length} items`);
+  // Trusted outlets first (newest-first within each group); others only fill
+  // whatever slots remain so the feed skews to reputable sources.
+  const trusted = items.filter((i) => i.trusted);
+  const rest = items.filter((i) => !i.trusted);
+  const out = [...trusted, ...rest].slice(0, 15);
+  console.log(`news: ${out.length} items (${trusted.length} trusted)`);
   // NOTE: hook point — if a NEWS_AI_KEY is configured, an LLM could rewrite
   // `snippet`/`impact` per item here (cache by url to stay cheap). Rule-based for now.
   return out.length ? out : prevNews ?? [];
@@ -470,22 +555,78 @@ function nextMonthlyExpiry(today = new Date()) {
   return exp;
 }
 
-function builtinEvents() {
-  // Static calendar with silver-impact metadata (direction / weight / mechanism).
-  return [
-    {
-      name: "US Jobs (NFP)", date: "2026-07-02", kind: "us_jobs", impact: "twoway", weight: 2,
+/** Upcoming calendar: FOMC decision days (2026 schedule), NFP (first Friday,
+ *  computed), CPI (release ≈ mid-month, date approximate), + MCX option expiry. */
+function buildEvents(optionExpiryIso) {
+  const FOMC = ["2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17", "2026-07-29", "2026-09-16", "2026-10-28", "2026-12-09"];
+  const CPI = ["2026-07-10", "2026-08-12", "2026-09-11", "2026-10-13", "2026-11-12", "2026-12-10"];
+  const events = [];
+  for (const d of FOMC) events.push({
+    name: "Fed FOMC", date: d, kind: "fomc", impact: "twoway", weight: 3,
+    effect: "Dovish / cut → silver UP. Hawkish hold → silver DOWN. Biggest IV-crush event.",
+  });
+  for (const d of CPI) events.push({
+    name: "US CPI", date: d, kind: "us_cpi", impact: "twoway", weight: 3,
+    effect: "Hot CPI → cuts fade, real yields up → silver DOWN. Cool CPI → silver UP. (Release date approximate.)",
+  });
+  // NFP: first Friday of this month + next 3.
+  const now = new Date();
+  for (let k = 0; k < 4; k++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + k, 1));
+    while (d.getUTCDay() !== 5) d.setUTCDate(d.getUTCDate() + 1);
+    events.push({
+      name: "US Jobs (NFP)", date: d.toISOString().slice(0, 10), kind: "us_jobs", impact: "twoway", weight: 2,
       effect: "Hot payrolls → hawkish Fed, ↑ yields & USD → silver DOWN. Weak jobs → silver UP.",
-    },
-    {
-      name: "US CPI", date: "2026-07-10", kind: "us_cpi", impact: "twoway", weight: 3,
-      effect: "Hot CPI → rate-cut hopes fade, real yields up → silver DOWN (inflation-hedge bid partly offsets).",
-    },
-    {
-      name: "Fed FOMC", date: "2026-07-29", kind: "fomc", impact: "twoway", weight: 3,
-      effect: "Dovish / cut → silver UP. Hawkish hold or hike risk → silver DOWN. Biggest IV-crush event.",
-    },
-  ];
+    });
+  }
+  if (optionExpiryIso) events.push({
+    name: "MCX option expiry", date: optionExpiryIso, kind: "mcx_expiry", impact: "twoway", weight: 2,
+    effect: "Theta collapse + pin risk near big-OI strikes. Roll or close short options before the final days.",
+  });
+  const today = new Date().toISOString().slice(0, 10);
+  const horizon = new Date(Date.now() + 75 * 86400000).toISOString().slice(0, 10);
+  return events
+    .filter((e) => e.date >= today && e.date <= horizon)
+    .sort((a, b) => (a.date < b.date ? -1 : 1))
+    .slice(0, 8);
+}
+
+/**
+ * Gamma-exposure (GEX) read from the option chain — is the market PINNING
+ * (dealers long gamma, price gets dampened toward big strikes) or prone to
+ * RANGING/trending moves? Black-76 gamma × OI per strike, calls signed +,
+ * puts − (standard dealers-long-calls/short-puts convention). EXPERIMENTAL:
+ * MCX OI is thin and the dealer assumption is crude — treat as a lean.
+ */
+function computeGex(chain, F, tYears) {
+  const rows = (chain || []).filter((o) => o.iv != null && o.iv > 0 && o.oi > 0 && o.strike > 0);
+  if (!(F > 0) || !(tYears > 0) || rows.length < 4) return null;
+  const perStrike = new Map();
+  let callG = 0, putG = 0;
+  for (const o of rows) {
+    const sT = o.iv * Math.sqrt(tYears);
+    const d1 = (Math.log(F / o.strike) + ((o.iv * o.iv) / 2) * tYears) / sT;
+    const gamma = Math.exp(-(d1 * d1) / 2) / Math.sqrt(2 * Math.PI) / (F * sT);
+    const g = gamma * o.oi;
+    perStrike.set(o.strike, (perStrike.get(o.strike) ?? 0) + g);
+    if (o.type === "CE") callG += g;
+    else putG += g;
+  }
+  const tot = callG + putG;
+  if (!(tot > 0)) return null;
+  const netPct = Math.round(((callG - putG) / tot) * 100); // + = long-gamma tilt
+  const regime = netPct >= 20 ? "pinning" : netPct <= -20 ? "volatile" : "balanced";
+  const pinStrike = [...perStrike.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const strikes = [...new Set(rows.map((o) => o.strike))];
+  let maxPain = strikes[0], best = Infinity;
+  for (const s of strikes) {
+    let pay = 0;
+    for (const o of rows) pay += o.oi * (o.type === "CE" ? Math.max(0, s - o.strike) : Math.max(0, o.strike - s));
+    if (pay < best) { best = pay; maxPain = s; }
+  }
+  const callWall = rows.filter((o) => o.type === "CE").sort((a, b) => b.oi - a.oi)[0]?.strike ?? null;
+  const putWall = rows.filter((o) => o.type === "PE").sort((a, b) => b.oi - a.oi)[0]?.strike ?? null;
+  return { netPct, regime, pinStrike, maxPain, callWall, putWall, coverage: rows.length };
 }
 
 async function loadLatest() {
@@ -517,13 +658,14 @@ async function main() {
     fredSeries("DTWEXBGS"),
   ]);
 
-  // 2) Latest spot/FX ticks + CFTC positioning + silver news.
-  const [xagSpot, xauSpot, inrSpot, cotNew, news] = await Promise.all([
+  // 2) Latest spot/FX ticks + CFTC positioning + silver news + macro prints.
+  const [xagSpot, xauSpot, inrSpot, cotNew, news, prints] = await Promise.all([
     goldApi("XAG"),
     goldApi("XAU"),
     frankfurterInr(),
     fetchCot(),
     fetchNews(prev?.news),
+    fetchEconPrints(),
   ]);
 
   // Use the fetched history when a provider returned a real series; otherwise
@@ -668,8 +810,25 @@ async function main() {
     ivRank = ivRankFrom(rv20);
   }
 
+  // Real IV history: accumulate daily real ATM IV so rank/percentile can be
+  // computed against ACTUAL implied vol instead of the realized-vol proxy.
+  // Once ~a month of real IV exists (≥20 points) the rank flips to genuine.
+  let ivPercentile = ivPctileFrom(rv20);
+  let ivRankEstimated = true;
+  let ivHistory = prev?.options?.ivHistory ?? [];
+  if (!ivEstimated && atmIv != null) {
+    ivHistory = mergeByDate(ivHistory, [{ t: new Date().toISOString().slice(0, 10), v: atmIv }]).slice(-370);
+  }
+  if (atmIv != null && ivHistory.length >= 20) {
+    const ivs = ivHistory.map((p) => p.v);
+    ivRank = round(rangeRank(atmIv, ivs), 1);
+    ivPercentile = round((ivs.filter((x) => x <= atmIv).length / ivs.length) * 100, 1);
+    ivRankEstimated = false;
+  }
+
   const expectedMove1sd = atmIv != null && silverFut != null ? Math.round(silverFut * atmIv * Math.sqrt(t)) : null;
   const basis = silverFut != null && fairValue != null ? Math.round(silverFut - fairValue) : null;
+  const gex = computeGex(chain, silverFut, t);
 
   // `partial` reflects only CORE data (silver/gold/INR). Missing optional
   // factors (DXY, real yields) don't mark the whole snapshot as degraded.
@@ -711,15 +870,19 @@ async function main() {
       atmIv,
       ivEstimated,
       ivRank,
-      ivPercentile: ivPctileFrom(rv20),
+      ivPercentile,
+      ivRankEstimated,
+      ivHistory,
       rv20: round(rv20, 4),
       expectedMove1sd,
       chain,
     },
     basis: { fairValue: round(fairValue, 0), basis },
+    gex,
     cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
     news: news ?? prev?.news ?? [],
-    events: builtinEvents(),
+    prints: prints.length ? prints : prev?.prints ?? [],
+    events: buildEvents(optionExpiryIso),
   };
 
   await writeFile(LATEST, JSON.stringify(snapshot, null, 2) + "\n");
