@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { fetchSnapshot } from "../lib/fetchers";
 import { deriveRegime, premiumSellScore, scoreAllHorizons } from "../lib/scoring";
+import { walkForwardHitRate, type TrackResult } from "../lib/track";
 import { buildOutlook, type Outlook } from "../lib/outlook";
 import { basis, fairValueInrPerKg, premiumPct } from "../lib/basis";
 import { cacheGet, cacheSet } from "../lib/cache";
@@ -28,6 +29,7 @@ export interface Dashboard {
   regime: RegimeResult | null;
   premium: PremiumSellScore | null;
   outlook: Outlook | null;
+  track: TrackResult | null;
   derived: {
     fairValue: number | null;
     basis: number | null;
@@ -100,5 +102,9 @@ export function useDashboard(): Dashboard {
     return buildOutlook(live, mcx, scores, regime, premium, derived);
   }, [live, mcx, scores, regime, premium, derived]);
 
-  return { live, mcx, scores, regime, premium, outlook, derived, loading, lastUpdated, refresh: load };
+  // Walk-forward self-check: how often the engine's lean matched what silver
+  // actually did. Recomputed only when the snapshot changes.
+  const track = useMemo(() => (live ? walkForwardHitRate(live) : null), [live]);
+
+  return { live, mcx, scores, regime, premium, outlook, track, derived, loading, lastUpdated, refresh: load };
 }

@@ -10,16 +10,18 @@ import {
 import { cacheGet, cacheSet } from "../lib/cache";
 import { Card, SectionTitle, Pill, fmtInt } from "./ui";
 
-/** A sold option the user is carrying. Premium is in ₹/kg (MCX quote units). */
+/** A sold option the user is carrying. Prices are in ₹/kg (MCX quote units). */
 export interface SoldPosition {
   id: string;
   type: "CE" | "PE";
   strike: number;
-  premium: number; // ₹/kg received
+  premium: number; // the price the option was SOLD at, ₹/kg
   lots: number;
   lotKg: number; // 1 = SILVERMIC, 5 = SILVERM, 30 = SILVER
   expiry: string; // ISO date of the option expiry
   openedAt: string; // ISO date
+  manualCmp?: number | null; // user-entered current option price (₹/kg)
+  manualCmpAt?: string | null; // ISO date the CMP was entered
 }
 
 const STORE_KEY = "positions";
@@ -72,10 +74,12 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
     type: "CE" as "CE" | "PE",
     strike: "",
     premium: "",
+    cmp: "",
     lots: "1",
     lotKg: "5",
     expiry: expiries[0] ?? "",
   });
+  const [cmpEdit, setCmpEdit] = useState<{ id: string; value: string } | null>(null);
 
   const save = (next: SoldPosition[]) => {
     setPositions(next);
@@ -85,19 +89,32 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
   const addPosition = () => {
     const strike = Number(form.strike);
     const premium = Number(form.premium);
+    const cmp = Number(form.cmp);
     const expiry = form.expiry || expiries[0];
     if (!(strike > 0)) return setError("Enter the strike you sold.");
-    if (!(premium > 0)) return setError("Enter the premium you received (₹/kg) — e.g. 2500.");
+    if (!(premium > 0)) return setError("Enter the price you SOLD the option at (₹/kg) — e.g. 2500.");
     if (!expiry) return setError("Pick an expiry month.");
     const lots = Math.max(1, Math.round(Number(form.lots) || 1));
     const lotKg = Number(form.lotKg) || 5;
+    const today = new Date().toISOString().slice(0, 10);
     save([
       ...positions,
-      { id: `${Date.now()}`, type: form.type, strike, premium, lots, lotKg, expiry, openedAt: new Date().toISOString().slice(0, 10) },
+      {
+        id: `${Date.now()}`, type: form.type, strike, premium, lots, lotKg, expiry, openedAt: today,
+        manualCmp: cmp > 0 ? cmp : null,
+        manualCmpAt: cmp > 0 ? today : null,
+      },
     ]);
-    setForm({ ...form, strike: "", premium: "" });
+    setForm({ ...form, strike: "", premium: "", cmp: "" });
     setError("");
     setAdding(false);
+  };
+
+  const setCmp = (id: string, raw: string) => {
+    const v = Number(raw);
+    const today = new Date().toISOString().slice(0, 10);
+    save(positions.map((p) => (p.id === id ? { ...p, manualCmp: v > 0 ? v : null, manualCmpAt: v > 0 ? today : null } : p)));
+    setCmpEdit(null);
   };
 
   /** IV for a strike: nearest same-type quote from the live chain, else ATM IV. */
@@ -113,21 +130,41 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
   const rows = useMemo(() => {
     if (F == null) return [];
     const now = Date.now();
+    const today = new Date().toISOString().slice(0, 10);
     return positions.map((p) => {
       const expiry = p.expiry ?? mcx.mcx.optionExpiry ?? mcx.mcx.expiry ?? null;
       const dte = expiry ? Math.max(0, Math.ceil((new Date(expiry).getTime() - now) / 86400000)) : (mcx.mcx.optionDte ?? null);
       const t = dte != null && dte > 0 ? dte / 365 : null;
       const iv = ivFor(p.type, p.strike);
       if (iv == null || t == null) return { p, ok: false as const, expiry, dte };
+
+      // Current option price, best source first:
+      //  1) live exchange quote for this exact strike/type (auto-refreshes),
+      //  2) the CMP the user typed (dated, may be stale),
+      //  3) Black-76 model estimate.
+      const liveQuote = chain.find((o) => o.type === p.type && Math.abs(o.strike - p.strike) < 1 && o.ltp > 0);
       const theo = black76Price(F, p.strike, t, iv, p.type);
-      const pnlPerKg = p.premium - theo;
+      let current: number;
+      let source: string;
+      if (liveQuote) {
+        current = liveQuote.ltp;
+        source = "live mkt";
+      } else if (p.manualCmp != null && p.manualCmp > 0) {
+        current = p.manualCmp;
+        source = p.manualCmpAt === today ? "your CMP" : `your CMP (${p.manualCmpAt})`;
+      } else {
+        current = theo;
+        source = "model est.";
+      }
+
+      const pnlPerKg = p.premium - current;
       const pnl = pnlPerKg * p.lotKg * p.lots;
       const captured = p.premium > 0 ? (pnlPerKg / p.premium) * 100 : null;
       const probItm = p.type === "CE" ? probabilityAbove(F, p.strike, iv, t) : probabilityBelow(F, p.strike, iv, t);
       const touch = probabilityOfTouch(F, p.strike, iv, t);
       const cushion = cushionSigma(F, p.strike, iv, t);
       const breakeven = p.type === "CE" ? p.strike + p.premium : p.strike - p.premium;
-      return { p, ok: true as const, iv, theo, pnl, captured, probItm, touch, cushion, breakeven, expiry, dte, status: statusOf(probItm, cushion, captured) };
+      return { p, ok: true as const, iv, current, source, pnl, captured, probItm, touch, cushion, breakeven, expiry, dte, status: statusOf(probItm, cushion, captured) };
     });
   }, [positions, F, atmIv, chain, mcx.mcx.optionExpiry, mcx.mcx.optionDte]);
 
@@ -173,13 +210,31 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
               <div className="mt-1.5 grid grid-cols-3 gap-y-1 text-[11px]">
                 <Cell l="P&L" v={`${r.pnl >= 0 ? "+" : "−"}₹${fmtInt(Math.abs(r.pnl))}`} tone={r.pnl >= 0 ? "up" : "down"} />
                 <Cell l="captured" v={r.captured == null ? "—" : `${Math.round(r.captured)}%`} />
-                <Cell l="theo now" v={`₹${fmtInt(r.theo)}`} />
+                <Cell l={`now (${r.source})`} v={`₹${fmtInt(r.current)}`} />
                 <Cell l="breach @ expiry" v={`${(r.probItm * 100).toFixed(1)}%`} tone={r.probItm > 0.25 ? "down" : r.probItm > 0.12 ? "warn" : "up"} />
                 <Cell l="touched before" v={`${Math.round(r.touch * 100)}%`} />
                 <Cell l="cushion" v={`${r.cushion.toFixed(2)}σ`} />
               </div>
-              <div className="mt-1 text-[10px] text-white/35">
-                breakeven {fmtInt(r.breakeven)} · IV {(r.iv! * 100).toFixed(0)}% · exp {r.expiry ? expiryLabel(r.expiry) : "—"} ({r.dte ?? "—"}d)
+              <div className="mt-1 flex items-center justify-between text-[10px] text-white/35">
+                <span>
+                  breakeven {fmtInt(r.breakeven)} · IV {(r.iv! * 100).toFixed(0)}% · exp {r.expiry ? expiryLabel(r.expiry) : "—"} ({r.dte ?? "—"}d)
+                </span>
+                {cmpEdit?.id === r.p.id ? (
+                  <span className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={cmpEdit.value}
+                      placeholder="option CMP"
+                      onInput={(e) => setCmpEdit({ id: r.p.id, value: (e.target as HTMLInputElement).value })}
+                      className="w-20 rounded bg-black/40 border border-white/15 px-1.5 py-0.5 text-[11px] tnum text-white"
+                    />
+                    <button onClick={() => setCmp(r.p.id, cmpEdit.value)} className="text-sky-300 font-semibold">save</button>
+                  </span>
+                ) : (
+                  <button onClick={() => setCmpEdit({ id: r.p.id, value: r.p.manualCmp ? String(r.p.manualCmp) : "" })} className="text-sky-300/70 hover:text-sky-200">
+                    upd CMP
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -215,7 +270,8 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Strike (₹/kg)" value={form.strike} onInput={(v) => setForm({ ...form, strike: v })} placeholder={F ? String(Math.round((F * (form.type === "CE" ? 1.06 : 0.94)) / 500) * 500) : ""} />
-            <Field label="Premium got (₹/kg) *" value={form.premium} onInput={(v) => setForm({ ...form, premium: v })} placeholder="e.g. 2500" />
+            <Field label="Sold at (option price) *" value={form.premium} onInput={(v) => setForm({ ...form, premium: v })} placeholder="e.g. 2500" />
+            <Field label="Option CMP now (optional)" value={form.cmp} onInput={(v) => setForm({ ...form, cmp: v })} placeholder="today's price" />
             <Field label="Lots" value={form.lots} onInput={(v) => setForm({ ...form, lots: v })} />
             <label className="text-[10px] uppercase text-white/40">
               Contract
@@ -251,7 +307,10 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
               Cancel
             </button>
           </div>
-          <p className="text-[10px] text-white/30">* Premium is required — it's what you sold the option for, and how P&L is measured.</p>
+          <p className="text-[10px] text-white/30">
+            * "Sold at" = the option's price when you sold it (that price IS your premium, in ₹/kg).
+            CMP is optional — if the strike is quoted live we use the exchange price automatically.
+          </p>
         </div>
       ) : (
         <button onClick={() => { setError(""); setForm({ ...form, expiry: expiries[0] ?? form.expiry }); setAdding(true); }} className="mt-2 w-full rounded-xl border border-dashed border-white/15 py-2 text-xs text-white/50 hover:text-white/80 hover:border-white/30">
@@ -261,8 +320,9 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
 
       {rows.length > 0 && (
         <p className="text-[10px] text-white/30 mt-2">
-          Theo = Black-76 at live IV, priced to each position's expiry. "Breach" = finishing ITM at
-          expiry; P&L excludes brokerage/taxes. Stored only on this device.
+          P&L = (sold at − current) × kg. Current price source shown per row: live mkt (exchange quote)
+          → your CMP → model est. Breach/touch odds from Black-76 at live IV. Excludes brokerage/taxes.
+          Stored only on this device.
         </p>
       )}
     </Card>

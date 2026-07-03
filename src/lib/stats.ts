@@ -123,6 +123,18 @@ export function changeOverWindow(points: Point[], lookback: number): number | nu
   return (latest - past) / past;
 }
 
+/** Series of vsMovingAverage values at each step (for z-scoring the latest). */
+export function vsMovingAverageSeries(points: Point[], window: number): number[] {
+  const out: number[] = [];
+  for (let i = window; i <= points.length; i++) {
+    const slice = points.slice(i - window, i).map((p) => p.v);
+    const m = mean(slice);
+    const latest = slice[slice.length - 1];
+    if (Number.isFinite(m) && m !== 0) out.push((latest - m) / m);
+  }
+  return out;
+}
+
 /** Most recent value vs its simple moving average over `window`, as a fraction. */
 export function vsMovingAverage(points: Point[], window: number): number | null {
   if (points.length < window) return null;

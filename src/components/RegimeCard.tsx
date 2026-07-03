@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
 import type { Horizon, HorizonScore, RegimeResult } from "../lib/types";
+import type { TrackResult } from "../lib/track";
 import { Card, Pill } from "./ui";
 
 const REGIME_TONE: Record<string, "bull" | "bear" | "neutral" | "warn"> = {
@@ -30,9 +31,11 @@ function ScoreBar({ score }: { score: number }) {
 export function RegimeCard({
   regime,
   scores,
+  track,
 }: {
   regime: RegimeResult;
   scores: Record<Horizon, HorizonScore>;
+  track?: TrackResult | null;
 }) {
   const [open, setOpen] = useState(false);
   const decision = scores[regime.dteHorizon];
@@ -63,6 +66,20 @@ export function RegimeCard({
       <div className="mt-3">
         <ScoreBar score={decision.score} />
       </div>
+
+      {track && (track.w1.n >= 8 || track.m1.n >= 8) && (
+        <p className="mt-2 text-[10px] text-white/40 leading-snug">
+          <span className="text-white/60 font-medium">Self-check</span> (walk-forward, last ~{track.sampleDays}d):{" "}
+          {track.w1.n >= 8 && (
+            <>1W lean right <span className={track.w1.rate >= 0.5 ? "text-emerald-300" : "text-rose-300"}>{Math.round(track.w1.rate * 100)}%</span> of {track.w1.n} signals</>
+          )}
+          {track.w1.n >= 8 && track.m1.n >= 8 && " · "}
+          {track.m1.n >= 8 && (
+            <>1M right <span className={track.m1.rate >= 0.5 ? "text-emerald-300" : "text-rose-300"}>{Math.round(track.m1.rate * 100)}%</span> of {track.m1.n}</>
+          )}
+          {" — measured on this app's own data; a consistency check, not a promise."}
+        </p>
+      )}
 
       <button
         onClick={() => setOpen((o) => !o)}

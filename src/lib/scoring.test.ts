@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { HorizonScore, LiveInputs, McxData, Point } from "./types";
+import type { Horizon, HorizonScore, LiveInputs, McxData, Point } from "./types";
 import {
+  FACTOR_CONFIG,
   deriveRegime,
   premiumSellScore,
   scoreAllHorizons,
@@ -122,6 +123,40 @@ describe("scoreHorizon", () => {
       expect(h.confidence).toBeGreaterThanOrEqual(0);
       expect(h.confidence).toBeLessThanOrEqual(1);
     }
+  });
+
+  it("keeps nominal factor weights summing to 1 per horizon", () => {
+    for (const h of ["1D", "1W", "1M"] as Horizon[]) {
+      const sum = FACTOR_CONFIG.reduce((a, c) => a + c.weights[h], 0);
+      expect(sum).toBeCloseTo(1, 9);
+    }
+  });
+
+  it("long-trend factor activates with deep history and stays out on short history", () => {
+    const long: Point[] = [];
+    for (let i = 0; i < 250; i++) long.push({ t: `d${i}`, v: 60 + i * 0.1 }); // steady uptrend
+    const withDeep = scoreHorizon("1M", emptyLive({ xagHistory: long }), mcxFixture());
+    const lt = withDeep.factors.find((f) => f.key === "longTrend");
+    expect(lt?.present).toBe(true);
+    expect(lt!.s).toBeGreaterThan(0); // price above its long MA
+
+    const short = scoreHorizon("1M", emptyLive({ xagHistory: momentum(60, 80) }), mcxFixture());
+    expect(short.factors.find((f) => f.key === "longTrend")?.present).toBe(false);
+  });
+
+  it("vol-adaptive momentum: same % move counts more after a quiet stretch than a wild one", () => {
+    // Quiet series then +5% jump vs a whipsawing series ending at the same +5%.
+    const quiet: Point[] = [];
+    for (let i = 0; i < 59; i++) quiet.push({ t: `d${i}`, v: 100 + Math.sin(i) * 0.2 });
+    quiet.push({ t: "d59", v: 105 });
+    const wild: Point[] = [];
+    for (let i = 0; i < 59; i++) wild.push({ t: `d${i}`, v: 100 + Math.sin(i * 1.3) * 8 });
+    wild.push({ t: "d59", v: 105 });
+    const sQuiet = scoreHorizon("1W", emptyLive({ xagHistory: quiet }), mcxFixture());
+    const sWild = scoreHorizon("1W", emptyLive({ xagHistory: wild }), mcxFixture());
+    const fQuiet = sQuiet.factors.find((f) => f.key === "silverMomo")!;
+    const fWild = sWild.factors.find((f) => f.key === "silverMomo")!;
+    expect(fQuiet.s).toBeGreaterThan(fWild.s);
   });
 
   it("gives zero score and confidence when no factors are available", () => {

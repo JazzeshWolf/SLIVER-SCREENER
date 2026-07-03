@@ -61,7 +61,7 @@ export function App() {
                   />
                 )}
                 {dash.regime && dash.scores && (
-                  <RegimeCard regime={dash.regime} scores={dash.scores} />
+                  <RegimeCard regime={dash.regime} scores={dash.scores} track={dash.track} />
                 )}
                 <div className="flex gap-3">
                   {dash.premium && (

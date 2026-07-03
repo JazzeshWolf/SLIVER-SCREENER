@@ -21,6 +21,7 @@ import {
   changeOverWindow,
   clamp,
   vsMovingAverage,
+  vsMovingAverageSeries,
   zToSignal,
   zScore,
 } from "./stats";
@@ -41,13 +42,13 @@ export const FACTOR_CONFIG: FactorConfig[] = [
     key: "dxy",
     label: "Dollar (USD index, inverse)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
-    weights: { "1D": 0.24, "1W": 0.18, "1M": 0.14 },
+    weights: { "1D": 0.24, "1W": 0.17, "1M": 0.13 },
   },
   {
     key: "real10y",
     label: "Real yield (inverse)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
-    weights: { "1D": 0.18, "1W": 0.15, "1M": 0.13 },
+    weights: { "1D": 0.18, "1W": 0.14, "1M": 0.12 },
   },
   {
     key: "silverMomo",
@@ -59,7 +60,15 @@ export const FACTOR_CONFIG: FactorConfig[] = [
     key: "goldMomo",
     label: "Gold momentum",
     windows: { "1D": 5, "1W": 20, "1M": 50 },
-    weights: { "1D": 0.16, "1W": 0.13, "1M": 0.11 },
+    weights: { "1D": 0.16, "1W": 0.13, "1M": 0.1 },
+  },
+  {
+    // Classic long-trend regime filter: price vs its ~200-day average. Slow by
+    // design — only meaningful on 1W/1M, and only once enough history accrues.
+    key: "longTrend",
+    label: "Long trend (200-DMA)",
+    windows: { "1D": 0, "1W": 200, "1M": 200 },
+    weights: { "1D": 0.0, "1W": 0.05, "1M": 0.1 },
   },
   {
     key: "mcxPositioning",
@@ -77,13 +86,13 @@ export const FACTOR_CONFIG: FactorConfig[] = [
     key: "gsr",
     label: "Gold-silver ratio (revert)",
     windows: { "1D": 20, "1W": 60, "1M": 252 },
-    weights: { "1D": 0.0, "1W": 0.06, "1M": 0.08 },
+    weights: { "1D": 0.0, "1W": 0.05, "1M": 0.06 },
   },
   {
     key: "deficitBias",
     label: "Structural deficit bias",
     windows: { "1D": 0, "1W": 0, "1M": 0 },
-    weights: { "1D": 0.0, "1W": 0.1, "1M": 0.2 },
+    weights: { "1D": 0.0, "1W": 0.08, "1M": 0.15 },
   },
 ];
 
@@ -112,13 +121,17 @@ function factorSignal(
       const z = ch === null ? null : zScore(ch, windowChanges(live.real10yHistory, window));
       return z === null ? null : -zToSignal(z); // inverse: yields down = bullish
     }
-    case "silverMomo": {
-      const v = vsMovingAverage(live.xagHistory, window);
-      return v === null ? null : clamp(v * 12, -1, 1); // ~8% above MA -> ~+1
-    }
-    case "goldMomo": {
-      const v = vsMovingAverage(live.xauHistory, window);
-      return v === null ? null : clamp(v * 12, -1, 1);
+    case "silverMomo":
+      return momentumSignal(live.xagHistory, window);
+    case "goldMomo":
+      return momentumSignal(live.xauHistory, window);
+    case "longTrend": {
+      // Price vs its long (~200-day) moving average — the classic trend gate.
+      // Requires meaningful history; uses what exists once past 100 points.
+      const n = live.xagHistory.length;
+      if (n < 100) return null;
+      const v = vsMovingAverage(live.xagHistory, Math.min(window, n));
+      return v === null ? null : clamp(v * 8, -1, 1); // ±12.5% from the MA saturates
     }
     case "mcxPositioning": {
       const oiChg = mcx.mcx.oiChg;
@@ -156,6 +169,20 @@ function factorSignal(
     default:
       return null;
   }
+}
+
+/**
+ * Vol-adaptive momentum: z-score today's distance-from-MA against the asset's
+ * OWN history of that distance, so a 3% move in a quiet market registers more
+ * than in a wild one (standard time-series-momentum normalization). Falls back
+ * to the fixed scaler when the distribution is degenerate (e.g. flat series).
+ */
+function momentumSignal(points: { t: string; v: number }[], window: number): number | null {
+  const v = vsMovingAverage(points, window);
+  if (v === null) return null;
+  const series = vsMovingAverageSeries(points, window);
+  const z = series.length >= 10 ? zScore(v, series) : null;
+  return z !== null ? zToSignal(z) : clamp(v * 12, -1, 1);
 }
 
 /** Series of rolling `window`-step percent changes, for z-scoring the latest change. */
