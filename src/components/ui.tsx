@@ -104,5 +104,6 @@ export function timeAgo(iso: string | null): string {
   if (m < 1) return "just now";
   if (m < 60) return `${m}m ago`;
   const h = Math.round(m / 60);
-  return `${h}h ago`;
+  if (h < 48) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
 }

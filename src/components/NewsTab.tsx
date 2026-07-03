@@ -19,8 +19,9 @@ export function NewsTab({ news }: { news: NewsItem[] }) {
   return (
     <div className="space-y-2">
       <p className="text-[11px] text-white/35 px-1 leading-snug">
-        Silver headlines, trusted outlets first (Reuters, Bloomberg, Zee Business, ET, Mint…) — the ✓
-        marks whitelisted sources. Tap to read at the source. Impact is keyword-tagged (a lean, not gospel).
+        Silver headlines plus the macro stories that move it (Fed, dollar, inflation, gold) — trusted
+        outlets first (✓), nothing older than ~2½ weeks. Tap to read at the source. Impact is
+        keyword-tagged (a lean, not gospel).
       </p>
       {news.map((n, i) => (
         <a key={n.url + i} href={n.url} target="_blank" rel="noopener noreferrer" className="block">
@@ -29,6 +30,11 @@ export function NewsTab({ news }: { news: NewsItem[] }) {
               <span className="text-[11px] text-white/45 truncate">
                 {n.trusted && <span className="text-emerald-300/90 mr-1" title="trusted source">✓</span>}
                 {n.source} · {timeAgo(n.publishedAt)}
+                {n.indirect && (
+                  <span className="ml-1.5 rounded border border-sky-400/30 bg-sky-500/10 px-1 py-px text-[9px] uppercase tracking-wide text-sky-300/80">
+                    macro
+                  </span>
+                )}
               </span>
               <ImpactChip impact={n.impact} />
             </div>

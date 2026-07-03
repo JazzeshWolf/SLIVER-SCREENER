@@ -131,6 +131,7 @@ export interface NewsItem {
   url: string; // links back to the original publisher
   source: string;
   trusted?: boolean; // from the reputable-source whitelist (Reuters, Bloomberg, …)
+  indirect?: boolean; // macro driver (Fed/dollar/inflation/gold) rather than silver itself
   publishedAt: string; // ISO
   snippet: string;
   impact: "up" | "down" | "twoway"; // auto-tagged silver impact

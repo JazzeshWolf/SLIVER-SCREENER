@@ -339,7 +339,15 @@ async function fetchNews(prevNews) {
     `https://news.google.com/rss/search?q=${encodeURIComponent("silver price forecast OR silver Fed OR silver dollar OR silver rally")}&hl=en-US&gl=US&ceid=US:en`,
     // Targeted pull from the most-trusted outlets so they're well represented.
     `https://news.google.com/rss/search?q=${encodeURIComponent('silver (source:Reuters OR source:Bloomberg OR source:"Zee Business" OR source:"The Economic Times" OR source:Mint)')}&hl=en-IN&gl=IN&ceid=IN:en`,
+    // Indirect drivers: Fed/rates/inflation/dollar/gold move silver too.
+    `https://news.google.com/rss/search?q=${encodeURIComponent("Federal Reserve rate decision OR US inflation CPI OR dollar index OR gold price outlook")}&hl=en-US&gl=US&ceid=US:en`,
   ];
+  // Freshness: nothing older than ~2.5 weeks makes the feed.
+  const MAX_AGE_MS = 18 * 86400000;
+  const cutoff = Date.now() - MAX_AGE_MS;
+  // Direct = names silver itself; indirect = a macro driver that moves silver.
+  const DIRECT_RE = /silver|bullion|MCX/i;
+  const INDIRECT_RE = /\bgold\b|precious metal|federal reserve|fomc|rate (cut|hike|decision)|inflation|\bcpi\b|dollar index|treasury yield|real yield|tariff|geopolit|safe[- ]?haven/i;
   const items = [];
   const seen = new Set();
   for (const url of queries) {
@@ -364,8 +372,11 @@ async function fetchNews(prevNews) {
           title = title.slice(0, -(source.length + 3));
         }
         if (!title || !link) continue;
+        const pubMs = pub ? new Date(pub).getTime() : Date.now();
+        if (Number.isFinite(pubMs) && pubMs < cutoff) continue; // too old
         const text = `${title} ${desc}`;
-        if (!/silver|bullion|precious metal|MCX/i.test(text)) continue;
+        const direct = DIRECT_RE.test(text);
+        if (!direct && !INDIRECT_RE.test(text)) continue;
         const key = title.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 50);
         if (seen.has(key)) continue;
         seen.add(key);
@@ -374,7 +385,8 @@ async function fetchNews(prevNews) {
           url: link,
           source: source || "News",
           trusted: isTrusted(source),
-          publishedAt: pub ? new Date(pub).toISOString() : new Date().toISOString(),
+          indirect: !direct,
+          publishedAt: new Date(Number.isFinite(pubMs) ? pubMs : Date.now()).toISOString(),
           snippet: desc.slice(0, 200),
           impact: tagImpact(text),
         });
@@ -385,14 +397,27 @@ async function fetchNews(prevNews) {
   }
   items.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
   // Trusted outlets first (newest-first within each group); others only fill
-  // whatever slots remain so the feed skews to reputable sources.
-  const trusted = items.filter((i) => i.trusted);
-  const rest = items.filter((i) => !i.trusted);
-  const out = [...trusted, ...rest].slice(0, 15);
-  console.log(`news: ${out.length} items (${trusted.length} trusted)`);
+  // whatever slots remain. Cap indirect/macro items so silver stays the focus.
+  const MAX_INDIRECT = 6;
+  let indirectCount = 0;
+  const pick = (list, acc) => {
+    for (const i of list) {
+      if (acc.length >= 15) break;
+      if (i.indirect) {
+        if (indirectCount >= MAX_INDIRECT) continue;
+        indirectCount++;
+      }
+      acc.push(i);
+    }
+    return acc;
+  };
+  const out = pick(items.filter((i) => !i.trusted), pick(items.filter((i) => i.trusted), []));
+  console.log(`news: ${out.length} items (${out.filter((i) => i.trusted).length} trusted, ${indirectCount} indirect)`);
   // NOTE: hook point — if a NEWS_AI_KEY is configured, an LLM could rewrite
   // `snippet`/`impact` per item here (cache by url to stay cheap). Rule-based for now.
-  return out.length ? out : prevNews ?? [];
+  // Fallback to last-good news, but never resurrect stale items past the cutoff.
+  const prevFresh = (prevNews ?? []).filter((n) => new Date(n.publishedAt).getTime() >= cutoff);
+  return out.length ? out : prevFresh;
 }
 
 /** Append/replace today's point with a fresher live value. */
