@@ -14,6 +14,11 @@
 - [ ] COMEX / SLV inventory feed (best-effort — no clean free API yet).
 
 ## ✅ Done
+- [x] Position tracker — sold-strike analytics (P&L, breach odds, SAFE/WATCH/DANGER).
+- [x] Trusted-source news filter (Reuters/Bloomberg/Zee Business/ET/Mint… ranked first).
+- [x] Event Radar v2 — recent macro prints (CPI/NFP/Fed, actual vs prior) + dynamic calendar.
+- [x] GEX card — pinning vs ranging, pin magnet, max pain, call/put walls (experimental).
+- [x] Real IV history accumulation — IV Rank flips to genuine once ~a month accrues.
 - [x] Multi-horizon directional score (1D/1W/1M) + regime + hysteresis.
 - [x] Premium-sell window (P-score) + theta ring.
 - [x] Expected-move cone + event radar.
