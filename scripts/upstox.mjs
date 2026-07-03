@@ -102,7 +102,9 @@ export function pickContract(instruments, symbol, todayIso) {
   const optionExpiry =
     optExpiries.find((e) => e >= todayIso) ?? optExpiries[optExpiries.length - 1] ?? expiry;
   const options = optRows.filter((r) => r.expiry === optionExpiry);
-  return { future, options, expiry, optionExpiry };
+  // All upcoming option expiries — lets the user tag a position to its month.
+  const optionExpiries = optExpiries.filter((e) => e >= todayIso);
+  return { future, options, expiry, optionExpiry, optionExpiries };
 }
 
 /** Daily candles for an instrument: returns { history:[{t,v}], oiHistory:[{t,v}] }. */

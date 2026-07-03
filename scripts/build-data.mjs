@@ -529,7 +529,7 @@ async function fetchUpstox(usdInr) {
     const silverUsdHistory = mult > 0 ? futHist.map((p) => ({ t: p.t, v: p.v / mult })) : [];
 
     console.log(`upstox: ${MCX_SYMBOL} fut=${ltp} oi=${oi} dte=${dte} hist=${futHist.length} opts=${c.options?.length ?? 0} optExp=${optExpiry} chain=${chain.length} atmIv=${atmIv}`);
-    return { silverFut: Math.round(ltp), prevClose, oi, oiChg, expiry: c.expiry, optionExpiry: optExpiry, dte, atmIv, chain, silverUsdHistory };
+    return { silverFut: Math.round(ltp), prevClose, oi, oiChg, expiry: c.expiry, optionExpiry: optExpiry, optionExpiries: c.optionExpiries ?? [], dte, atmIv, chain, silverUsdHistory };
   } catch (e) {
     console.warn(`upstox failed: ${e.message}`);
     return null;
@@ -862,6 +862,7 @@ async function main() {
       dte,
       optionExpiry: optionExpiryIso, // option expiry (what a seller trades)
       optionDte,
+      optionExpiries: ups?.optionExpiries?.length ? ups.optionExpiries : [optionExpiryIso], // all upcoming option expiries
       oi,
       oiChg,
     },

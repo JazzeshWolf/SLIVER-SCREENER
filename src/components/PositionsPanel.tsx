@@ -18,6 +18,7 @@ export interface SoldPosition {
   premium: number; // ₹/kg received
   lots: number;
   lotKg: number; // 1 = SILVERMIC, 5 = SILVERM, 30 = SILVER
+  expiry: string; // ISO date of the option expiry
   openedAt: string; // ISO date
 }
 
@@ -32,16 +33,49 @@ function statusOf(probItm: number, cushion: number, captured: number | null): St
   return { label: "SAFE", tone: "bull" };
 }
 
+/** Month-end weekday fallback expiries when no live list is available. */
+function genExpiries(n = 4): string[] {
+  const out: string[] = [];
+  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  for (let k = 0; k < n; k++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + k + 1, 0));
+    while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
+    const iso = d.toISOString().slice(0, 10);
+    if (iso >= today) out.push(iso);
+  }
+  return out;
+}
+
+const expiryLabel = (iso: string) =>
+  new Date(iso + "T00:00:00Z").toLocaleDateString("en", { day: "numeric", month: "short", timeZone: "UTC" });
+
 export function PositionsPanel({ mcx }: { mcx: McxData }) {
   const [positions, setPositions] = useState<SoldPosition[]>(loadPositions);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ type: "CE" as "CE" | "PE", strike: "", premium: "", lots: "1", lotKg: "5" });
+  const [error, setError] = useState("");
 
   const F = mcx.mcx.silverFut;
-  const dte = mcx.mcx.optionDte ?? mcx.mcx.dte;
-  const t = dte != null && dte > 0 ? dte / 365 : null;
   const atmIv = mcx.options.atmIv;
   const chain = mcx.options.chain ?? [];
+
+  // Available option expiries: live list, else the front expiry, else generated.
+  const expiries = useMemo(() => {
+    const live = (mcx.mcx.optionExpiries ?? []).filter(Boolean);
+    if (live.length) return live;
+    const front = mcx.mcx.optionExpiry ?? mcx.mcx.expiry;
+    const gen = genExpiries();
+    return front ? [front, ...gen.filter((d) => d !== front)] : gen;
+  }, [mcx.mcx.optionExpiries, mcx.mcx.optionExpiry, mcx.mcx.expiry]);
+
+  const [form, setForm] = useState({
+    type: "CE" as "CE" | "PE",
+    strike: "",
+    premium: "",
+    lots: "1",
+    lotKg: "5",
+    expiry: expiries[0] ?? "",
+  });
 
   const save = (next: SoldPosition[]) => {
     setPositions(next);
@@ -51,22 +85,18 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
   const addPosition = () => {
     const strike = Number(form.strike);
     const premium = Number(form.premium);
+    const expiry = form.expiry || expiries[0];
+    if (!(strike > 0)) return setError("Enter the strike you sold.");
+    if (!(premium > 0)) return setError("Enter the premium you received (₹/kg) — e.g. 2500.");
+    if (!expiry) return setError("Pick an expiry month.");
     const lots = Math.max(1, Math.round(Number(form.lots) || 1));
     const lotKg = Number(form.lotKg) || 5;
-    if (!(strike > 0) || !(premium > 0)) return;
     save([
       ...positions,
-      {
-        id: `${Date.now()}`,
-        type: form.type,
-        strike,
-        premium,
-        lots,
-        lotKg,
-        openedAt: new Date().toISOString().slice(0, 10),
-      },
+      { id: `${Date.now()}`, type: form.type, strike, premium, lots, lotKg, expiry, openedAt: new Date().toISOString().slice(0, 10) },
     ]);
     setForm({ ...form, strike: "", premium: "" });
+    setError("");
     setAdding(false);
   };
 
@@ -81,10 +111,14 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
   };
 
   const rows = useMemo(() => {
-    if (F == null || t == null) return [];
+    if (F == null) return [];
+    const now = Date.now();
     return positions.map((p) => {
+      const expiry = p.expiry ?? mcx.mcx.optionExpiry ?? mcx.mcx.expiry ?? null;
+      const dte = expiry ? Math.max(0, Math.ceil((new Date(expiry).getTime() - now) / 86400000)) : (mcx.mcx.optionDte ?? null);
+      const t = dte != null && dte > 0 ? dte / 365 : null;
       const iv = ivFor(p.type, p.strike);
-      if (iv == null) return { p, ok: false as const };
+      if (iv == null || t == null) return { p, ok: false as const, expiry, dte };
       const theo = black76Price(F, p.strike, t, iv, p.type);
       const pnlPerKg = p.premium - theo;
       const pnl = pnlPerKg * p.lotKg * p.lots;
@@ -93,12 +127,12 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
       const touch = probabilityOfTouch(F, p.strike, iv, t);
       const cushion = cushionSigma(F, p.strike, iv, t);
       const breakeven = p.type === "CE" ? p.strike + p.premium : p.strike - p.premium;
-      return { p, ok: true as const, iv, theo, pnl, captured, probItm, touch, cushion, breakeven, status: statusOf(probItm, cushion, captured) };
+      return { p, ok: true as const, iv, theo, pnl, captured, probItm, touch, cushion, breakeven, expiry, dte, status: statusOf(probItm, cushion, captured) };
     });
-  }, [positions, F, t, atmIv, chain]);
+  }, [positions, F, atmIv, chain, mcx.mcx.optionExpiry, mcx.mcx.optionDte]);
 
   const totalPnl = rows.reduce((a, r) => a + (r.ok ? r.pnl : 0), 0);
-  const worst = rows.filter((r) => r.ok).sort((a, b) => (b as any).probItm - (a as any).probItm)[0];
+  const worst = rows.filter((r): r is Extract<typeof r, { ok: true }> => r.ok).sort((a, b) => b.probItm - a.probItm)[0];
 
   return (
     <Card>
@@ -145,7 +179,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
                 <Cell l="cushion" v={`${r.cushion.toFixed(2)}σ`} />
               </div>
               <div className="mt-1 text-[10px] text-white/35">
-                breakeven {fmtInt(r.breakeven)} · IV {(r.iv! * 100).toFixed(0)}% · since {r.p.openedAt}
+                breakeven {fmtInt(r.breakeven)} · IV {(r.iv! * 100).toFixed(0)}% · exp {r.expiry ? expiryLabel(r.expiry) : "—"} ({r.dte ?? "—"}d)
               </div>
             </div>
           ) : (
@@ -156,7 +190,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
         )}
       </div>
 
-      {worst && worst.ok && rows.length > 1 && (
+      {worst && rows.length > 1 && (
         <p className="text-[10px] text-amber-300/70 mt-2">
           Most at risk: {worst.p.type} {fmtInt(worst.p.strike)} ({(worst.probItm * 100).toFixed(0)}% breach odds).
         </p>
@@ -181,7 +215,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Strike (₹/kg)" value={form.strike} onInput={(v) => setForm({ ...form, strike: v })} placeholder={F ? String(Math.round((F * (form.type === "CE" ? 1.06 : 0.94)) / 500) * 500) : ""} />
-            <Field label="Premium received (₹/kg)" value={form.premium} onInput={(v) => setForm({ ...form, premium: v })} placeholder="e.g. 2500" />
+            <Field label="Premium got (₹/kg) *" value={form.premium} onInput={(v) => setForm({ ...form, premium: v })} placeholder="e.g. 2500" />
             <Field label="Lots" value={form.lots} onInput={(v) => setForm({ ...form, lots: v })} />
             <label className="text-[10px] uppercase text-white/40">
               Contract
@@ -195,26 +229,40 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
                 <option value="1">SILVERMIC (1 kg)</option>
               </select>
             </label>
+            <label className="text-[10px] uppercase text-white/40 col-span-2">
+              Expiry month
+              <select
+                value={form.expiry}
+                onChange={(e) => setForm({ ...form, expiry: (e.target as HTMLSelectElement).value })}
+                className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-2 py-1.5 text-sm text-white"
+              >
+                {expiries.map((d) => (
+                  <option key={d} value={d}>{expiryLabel(d)} ({d})</option>
+                ))}
+              </select>
+            </label>
           </div>
+          {error && <p className="text-[11px] text-rose-300">{error}</p>}
           <div className="flex gap-2 pt-1">
             <button onClick={addPosition} className="flex-1 rounded-lg bg-sky-500/25 border border-sky-400/40 text-sky-200 py-1.5 text-xs font-semibold">
               Add position
             </button>
-            <button onClick={() => setAdding(false)} className="rounded-lg bg-black/20 border border-white/10 text-white/50 px-4 py-1.5 text-xs">
+            <button onClick={() => { setAdding(false); setError(""); }} className="rounded-lg bg-black/20 border border-white/10 text-white/50 px-4 py-1.5 text-xs">
               Cancel
             </button>
           </div>
+          <p className="text-[10px] text-white/30">* Premium is required — it's what you sold the option for, and how P&L is measured.</p>
         </div>
       ) : (
-        <button onClick={() => setAdding(true)} className="mt-2 w-full rounded-xl border border-dashed border-white/15 py-2 text-xs text-white/50 hover:text-white/80 hover:border-white/30">
+        <button onClick={() => { setError(""); setForm({ ...form, expiry: expiries[0] ?? form.expiry }); setAdding(true); }} className="mt-2 w-full rounded-xl border border-dashed border-white/15 py-2 text-xs text-white/50 hover:text-white/80 hover:border-white/30">
           + add a sold option
         </button>
       )}
 
       {rows.length > 0 && (
         <p className="text-[10px] text-white/30 mt-2">
-          Theo value = Black-76 at live IV ({dte ?? "—"} DTE). "Breach" = finishing ITM at expiry; P&L
-          excludes brokerage. Stored only on this device.
+          Theo = Black-76 at live IV, priced to each position's expiry. "Breach" = finishing ITM at
+          expiry; P&L excludes brokerage/taxes. Stored only on this device.
         </p>
       )}
     </Card>

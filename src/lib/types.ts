@@ -59,6 +59,7 @@ export interface McxData {
     // future's expiry when no live option contract is available.
     optionExpiry?: string | null;
     optionDte?: number | null;
+    optionExpiries?: string[]; // all upcoming option expiries (for tagging positions)
     oi: number | null;
     oiChg: number | null;
   };
