@@ -1,15 +1,15 @@
 {
-  "asOf": "2026-07-09T19:14:54.439Z",
+  "asOf": "2026-07-10T06:52:11.507Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
-    "xagUsd": 60.05,
-    "xauUsd": 4124.5,
+    "xagUsd": 60.21,
+    "xauUsd": 4113.7,
     "usdInr": 95.39,
     "dxy": 120.69,
     "usdBroad": true,
-    "real10y": 2.3,
+    "real10y": 2.31,
     "breakeven10y": 2.25,
     "xagHistory": [
       {
@@ -642,14 +642,14 @@
       },
       {
         "t": "2026-07-09",
-        "v": 60.048
+        "v": 63.417801958658984
+      },
+      {
+        "t": "2026-07-10",
+        "v": 60.207001
       }
     ],
     "xauHistory": [
-      {
-        "t": "2026-01-31",
-        "v": 4865.45982
-      },
       {
         "t": "2026-02-01",
         "v": 4865.45954
@@ -1284,7 +1284,11 @@
       },
       {
         "t": "2026-07-09",
-        "v": 4124.5
+        "v": 4123.6425
+      },
+      {
+        "t": "2026-07-10",
+        "v": 4113.700195
       }
     ],
     "dxyHistory": [
@@ -2055,10 +2059,6 @@
     ],
     "real10yHistory": [
       {
-        "t": "2025-10-01",
-        "v": 1.77
-      },
-      {
         "t": "2025-10-02",
         "v": 1.76
       },
@@ -2813,13 +2813,13 @@
       {
         "t": "2026-07-07",
         "v": 2.3
+      },
+      {
+        "t": "2026-07-08",
+        "v": 2.31
       }
     ],
     "usdInrHistory": [
-      {
-        "t": "2026-01-31",
-        "v": 91.68225
-      },
       {
         "t": "2026-02-01",
         "v": 91.69599
@@ -3454,20 +3454,24 @@
       },
       {
         "t": "2026-07-09",
+        "v": 95.40703
+      },
+      {
+        "t": "2026-07-10",
         "v": 95.39
       }
     ],
-    "asOf": "2026-07-09T19:14:54.439Z",
+    "asOf": "2026-07-10T06:52:11.507Z",
     "partial": false
   },
   "mcx": {
     "symbol": "SILVERM",
-    "silverFut": 229600,
-    "prevClose": 233501,
+    "silverFut": 226838,
+    "prevClose": 226299,
     "expiry": "2026-08-31",
-    "dte": 53,
+    "dte": 52,
     "optionExpiry": "2026-07-28",
-    "optionDte": 19,
+    "optionDte": 18,
     "optionExpiries": [
       "2026-07-28",
       "2026-08-24",
@@ -3480,15 +3484,15 @@
       "2027-03-25",
       "2027-04-23"
     ],
-    "oi": 95792,
-    "oiChg": 4403
+    "oi": 97650,
+    "oiChg": 2444
   },
   "options": {
-    "atmStrike": 230000,
-    "atmIv": 0.3755,
+    "atmStrike": 227000,
+    "atmIv": 0.3862,
     "ivEstimated": false,
-    "ivRank": 9.5,
-    "ivPercentile": 23.2,
+    "ivRank": 11.1,
+    "ivPercentile": 31.7,
     "ivRankEstimated": true,
     "ivHistory": [
       {
@@ -3510,619 +3514,602 @@
       {
         "t": "2026-07-09",
         "v": 0.3755
+      },
+      {
+        "t": "2026-07-10",
+        "v": 0.3862
       }
     ],
-    "rv20": 0.429,
-    "expectedMove1sd": 19670,
+    "rv20": 0.4497,
+    "expectedMove1sd": 19454,
     "chain": [
       {
         "strike": 210000,
         "type": "CE",
-        "ltp": 21051.5,
-        "iv": 0.3841370598487555,
-        "oi": 157
+        "ltp": 21218.5,
+        "iv": 0.5616915599834176,
+        "oi": 155
       },
       {
         "strike": 210000,
         "type": "PE",
-        "ltp": 1787,
-        "iv": 0.4125478723198176,
-        "oi": 2037
+        "ltp": 2286,
+        "iv": 0.4200336123257876,
+        "oi": 2249
       },
       {
         "strike": 209000,
         "type": "PE",
         "ltp": 4422,
-        "iv": 0.6160548640191554,
+        "iv": 0.5825316848829388,
         "oi": 35
       },
       {
         "strike": 205000,
         "type": "PE",
-        "ltp": 1272.5,
-        "iv": 0.43585974511131637,
-        "oi": 728
+        "ltp": 1607.5,
+        "iv": 0.4408454213701188,
+        "oi": 751
       },
       {
         "strike": 205000,
         "type": "CE",
         "ltp": 25794,
-        "iv": 0.42774522737786175,
+        "iv": 0.6226672354117034,
         "oi": 63
       },
       {
         "strike": 208000,
         "type": "PE",
-        "ltp": 1574.5,
-        "iv": 0.42313789042457933,
-        "oi": 29
+        "ltp": 1965.5,
+        "iv": 0.4265971363075078,
+        "oi": 37
+      },
+      {
+        "strike": 204000,
+        "type": "PE",
+        "ltp": 1372,
+        "iv": 0.432933798238635,
+        "oi": 9
+      },
+      {
+        "strike": 202000,
+        "type": "PE",
+        "ltp": 1268,
+        "iv": 0.4503083362169564,
+        "oi": 7
       },
       {
         "strike": 224000,
         "type": "PE",
-        "ltp": 5100.5,
-        "iv": 0.3749892787747085,
-        "oi": 116
+        "ltp": 6313.5,
+        "iv": 0.386211026309058,
+        "oi": 125
       },
       {
         "strike": 225000,
         "type": "PE",
-        "ltp": 5562,
-        "iv": 0.3775876891389489,
-        "oi": 1569
+        "ltp": 6785,
+        "iv": 0.38636642364785073,
+        "oi": 1547
       },
       {
         "strike": 226000,
         "type": "PE",
-        "ltp": 5950,
-        "iv": 0.3753841829951853,
-        "oi": 76
+        "ltp": 7315,
+        "iv": 0.38841696271859116,
+        "oi": 107
       },
       {
         "strike": 227000,
         "type": "PE",
-        "ltp": 6364,
-        "iv": 0.3734898047950119,
-        "oi": 118
+        "ltp": 7811,
+        "iv": 0.38770807002298524,
+        "oi": 133
       },
       {
         "strike": 228000,
         "type": "PE",
-        "ltp": 6787.5,
-        "iv": 0.3710646509639919,
-        "oi": 152
+        "ltp": 8225,
+        "iv": 0.38185904417745764,
+        "oi": 155
       },
       {
         "strike": 229000,
         "type": "PE",
-        "ltp": 7400,
-        "iv": 0.37690209347382186,
-        "oi": 104
+        "ltp": 8823,
+        "iv": 0.38421074997633686,
+        "oi": 105
       },
       {
         "strike": 230000,
         "type": "PE",
-        "ltp": 7921,
-        "iv": 0.3772093405220658,
-        "oi": 1854
+        "ltp": 9359.5,
+        "iv": 0.38244349050521853,
+        "oi": 1863
       },
       {
         "strike": 225000,
         "type": "CE",
-        "ltp": 10095,
-        "iv": 0.37417785865999753,
-        "oi": 656
+        "ltp": 8592.5,
+        "iv": 0.3848218268025665,
+        "oi": 812
       },
       {
         "strike": 226000,
         "type": "CE",
-        "ltp": 9557,
-        "iv": 0.3757356403954328,
-        "oi": 54
+        "ltp": 8150,
+        "iv": 0.38826592309772967,
+        "oi": 127
       },
       {
         "strike": 224000,
         "type": "CE",
-        "ltp": 10900,
-        "iv": 0.3853009988591074,
-        "oi": 16
+        "ltp": 9100,
+        "iv": 0.3835802403353154,
+        "oi": 17
       },
       {
         "strike": 227000,
         "type": "CE",
-        "ltp": 9099.5,
-        "iv": 0.3802200021762401,
-        "oi": 82
+        "ltp": 7587,
+        "iv": 0.38459628696553405,
+        "oi": 124
       },
       {
         "strike": 228000,
         "type": "CE",
-        "ltp": 8581.5,
-        "iv": 0.3806247391961515,
-        "oi": 99
+        "ltp": 7070,
+        "iv": 0.3822102222368121,
+        "oi": 144
       },
       {
         "strike": 229000,
         "type": "CE",
-        "ltp": 7851,
-        "iv": 0.3695974967256188,
-        "oi": 150
+        "ltp": 6675,
+        "iv": 0.38491470764949914,
+        "oi": 173
       },
       {
         "strike": 230000,
         "type": "CE",
-        "ltp": 7450,
-        "iv": 0.3737371239103377,
-        "oi": 2637
+        "ltp": 6250,
+        "iv": 0.3850964375231414,
+        "oi": 3210
       },
       {
         "strike": 231000,
         "type": "PE",
-        "ltp": 8507,
-        "iv": 0.37969176854752007,
-        "oi": 63
+        "ltp": 9973,
+        "iv": 0.3835483489166944,
+        "oi": 67
       },
       {
         "strike": 234000,
         "type": "PE",
-        "ltp": 10214,
-        "iv": 0.3787359571252018,
-        "oi": 51
+        "ltp": 12092.5,
+        "iv": 0.3955558172035962,
+        "oi": 53
       },
       {
         "strike": 235000,
         "type": "PE",
-        "ltp": 10858,
-        "iv": 0.3802004110682755,
-        "oi": 545
+        "ltp": 12597,
+        "iv": 0.3869713270403444,
+        "oi": 604
       },
       {
         "strike": 232000,
         "type": "PE",
-        "ltp": 9081,
-        "iv": 0.38059981267713006,
-        "oi": 65
+        "ltp": 10657.5,
+        "iv": 0.38730661060288535,
+        "oi": 62
       },
       {
         "strike": 233000,
         "type": "PE",
-        "ltp": 9777.5,
-        "iv": 0.3865699327997863,
+        "ltp": 11447.5,
+        "iv": 0.3956304105333985,
         "oi": 42
       },
       {
         "strike": 236000,
         "type": "PE",
-        "ltp": 11692,
-        "iv": 0.3903830011691898,
+        "ltp": 11768,
+        "iv": 0.3014036526214331,
         "oi": 26
       },
       {
         "strike": 237000,
         "type": "PE",
-        "ltp": 12353.5,
-        "iv": 0.3910145629942417,
+        "ltp": 12329,
+        "iv": 0.2900263960119336,
         "oi": 60
       },
       {
         "strike": 238000,
         "type": "PE",
-        "ltp": 12387,
-        "iv": 0.35762243198230864,
-        "oi": 54
+        "ltp": 15251.5,
+        "iv": 0.41804282427206635,
+        "oi": 30
       },
       {
         "strike": 231000,
         "type": "CE",
-        "ltp": 7079.5,
-        "iv": 0.3783466117884964,
+        "ltp": 5796.5,
+        "iv": 0.38281002300232647,
         "oi": 86
       },
       {
         "strike": 232000,
         "type": "CE",
-        "ltp": 6732.5,
-        "iv": 0.3831257713250816,
-        "oi": 137
+        "ltp": 5341,
+        "iv": 0.3793593808189034,
+        "oi": 139
       },
       {
         "strike": 235000,
         "type": "CE",
-        "ltp": 5381,
-        "iv": 0.3763319773338735,
-        "oi": 1601
+        "ltp": 4500,
+        "iv": 0.39046277161687615,
+        "oi": 1906
       },
       {
         "strike": 236000,
         "type": "CE",
-        "ltp": 5119.5,
-        "iv": 0.3816215671729295,
-        "oi": 125
+        "ltp": 4178.5,
+        "iv": 0.39016748035885385,
+        "oi": 138
       },
       {
         "strike": 233000,
         "type": "CE",
-        "ltp": 6222,
-        "iv": 0.37890313333831727,
-        "oi": 356
+        "ltp": 5123,
+        "iv": 0.3871817545350641,
+        "oi": 399
       },
       {
         "strike": 234000,
         "type": "CE",
-        "ltp": 5806.5,
-        "iv": 0.37836311152391144,
-        "oi": 227
+        "ltp": 4817.5,
+        "iv": 0.3895970476325601,
+        "oi": 244
       },
       {
         "strike": 237000,
         "type": "CE",
-        "ltp": 4645,
-        "iv": 0.37509617322310795,
-        "oi": 142
+        "ltp": 3900,
+        "iv": 0.39129576615989203,
+        "oi": 116
       },
       {
         "strike": 238000,
         "type": "CE",
-        "ltp": 4490,
-        "iv": 0.38418779746629295,
-        "oi": 176
+        "ltp": 3575.5,
+        "iv": 0.3888804916851222,
+        "oi": 180
       },
       {
         "strike": 212000,
         "type": "PE",
         "ltp": 2095,
-        "iv": 0.40689319324493395,
+        "iv": 0.3742699759751559,
         "oi": 37
       },
       {
         "strike": 211000,
         "type": "PE",
-        "ltp": 1976.5,
-        "iv": 0.4129024490267038,
-        "oi": 24
+        "ltp": 2425.5,
+        "iv": 0.41409151009470213,
+        "oi": 37
       },
       {
         "strike": 214000,
         "type": "PE",
-        "ltp": 2439.5,
-        "iv": 0.4006557904444634,
-        "oi": 28
+        "ltp": 3174.5,
+        "iv": 0.4137298939973116,
+        "oi": 35
       },
       {
         "strike": 213000,
         "type": "PE",
-        "ltp": 2238,
-        "iv": 0.4020836693532765,
+        "ltp": 3023,
+        "iv": 0.42135167301818727,
         "oi": 26
       },
       {
         "strike": 216000,
         "type": "PE",
-        "ltp": 2743,
-        "iv": 0.38865444903448226,
-        "oi": 71
+        "ltp": 3522,
+        "iv": 0.3993829177971929,
+        "oi": 72
       },
       {
         "strike": 215000,
         "type": "PE",
-        "ltp": 2595,
-        "iv": 0.39523033850640055,
-        "oi": 815
+        "ltp": 3266.5,
+        "iv": 0.4018347766175866,
+        "oi": 1188
       },
       {
         "strike": 217000,
         "type": "PE",
-        "ltp": 3038.5,
-        "iv": 0.39066097329184407,
-        "oi": 18
+        "ltp": 3792,
+        "iv": 0.3968490165565163,
+        "oi": 28
       },
       {
         "strike": 219000,
         "type": "PE",
-        "ltp": 3486.5,
-        "iv": 0.38286249253340054,
-        "oi": 92
+        "ltp": 4152.5,
+        "iv": 0.3790092456322164,
+        "oi": 108
       },
       {
         "strike": 218000,
         "type": "PE",
-        "ltp": 3263.5,
-        "iv": 0.38724117034301153,
-        "oi": 175
+        "ltp": 4082.5,
+        "iv": 0.39454624197073274,
+        "oi": 157
       },
       {
         "strike": 221000,
         "type": "PE",
-        "ltp": 4074.5,
-        "iv": 0.3795588953960687,
-        "oi": 44
+        "ltp": 5069.5,
+        "iv": 0.38816434543766076,
+        "oi": 72
       },
       {
         "strike": 220000,
         "type": "PE",
-        "ltp": 3823,
-        "iv": 0.38411407009325915,
-        "oi": 2796
+        "ltp": 4725,
+        "iv": 0.3904426125157624,
+        "oi": 3174
       },
       {
         "strike": 223000,
         "type": "PE",
-        "ltp": 4701,
-        "iv": 0.3744798727221787,
-        "oi": 713
+        "ltp": 5796,
+        "iv": 0.38259949308261276,
+        "oi": 932
       },
       {
         "strike": 222000,
         "type": "PE",
-        "ltp": 4351,
-        "iv": 0.37551865770108994,
-        "oi": 95
+        "ltp": 5457,
+        "iv": 0.3871519674845038,
+        "oi": 126
       },
       {
         "strike": 215000,
         "type": "CE",
-        "ltp": 17086.5,
-        "iv": 0.38795302405208343,
+        "ltp": 14917,
+        "iv": 0.39015588771179316,
         "oi": 80
       },
       {
         "strike": 217000,
         "type": "CE",
         "ltp": 15471.5,
-        "iv": 0.3802371816411614,
+        "iv": 0.5015269042812289,
         "oi": 39
       },
       {
         "strike": 216000,
         "type": "CE",
         "ltp": 25630.5,
-        "iv": 0.9097897276990115,
+        "iv": 1.0167273156438021,
         "oi": 5
       },
       {
         "strike": 219000,
         "type": "CE",
         "ltp": 13986.5,
-        "iv": 0.3770103101357818,
+        "iv": 0.4882880734037608,
         "oi": 140
       },
       {
         "strike": 218000,
         "type": "CE",
         "ltp": 15606.5,
-        "iv": 0.4310994503963739,
+        "iv": 0.5430128445550799,
         "oi": 20
       },
       {
         "strike": 221000,
         "type": "CE",
-        "ltp": 12609.5,
-        "iv": 0.3759669998344035,
+        "ltp": 10675,
+        "iv": 0.3757566375192255,
         "oi": 40
       },
       {
         "strike": 220000,
         "type": "CE",
-        "ltp": 13257.5,
-        "iv": 0.3747187091857195,
-        "oi": 684
+        "ltp": 11408,
+        "iv": 0.3820122999027372,
+        "oi": 779
       },
       {
         "strike": 223000,
         "type": "CE",
-        "ltp": 11243,
-        "iv": 0.37141768198460345,
-        "oi": 23
+        "ltp": 9414,
+        "iv": 0.3712220968026668,
+        "oi": 21
       },
       {
         "strike": 222000,
         "type": "CE",
         "ltp": 12008.5,
-        "iv": 0.3786184011660516,
+        "iv": 0.47642055490426727,
         "oi": 5
       },
       {
         "strike": 245000,
         "type": "CE",
-        "ltp": 2654.5,
-        "iv": 0.3853406187091021,
-        "oi": 1566
+        "ltp": 2250,
+        "iv": 0.4045092421956359,
+        "oi": 1888
       },
       {
         "strike": 246000,
         "type": "CE",
-        "ltp": 2542.5,
-        "iv": 0.3914255758728832,
+        "ltp": 2090,
+        "iv": 0.40565716566145416,
         "oi": 46
       },
       {
         "strike": 247000,
         "type": "CE",
-        "ltp": 2363,
-        "iv": 0.3925242701619863,
-        "oi": 41
+        "ltp": 1949,
+        "iv": 0.4074595289714634,
+        "oi": 37
       },
       {
         "strike": 241000,
         "type": "CE",
-        "ltp": 3607.5,
-        "iv": 0.3845828320458531,
-        "oi": 88
+        "ltp": 3030,
+        "iv": 0.401469286993146,
+        "oi": 96
       },
       {
         "strike": 242000,
         "type": "CE",
-        "ltp": 3405,
-        "iv": 0.38810889627039435,
-        "oi": 133
+        "ltp": 2726,
+        "iv": 0.39649322006106374,
+        "oi": 134
       },
       {
         "strike": 243000,
         "type": "CE",
-        "ltp": 3153,
-        "iv": 0.387999720538035,
-        "oi": 160
+        "ltp": 2559,
+        "iv": 0.39930305423587564,
+        "oi": 171
       },
       {
         "strike": 244000,
         "type": "CE",
-        "ltp": 2946,
-        "iv": 0.38971347691677505,
-        "oi": 102
+        "ltp": 2374.5,
+        "iv": 0.40020716897025704,
+        "oi": 113
       },
       {
         "strike": 239000,
         "type": "CE",
-        "ltp": 4125,
-        "iv": 0.38142573058418927,
-        "oi": 170
+        "ltp": 3392,
+        "iv": 0.39367120662331584,
+        "oi": 161
       },
       {
         "strike": 240000,
         "type": "CE",
-        "ltp": 3907.5,
-        "iv": 0.38567865843512117,
-        "oi": 268
+        "ltp": 3171.5,
+        "iv": 0.39554226917028423,
+        "oi": 4733
       },
       {
         "strike": 252000,
         "type": "CE",
         "ltp": 1528,
-        "iv": 0.3901043958738445,
+        "iv": 0.4306114697903394,
         "oi": 2
-      },
-      {
-        "strike": 253000,
-        "type": "CE",
-        "ltp": 2994,
-        "iv": 0.5093820633068681,
-        "oi": 17
-      },
-      {
-        "strike": 254000,
-        "type": "CE",
-        "ltp": 1452,
-        "iv": 0.4053116023540496,
-        "oi": 72
-      },
-      {
-        "strike": 255000,
-        "type": "CE",
-        "ltp": 1406,
-        "iv": 0.41182977999746795,
-        "oi": 985
       },
       {
         "strike": 248000,
         "type": "CE",
         "ltp": 1794,
-        "iv": 0.36504893309623,
+        "iv": 0.4074457295313476,
         "oi": 31
       },
       {
         "strike": 249000,
         "type": "CE",
-        "ltp": 2065.5,
-        "iv": 0.39672374147735534,
-        "oi": 101
+        "ltp": 1709.5,
+        "iv": 0.4123340648002923,
+        "oi": 98
       },
       {
         "strike": 250000,
         "type": "CE",
-        "ltp": 1901,
-        "iv": 0.39660622276365753,
-        "oi": 4330
+        "ltp": 1609.5,
+        "iv": 0.41546387465670703,
+        "oi": 4854
       },
       {
         "strike": 251000,
         "type": "CE",
         "ltp": 626,
-        "iv": 0.2930675896257162,
+        "iv": 0.32738249534368524,
         "oi": 20
       },
       {
         "strike": 241000,
         "type": "PE",
         "ltp": 15155,
-        "iv": 0.39281714046560223,
+        "iv": 0.25949563756957655,
         "oi": 24
       },
       {
         "strike": 242000,
         "type": "PE",
         "ltp": 18127,
-        "iv": 0.5152807838972658,
+        "iv": 0.4116254700683056,
         "oi": 11
       },
       {
         "strike": 243000,
         "type": "PE",
         "ltp": 17048.5,
-        "iv": 0.41677750314027073,
+        "iv": 0.2729936129935085,
         "oi": 7
       },
       {
         "strike": 244000,
         "type": "PE",
         "ltp": 17306,
-        "iv": 0.3872852689586579,
+        "iv": 0.18583204737305636,
         "oi": 31
       },
       {
         "strike": 239000,
         "type": "PE",
         "ltp": 14110,
-        "iv": 0.4125201989486814,
+        "iv": 0.30444706233963365,
         "oi": 87
       },
       {
         "strike": 240000,
         "type": "PE",
-        "ltp": 14223.5,
-        "iv": 0.381081759519875,
+        "ltp": 16236.5,
+        "iv": 0.38968573836609716,
         "oi": 1089
       },
       {
         "strike": 245000,
         "type": "PE",
-        "ltp": 17738,
-        "iv": 0.36509348796866825,
-        "oi": 268
+        "ltp": 20574,
+        "iv": 0.4157661587484181,
+        "oi": 237
       },
       {
         "strike": 246000,
         "type": "PE",
         "ltp": 19149.5,
-        "iv": 0.4046552071236073,
+        "iv": null,
         "oi": 17
       },
       {
         "strike": 247000,
         "type": "PE",
         "ltp": 19952.5,
-        "iv": 0.40504416138306254,
+        "iv": null,
         "oi": 35
       },
       {
         "strike": 252000,
         "type": "PE",
         "ltp": 23414,
-        "iv": 0.34430014335736625,
-        "oi": 1
-      },
-      {
-        "strike": 253000,
-        "type": "PE",
-        "ltp": 16005,
         "iv": null,
         "oi": 1
-      },
-      {
-        "strike": 255000,
-        "type": "PE",
-        "ltp": 26549,
-        "iv": 0.38801872503012413,
-        "oi": 173
       },
       {
         "strike": 248000,
@@ -4141,24 +4128,24 @@
       {
         "strike": 250000,
         "type": "PE",
-        "ltp": 22250,
-        "iv": 0.3927926236465573,
-        "oi": 999
+        "ltp": 24700,
+        "iv": 0.40940117165073747,
+        "oi": 1010
       }
     ]
   },
   "basis": {
-    "fairValue": 217307,
-    "basis": 12293
+    "fairValue": 217882,
+    "basis": 8956
   },
   "gex": {
-    "netPct": 2,
+    "netPct": 11,
     "regime": "balanced",
     "pinStrike": 230000,
     "maxPain": 230000,
     "callWall": 250000,
     "putWall": 220000,
-    "coverage": 87
+    "coverage": 82
   },
   "cot": {
     "net": 13782,
@@ -4592,43 +4579,43 @@
       "impact": "twoway"
     },
     {
-      "title": "Platinum and Palladium Have Been Left Behind in the Precious Metals Rally and These 3 ETFs Could Be the Next Catch Up Trade",
-      "url": "https://news.google.com/rss/articles/CBMigwJBVV95cUxPV25yQkdTS1V4WDdfNXdIVkdLN2xiNXYzVngtaTZRRmpxT202cDZoTXhvRFhxUTJvcUVlaXBkNkNzMm9wS2RvOXZxem5hTlMtM25MN0RrdFFWVS1melhuYU5OaHNHbWFFdXczZ0lwaHgzcVpIVVpMdDV1dFpjQVMySjBZeWZVTmNuZWpGZ2d3Q1ZuQ0lxandsZjVjZC05TnEtR1E0TktjdzdOVTloaDlGR3VHVHNpMC1TU2E5YS1JN0lqN1IwRmwzd3ZxMlZTbmFjaHNsaEd4N2R3RFVjV1ViNG5vdjJCVVlWRXFkeWJQU2hob3ZoX3lrdUV2Zk0zUmpPOEdj?oc=5",
-      "source": "24/7 Wall St.",
-      "trusted": false,
-      "indirect": true,
-      "publishedAt": "2026-07-09T15:41:34.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMigwJBVV95cUxPV25yQkdTS1V4WDdfNXdIVkdLN2xiNXYzVngtaTZRRmpxT202cDZoTXhvRFhxUTJvcUVlaXBkNkNzMm9wS2RvOXZxem5hTlMtM25MN0RrdFFWVS1melhuYU5OaHNHbWFFdXczZ0lwaH",
-      "impact": "up"
-    },
-    {
-      "title": "Euro holds firm as traders assess geopolitical risks and interest rate outlook",
-      "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxObk5KWWFacU5NNkk0QWNBYmJXeEtZcWlzM1hmNXJjN1RCUkdsREpjaDFkd2tiOW0wYlcwSWJjbENhNW85Z204X0REM3NneElual9Kb3h0TnI0LVRCbVNPVVIzblV0bTRDNnF4cDI2c25RQ2dxMEM5YjVVYkt4RXJGRzNMYWVrRV9ha1dacnJ5MEFmbXFvMWlxemliWDA0a0dTS1pvRk8wc25YSGFrb3p6Q255ZlNQRlpKSkdwSVl3?oc=5",
-      "source": "FXStreet",
-      "trusted": false,
-      "indirect": true,
-      "publishedAt": "2026-07-09T14:05:24.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMivgFBVV95cUxObk5KWWFacU5NNkk0QWNBYmJXeEtZcWlzM1hmNXJjN1RCUkdsREpjaDFkd2tiOW0wYlcwSWJjbENhNW85Z204X0REM3NneElual9Kb3h0TnI0LVRCbVNPVVIzblV0bTRDNnF4cDI2c2",
-      "impact": "up"
-    },
-    {
-      "title": "Silver Price Analysis – Silver Risks Breakdown as US Interest Rates Surge",
-      "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPUkYxcDEzZjNNa2hrS19UTV9xVFFwNkRwOWdUeWR6WU51QzdhRUdHcTluM2tzSFFkWGFWdkRUOG44bXpwY3dGTGlQd2l6R3hLb1N3R3JHdUpiekhLSnhGd0ZaRkdSQXhKYTFLd19abHVUWndPTzRGRFRaVG9Hel95WEJ3Wk5ldGdKUWJvMUFhS213MFhLQUliUm05RkFiNUNzTW1NY0JxQ2V4ODhzcDF6c04wcVV6VktMTzd3cW15RQ?oc=5",
+      "title": "Gold and Silver Price Forecast: Weaker Dollar Drives Rebound as Breakout Nears",
+      "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxQSFpGX2VTaXdKX21oYlozT1NUWTFxQ3p2NVMxZWNCdUZfZXBvQVBvZmI0R3F6bThvTEJyVDM0RjlUNF9kcUlsMWF0dlJJcVREaE5UYURSNWRhZXFTUzNRQTl3N2RYdEg2Z2Jtc1JZUlYwZXZWTFBsSUlYV2drbzJvYzZVc0k4QmVFLUVSd19yT2F0MHVueW9jYVQ2c2ZzODgxQ2R6Q3kzOUtQQXV6eXpJTmh1cXlWX0ljREZGeU9qZ01QdVcxeG9r?oc=5",
       "source": "FXEmpire",
       "trusted": false,
       "indirect": false,
-      "publishedAt": "2026-07-09T12:58:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMivwFBVV95cUxPUkYxcDEzZjNNa2hrS19UTV9xVFFwNkRwOWdUeWR6WU51QzdhRUdHcTluM2tzSFFkWGFWdkRUOG44bXpwY3dGTGlQd2l6R3hLb1N3R3JHdUpiekhLSnhGd0ZaRkdSQXhKYTFLd19abH",
+      "publishedAt": "2026-07-10T03:22:00.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMixwFBVV95cUxQSFpGX2VTaXdKX21oYlozT1NUWTFxQ3p2NVMxZWNCdUZfZXBvQVBvZmI0R3F6bThvTEJyVDM0RjlUNF9kcUlsMWF0dlJJcVREaE5UYURSNWRhZXFTUzNRQTl3N2RYdEg2Z2Jtc1JZUl",
       "impact": "up"
     },
     {
-      "title": "Copper, Uranium and Lithium Test Support as Silver Nears Buy Zone",
-      "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxONHJuSHFmbEVjWVFrcWh6c2dRSkVmMEVMNlBXYUVMQVpreV9VSWkzdkUyM1pvVFdSMlZaNUFyVVQ4RVh4ck9ab2lxYnlZNTVrQVZ0aUxtZ3NGSFFTNXl0UENSbi10a0ozdGRGVEdXZ1Q0bE0yVzcwNVUwS2tZNGEwX2JabFRHOXhPTFFxcWtQRmVwNEd3bFFVSUE2bmZwN3hicGpuRnp5TG04N29jMnlJY29QZ0w3Q1NsUWtrYU11eGRzRTdTdzdsTkdqN2ExZw?oc=5",
-      "source": "FXEmpire",
+      "title": "Silver and Copper Are Outpacing Gold in 2026 and After Following Industrial Metals These 3 ETFs Show How Smart Money Is Playing the Trend",
+      "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxOanQ1TkF1YlpaLVBIUFY4OEdIeXNkT1M5Y2x4eE1sSWxIMGJDMHljTmt4TzIwWkhjNHlRd0FkV0tTSEt6cXo3MXgxN1FhMHdKSkxOVWhXNExsM2NHa1JUaGZMQlVPQmxuT25LT1hVYy1YZVl3WU5ZVUdYdU5uVDdCU2lkcw?oc=5",
+      "source": "AOL.com",
       "trusted": false,
       "indirect": false,
-      "publishedAt": "2026-07-09T08:31:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMizgFBVV95cUxONHJuSHFmbEVjWVFrcWh6c2dRSkVmMEVMNlBXYUVMQVpreV9VSWkzdkUyM1pvVFdSMlZaNUFyVVQ4RVh4ck9ab2lxYnlZNTVrQVZ0aUxtZ3NGSFFTNXl0UENSbi10a0ozdGRGVEdXZ1",
+      "publishedAt": "2026-07-10T01:54:00.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMigwFBVV95cUxOanQ1TkF1YlpaLVBIUFY4OEdIeXNkT1M5Y2x4eE1sSWxIMGJDMHljTmt4TzIwWkhjNHlRd0FkV0tTSEt6cXo3MXgxN1FhMHdKSkxOVWhXNExsM2NHa1JUaGZMQlVPQmxuT25LT1hVYy",
+      "impact": "twoway"
+    },
+    {
+      "title": "Silver Price Forecast: Rebound Toward $60 Continues, But Lower-Low Structure Signals Caution",
+      "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxNMl96ZE5qS2FXVXA3VWtrNldLTmJhbmhJbllIMG8zeTlwc05oUHJDU3dXUkdEZFVMcWxvdHd2NGxMYnVERzI1eEVYV3phbjlFcmxreDdJR0d5NUY5RUYwcGoydWVuc3psN0FaTWhwbHItbU5fYU5qVGMxMWpSOHpmbE9xamR0MVZKY0VDSDZqNTY?oc=5",
+      "source": "Bitcoin World",
+      "trusted": false,
+      "indirect": false,
+      "publishedAt": "2026-07-09T23:10:11.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMikAFBVV95cUxNMl96ZE5qS2FXVXA3VWtrNldLTmJhbmhJbllIMG8zeTlwc05oUHJDU3dXUkdEZFVMcWxvdHd2NGxMYnVERzI1eEVYV3phbjlFcmxreDdJR0d5NUY5RUYwcGoydWVuc3psN0FaTWhwbH",
+      "impact": "up"
+    },
+    {
+      "title": "Fed Minutes Reveal Divisions: Some Officials Wanted Rate Hike in June, AI Investment Emerges as New Inflation Variable",
+      "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE1ieS15LVp4LS1uMm9uTTVHaWRvdDJaUFFpU1g2bDdIYnZ0OXc5WEZ6MnQ0U0hSNnlEWU5TZzFYYzhPWlk2Q25nRVh4czI0ZzBWdTJhVjlLQ2psSW1JRVd4VTlyakhfQTRMQ1JtcEV1Y2JBZHVGYlE?oc=5",
+      "source": "finance.biggo.com",
+      "trusted": false,
+      "indirect": true,
+      "publishedAt": "2026-07-09T22:35:00.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMidkFVX3lxTE1ieS15LVp4LS1uMm9uTTVHaWRvdDJaUFFpU1g2bDdIYnZ0OXc5WEZ6MnQ0U0hSNnlEWU5TZzFYYzhPWlk2Q25nRVh4czI0ZzBWdTJhVjlLQ2psSW1JRVd4VTlyakhfQTRMQ1JtcEV1Y2",
       "impact": "twoway"
     }
   ],
