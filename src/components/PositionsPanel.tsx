@@ -139,10 +139,14 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
       if (iv == null || t == null) return { p, ok: false as const, expiry, dte };
 
       // Current option price, best source first:
-      //  1) live exchange quote for this exact strike/type (auto-refreshes),
+      //  1) live exchange quote for this exact strike/type (skipped when the
+      //     server snapshot is stale — that quote would be stale too),
       //  2) the CMP the user typed (dated, may be stale),
-      //  3) Black-76 model estimate.
-      const liveQuote = chain.find((o) => o.type === p.type && Math.abs(o.strike - p.strike) < 1 && o.ltp > 0);
+      //  3) Black-76 model estimate (uses the live parity F when server is stale).
+      const serverStale = mcx.liveParity === true;
+      const liveQuote = serverStale
+        ? undefined
+        : chain.find((o) => o.type === p.type && Math.abs(o.strike - p.strike) < 1 && o.ltp > 0);
       const theo = black76Price(F, p.strike, t, iv, p.type);
       let current: number;
       let source: string;

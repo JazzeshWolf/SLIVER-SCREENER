@@ -31,6 +31,11 @@ export function App() {
               MCX est.
             </span>
           )}
+          {dash.mcx?.liveParity && !dash.mcx?.estimated && (
+            <span className="text-[9px] uppercase tracking-wide text-sky-300/80 border border-sky-400/30 rounded px-1 py-0.5" title="MCX price computed live from spot × parity; OI/IV from the last server run">
+              live ~parity
+            </span>
+          )}
         </div>
         <button
           onClick={dash.refresh}

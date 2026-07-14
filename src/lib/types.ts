@@ -47,6 +47,9 @@ export interface McxData {
   // When true, MCX price/IV are derived from international parity + realized vol
   // (no live exchange feed available), and should be labelled as estimates.
   estimated?: boolean;
+  // Set client-side: the server snapshot was stale, so silverFut/fairValue were
+  // recomputed from live browser spot × parity + last basis. OI/IV stay server.
+  liveParity?: boolean;
   mcx: {
     symbol: string;
     silverFut: number | null; // ₹/kg

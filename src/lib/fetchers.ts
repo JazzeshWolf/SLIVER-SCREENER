@@ -50,6 +50,31 @@ function toSnapshot(j: McxData & { live?: LiveInputs }): Snapshot {
 }
 
 /**
+ * Live international spot, fetched straight from the browser (these APIs are
+ * CORS-enabled). Lets the ⟳ button actually update prices even when the
+ * server-built snapshot is stale. Returns null on any failure so the caller
+ * falls back to the server values — never throws, never blocks.
+ */
+export async function fetchLiveSpot(): Promise<
+  { xagUsd: number | null; xauUsd: number | null; usdInr: number | null } | null
+> {
+  const j = async (url: string) => (await timed(fetch(url, { cache: "no-store" }), 6000)).json();
+  const [xag, xau, inr] = await Promise.allSettled([
+    j("https://api.gold-api.com/price/XAG"),
+    j("https://api.gold-api.com/price/XAU"),
+    j("https://api.frankfurter.app/latest?from=USD&to=INR"),
+  ]);
+  const price = (r: PromiseSettledResult<any>) =>
+    r.status === "fulfilled" && typeof r.value?.price === "number" && r.value.price > 0 ? r.value.price : null;
+  const xagUsd = price(xag);
+  const xauUsd = price(xau);
+  const usdInr =
+    inr.status === "fulfilled" && typeof inr.value?.rates?.INR === "number" ? inr.value.rates.INR : null;
+  if (xagUsd == null && xauUsd == null && usdInr == null) return null; // everything blocked
+  return { xagUsd, xauUsd, usdInr };
+}
+
+/**
  * Load the snapshot: raw GitHub URL first (always fresh), then the bundled copy
  * shipped with the site, then the last cached snapshot. Never throws.
  */
