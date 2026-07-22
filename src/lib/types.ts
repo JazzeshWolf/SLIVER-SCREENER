@@ -89,6 +89,8 @@ export interface McxData {
   };
   /** Gamma-exposure read (pinning vs ranging) from the option chain. */
   gex?: GexData | null;
+  /** COMEX silver futures term structure (contango vs backwardation). */
+  curve?: CurveData | null;
   /** CFTC Commitments of Traders — COMEX silver speculative net positioning. */
   cot?: CotData | null;
   /** Silver-relevant news headlines with auto-tagged impact + source links. */
@@ -96,6 +98,15 @@ export interface McxData {
   /** Recent macro prints (actual vs prior) that move silver. */
   prints?: EconPrint[];
   events: MarketEvent[];
+}
+
+/** COMEX silver futures term structure — contango vs backwardation. */
+export interface CurveData {
+  front: number; // $/oz, nearest listed contract
+  structure: "contango" | "flat" | "backwardation";
+  annualizedPct: number; // annualized slope %, + = contango, − = backwardation
+  months: { label: string; price: number }[]; // ladder, nearest → furthest
+  source: "curve" | "carry"; // "carry" = front-vs-spot approximation (weaker)
 }
 
 /** Gamma exposure summary — EXPERIMENTAL (thin MCX OI, crude dealer assumption). */

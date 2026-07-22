@@ -654,6 +654,82 @@ function computeGex(chain, F, tYears) {
   return { netPct, regime, pinStrike, maxPain, callWall, putWall, coverage: rows.length };
 }
 
+// --- COMEX silver futures term structure (contango / backwardation) --------
+// A lightweight "OpenBB-style" curve read, fetched from Yahoo (the same free
+// source OpenBB wraps) — OpenBB itself has no MCX data, so we only borrow the
+// international signal it's good at. Silver normally sits in mild CONTANGO
+// (cost of carry); a flip toward BACKWARDATION signals physical tightness /
+// squeeze risk — a genuine warning for short-call sellers. Best-effort: falls
+// back to a front-future-vs-spot carry read, then to null (UI hides the card).
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const SI_MONTH_CODE = { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" }; // liquid COMEX silver delivery months
+
+function nextSilverContracts(from = new Date(), n = 5) {
+  const out = [];
+  const y0 = from.getUTCFullYear(), m0 = from.getUTCMonth();
+  for (let i = 0; out.length < n && i < 24; i++) {
+    const mi = (m0 + i) % 12;
+    const yy = y0 + Math.floor((m0 + i) / 12);
+    if (SI_MONTH_CODE[mi]) {
+      out.push({
+        sym: `SI${SI_MONTH_CODE[mi]}${String(yy).slice(2)}.CMX`,
+        label: `${MONTHS[mi]}'${String(yy).slice(2)}`,
+        monthsOut: i + 0.5, // mid-delivery-month, in months from now
+      });
+    }
+  }
+  return out;
+}
+
+async function yahooQuote(sym) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=5d&interval=1d`;
+  try {
+    const j = await getJson(url, { headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/124.0" } });
+    const p = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
+    return Number.isFinite(p) && p > 0 ? p : null;
+  } catch (e) {
+    console.warn(`yahoo quote ${sym}: ${e.message}`);
+    return null;
+  }
+}
+
+function curveResult(front, annualizedPct, months, source) {
+  if (annualizedPct == null || !Number.isFinite(annualizedPct)) return null;
+  const structure = annualizedPct < -0.5 ? "backwardation" : annualizedPct > 1 ? "contango" : "flat";
+  return { front: round(front, 2), structure, annualizedPct, months, source };
+}
+
+async function fetchSilverCurve(spotUsd) {
+  const contracts = nextSilverContracts();
+  const prices = await Promise.all(contracts.map((c) => yahooQuote(c.sym)));
+  const months = contracts
+    .map((c, i) => ({ label: c.label, monthsOut: c.monthsOut, price: prices[i] }))
+    .filter((m) => m.price != null);
+
+  if (months.length >= 2) {
+    const near = months[0], far = months[months.length - 1];
+    const dm = far.monthsOut - near.monthsOut;
+    const annualizedPct = dm > 0 ? round((far.price / near.price - 1) * (12 / dm) * 100, 2) : null;
+    console.log(`curve: ${months.length} contracts, annualized ${annualizedPct}%`);
+    return curveResult(near.price, annualizedPct, months.map((m) => ({ label: m.label, price: round(m.price, 2) })), "curve");
+  }
+
+  // Fallback: nearest listed future vs spot → a rough one-month carry read.
+  const front = await yahooQuote("SI=F");
+  if (front != null && spotUsd != null && spotUsd > 0) {
+    const annualizedPct = round((front / spotUsd - 1) * 12 * 100, 2);
+    console.log(`curve: carry fallback (front vs spot), annualized ${annualizedPct}%`);
+    return curveResult(
+      front,
+      annualizedPct,
+      [{ label: "Spot", price: round(spotUsd, 2) }, { label: "Front", price: round(front, 2) }],
+      "carry",
+    );
+  }
+  console.warn("curve: no futures data available");
+  return null;
+}
+
 async function loadLatest() {
   try {
     return JSON.parse(await readFile(LATEST, "utf8"));
@@ -854,6 +930,8 @@ async function main() {
   const expectedMove1sd = atmIv != null && silverFut != null ? Math.round(silverFut * atmIv * Math.sqrt(t)) : null;
   const basis = silverFut != null && fairValue != null ? Math.round(silverFut - fairValue) : null;
   const gex = computeGex(chain, silverFut, t);
+  // COMEX silver term structure — carry last-good if the fetch comes back empty.
+  const curve = (await fetchSilverCurve(xagUsd)) ?? prev?.curve ?? null;
 
   // `partial` reflects only CORE data (silver/gold/INR). Missing optional
   // factors (DXY, real yields) don't mark the whole snapshot as degraded.
@@ -905,6 +983,7 @@ async function main() {
     },
     basis: { fairValue: round(fairValue, 0), basis },
     gex,
+    curve, // COMEX silver futures term structure (contango/backwardation)
     cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
     news: news ?? prev?.news ?? [],
     prints: prints.length ? prints : prev?.prints ?? [],

@@ -14,6 +14,7 @@ import { EventRadar } from "./components/EventRadar";
 import { GexCard } from "./components/GexCard";
 import { PositionsPanel } from "./components/PositionsPanel";
 import { CorrelationPanel } from "./components/CorrelationPanel";
+import { CurveCard } from "./components/CurveCard";
 import { BasisPanel } from "./components/BasisPanel";
 import { timeAgo } from "./components/ui";
 
@@ -95,6 +96,7 @@ export function App() {
             {tab === "context" && (
               <>
                 <CorrelationPanel live={dash.live} gsr={dash.derived?.gsr ?? null} />
+                {dash.mcx && <CurveCard mcx={dash.mcx} />}
                 {dash.mcx && <CotCard mcx={dash.mcx} />}
                 {dash.mcx && dash.derived && <BasisPanel mcx={dash.mcx} derived={dash.derived} />}
               </>
