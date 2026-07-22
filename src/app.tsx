@@ -2,6 +2,8 @@ import { useState } from "preact/hooks";
 import { useDashboard } from "./state/store";
 import { TabBar, type Tab } from "./components/TabBar";
 import { RegimeCard } from "./components/RegimeCard";
+import { FactorBreakdown } from "./components/FactorBreakdown";
+import { MarketStructure } from "./components/MarketStructure";
 import { DirectionGauges } from "./components/DirectionGauges";
 import { OutlookTab } from "./components/OutlookTab";
 import { CotCard } from "./components/CotCard";
@@ -71,6 +73,13 @@ export function App() {
                 {dash.regime && dash.scores && (
                   <RegimeCard regime={dash.regime} scores={dash.scores} track={dash.track} />
                 )}
+                {dash.regime && dash.scores && (
+                  <FactorBreakdown
+                    decision={dash.scores[dash.regime.dteHorizon]}
+                    horizon={dash.regime.dteHorizon}
+                  />
+                )}
+                {dash.mcx && <MarketStructure mcx={dash.mcx} />}
                 <div className="flex gap-3">
                   {dash.premium && (
                     <SellWindow

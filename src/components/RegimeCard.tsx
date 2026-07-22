@@ -1,4 +1,3 @@
-import { useState } from "preact/hooks";
 import type { Horizon, HorizonScore, RegimeResult } from "../lib/types";
 import type { TrackResult } from "../lib/track";
 import { Card, Pill } from "./ui";
@@ -37,7 +36,6 @@ export function RegimeCard({
   scores: Record<Horizon, HorizonScore>;
   track?: TrackResult | null;
 }) {
-  const [open, setOpen] = useState(false);
   const decision = scores[regime.dteHorizon];
   const anyPartial = Object.values(scores).some((s) => s.partial);
 
@@ -81,37 +79,6 @@ export function RegimeCard({
         </p>
       )}
 
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="mt-3 text-xs text-sky-300/80 hover:text-sky-200"
-      >
-        {open ? "▾ hide factor breakdown" : `▸ factor breakdown (${regime.dteHorizon})`}
-      </button>
-
-      {open && (
-        <div className="mt-2 space-y-1">
-          {decision.factors.map((f) => (
-            <div key={f.key} className="flex items-center justify-between text-xs">
-              <span className={f.present ? "text-white/70" : "text-white/30 line-through"}>
-                {f.label}
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="text-white/40 tnum">w {(f.weight * 100).toFixed(0)}%</span>
-                <span
-                  className={`tnum font-medium ${
-                    f.s > 0.05 ? "text-emerald-300" : f.s < -0.05 ? "text-rose-300" : "text-white/50"
-                  }`}
-                >
-                  {f.present ? (f.s >= 0 ? "+" : "") + f.s.toFixed(2) : "n/a"}
-                </span>
-              </span>
-            </div>
-          ))}
-          <p className="text-[10px] text-white/30 pt-1">
-            Weights are hand-set priors, not backtested. Trust the regime/divergence, not the decimal.
-          </p>
-        </div>
-      )}
     </Card>
   );
 }
