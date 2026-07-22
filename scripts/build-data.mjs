@@ -933,6 +933,18 @@ async function main() {
   // COMEX silver term structure — carry last-good if the fetch comes back empty.
   const curve = (await fetchSilverCurve(xagUsd)) ?? prev?.curve ?? null;
 
+  // Live-feed health — lets the UI say "token not working" instead of silently
+  // showing stale last-good. A 401/403 on any authed Upstox call = bad token.
+  const authFailed = upstox.upstoxFeed.authFailed;
+  const noToken = !process.env.UPSTOX_ACCESS_TOKEN;
+  const liveChainOk = (ups?.chain?.length ?? 0) > 0; // real option chain THIS run
+  const feed = {
+    upstox: authFailed ? "auth_failed" : noToken ? "no_token" : liveChainOk ? "ok" : "degraded",
+    chainOk: liveChainOk,
+    // Timestamp of the last run that had a real live option chain (persisted).
+    lastLiveAt: liveChainOk ? new Date().toISOString() : prev?.feed?.lastLiveAt ?? null,
+  };
+
   // `partial` reflects only CORE data (silver/gold/INR). Missing optional
   // factors (DXY, real yields) don't mark the whole snapshot as degraded.
   const corePartial = !(xauHistory.length > 5 && usdInrHistory.length > 5);
@@ -984,6 +996,7 @@ async function main() {
     basis: { fairValue: round(fairValue, 0), basis },
     gex,
     curve, // COMEX silver futures term structure (contango/backwardation)
+    feed, // live-feed / token health (auth_failed → UI warns to refresh token)
     cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
     news: news ?? prev?.news ?? [],
     prints: prints.length ? prints : prev?.prints ?? [],
@@ -993,7 +1006,7 @@ async function main() {
   await writeFile(LATEST, JSON.stringify(snapshot, null, 2) + "\n");
   console.log(
     `Wrote snapshot: xag=${xagUsd} inr=${usdInr} mcx=${silverFut} (${estimated ? "parity-est" : "live"}) ` +
-      `iv=${atmIv} ivRank=${ivRank} dte=${dte} histLen=${xagHistory.length}`,
+      `iv=${atmIv} ivRank=${ivRank} dte=${dte} histLen=${xagHistory.length} feed=${feed.upstox}`,
   );
 }
 

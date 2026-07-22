@@ -91,6 +91,8 @@ export interface McxData {
   gex?: GexData | null;
   /** COMEX silver futures term structure (contango vs backwardation). */
   curve?: CurveData | null;
+  /** Live-feed / Upstox-token health, so the UI can warn when the token is dead. */
+  feed?: FeedHealth | null;
   /** CFTC Commitments of Traders — COMEX silver speculative net positioning. */
   cot?: CotData | null;
   /** Silver-relevant news headlines with auto-tagged impact + source links. */
@@ -98,6 +100,16 @@ export interface McxData {
   /** Recent macro prints (actual vs prior) that move silver. */
   prints?: EconPrint[];
   events: MarketEvent[];
+}
+
+/** Live-feed health for the MCX/Upstox source. */
+export interface FeedHealth {
+  // "ok" = real option chain this run; "degraded" = token fine but no chain
+  // (off-hours/thin); "auth_failed" = token expired/invalid (401/403);
+  // "no_token" = no token configured.
+  upstox: "ok" | "degraded" | "auth_failed" | "no_token";
+  chainOk: boolean;
+  lastLiveAt: string | null; // ISO of the last run with a real live option chain
 }
 
 /** COMEX silver futures term structure — contango vs backwardation. */

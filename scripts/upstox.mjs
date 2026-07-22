@@ -16,9 +16,19 @@ function authHeaders(token) {
   return { Authorization: `Bearer ${token}`, Accept: "application/json" };
 }
 
+// Live feed health for this process. A 401/403 on any authenticated call means
+// the UPSTOX_ACCESS_TOKEN is expired/invalid — surfaced to the UI so the app can
+// say "token not working" instead of silently serving stale last-good data.
+export const upstoxFeed = { authFailed: false, lastStatus: null, sawResponse: false };
+
 async function getJson(url, opts) {
   const res = await fetch(url, opts);
-  if (!res.ok) throw new Error(`${url} -> ${res.status}`);
+  upstoxFeed.sawResponse = true;
+  upstoxFeed.lastStatus = res.status;
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) upstoxFeed.authFailed = true;
+    throw new Error(`${url} -> ${res.status}`);
+  }
   return res.json();
 }
 
