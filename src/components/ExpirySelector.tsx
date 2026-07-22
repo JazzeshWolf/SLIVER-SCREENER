@@ -27,7 +27,7 @@ export function ExpirySelector({
       <span className="text-[10px] uppercase tracking-wider text-white/30 shrink-0 mr-0.5">Expiry</span>
       {expiries.map((e) => {
         const on = e.optionExpiry === active;
-        const thin = !e.chain || e.chain.length < 4; // far/illiquid month
+        const thin = !e.chain || e.chain.length < 15; // sparse far/illiquid month
         return (
           <button
             key={e.optionExpiry}

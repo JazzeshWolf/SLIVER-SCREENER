@@ -1003,7 +1003,10 @@ async function main() {
       chain: b.chain,
     };
   });
-  const expiries = silverFut != null ? (ups ? [nearBundle, ...farBundles] : [nearBundle]) : prev?.expiries ?? null;
+  // Drop far months with no option chain — nothing to show, and selecting them
+  // would render empty cards. The nearest is always kept.
+  const usableFar = farBundles.filter((b) => b.chain.length > 0);
+  const expiries = silverFut != null ? (ups ? [nearBundle, ...usableFar] : [nearBundle]) : prev?.expiries ?? null;
 
   // `partial` reflects only CORE data (silver/gold/INR). Missing optional
   // factors (DXY, real yields) don't mark the whole snapshot as degraded.
