@@ -1,16 +1,16 @@
 {
-  "asOf": "2026-07-21T18:58:26.509Z",
+  "asOf": "2026-07-22T05:59:05.679Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
-    "xagUsd": 58.98,
-    "xauUsd": 4083.3,
+    "xagUsd": 59.71,
+    "xauUsd": 4130,
     "usdInr": 96.23,
     "dxy": 120.53,
     "usdBroad": true,
-    "real10y": 2.31,
-    "breakeven10y": 2.24,
+    "real10y": 2.35,
+    "breakeven10y": 2.25,
     "xagHistory": [
       {
         "t": "2025-12-02",
@@ -674,14 +674,14 @@
       },
       {
         "t": "2026-07-21",
-        "v": 58.980999
+        "v": 62.05288389488881
+      },
+      {
+        "t": "2026-07-22",
+        "v": 59.713001
       }
     ],
     "xauHistory": [
-      {
-        "t": "2026-02-12",
-        "v": 4945.1794
-      },
       {
         "t": "2026-02-13",
         "v": 5029.89519
@@ -1316,7 +1316,11 @@
       },
       {
         "t": "2026-07-21",
-        "v": 4083.300049
+        "v": 4077.82773
+      },
+      {
+        "t": "2026-07-22",
+        "v": 4130
       }
     ],
     "dxyHistory": [
@@ -2841,13 +2845,13 @@
       {
         "t": "2026-07-17",
         "v": 2.31
+      },
+      {
+        "t": "2026-07-20",
+        "v": 2.35
       }
     ],
     "usdInrHistory": [
-      {
-        "t": "2026-02-12",
-        "v": 90.58338
-      },
       {
         "t": "2026-02-13",
         "v": 90.58994
@@ -3482,20 +3486,24 @@
       },
       {
         "t": "2026-07-21",
+        "v": 96.30876
+      },
+      {
+        "t": "2026-07-22",
         "v": 96.23
       }
     ],
-    "asOf": "2026-07-21T18:58:26.509Z",
+    "asOf": "2026-07-22T05:59:05.679Z",
     "partial": false
   },
   "mcx": {
     "symbol": "SILVERM",
-    "silverFut": 221639,
-    "prevClose": 219886,
+    "silverFut": 226540,
+    "prevClose": 221639,
     "expiry": "2026-08-31",
-    "dte": 41,
+    "dte": 40,
     "optionExpiry": "2026-07-28",
-    "optionDte": 7,
+    "optionDte": 6,
     "optionExpiries": [
       "2026-07-28",
       "2026-08-24",
@@ -3510,15 +3518,15 @@
       "2027-05-26",
       "2027-06-23"
     ],
-    "oi": 106370,
-    "oiChg": -2793
+    "oi": 99163,
+    "oiChg": -7207
   },
   "options": {
-    "atmStrike": 222000,
-    "atmIv": 0.3633,
+    "atmStrike": 227000,
+    "atmIv": 0.3185,
     "ivEstimated": true,
-    "ivRank": 3.2,
-    "ivPercentile": 11.6,
+    "ivRank": 0,
+    "ivPercentile": 1.4,
     "ivRankEstimated": true,
     "ivHistory": [
       {
@@ -3570,13 +3578,13 @@
         "v": 0.3926
       }
     ],
-    "rv20": 0.346,
-    "expectedMove1sd": 11151,
+    "rv20": 0.3033,
+    "expectedMove1sd": 9251,
     "chain": []
   },
   "basis": {
-    "fairValue": 215325,
-    "basis": 6314
+    "fairValue": 217998,
+    "basis": 8542
   },
   "gex": null,
   "cot": {
@@ -3901,6 +3909,16 @@
   },
   "news": [
     {
+      "title": "Gold headed toward $3,500 and silver toward $50 before the next run, Chambers says",
+      "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxNclBUb252MjlfV1dSRHVSMkVhdmcxTUVMN2FYdnFhOG5IT1FDWGpyaU84ZmJIUEJ1d09qVnJUazRzUUF1MzM2c2tpUVJJRTdUNnd1NFFYMFFHc0pseUJWR3ROd01KZG5VX0ZJUFA5YVZCWU5mVXRSTUxxRWlzc3ltSHVRc3RWZ3J2djhGZ2Y4SnltRVByNmRab01vREVKbFY5YUR4WmlMYy01LVh5YnVDQlRvTQ?oc=5",
+      "source": "KITCO",
+      "trusted": true,
+      "indirect": false,
+      "publishedAt": "2026-07-21T14:27:06.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiswFBVV95cUxNclBUb252MjlfV1dSRHVSMkVhdmcxTUVMN2FYdnFhOG5IT1FDWGpyaU84ZmJIUEJ1d09qVnJUazRzUUF1MzM2c2tpUVJJRTdUNnd1NFFYMFFHc0pseUJWR3ROd01KZG5VX0ZJUFA5YV",
+      "impact": "up"
+    },
+    {
       "title": "How did gold and silver prices react to renewed war tensions in July? Should investors buy, hold or sell?",
       "url": "https://news.google.com/rss/articles/CBMihwJBVV95cUxPUzRLZUVkcDVXTWdKOVo1aHktYWltY1lGcmFObmF5T1l4OXVSRWtpaEtPU2MyM1lzYTlTRUpYa3NLeGk4b0taaXB4VkJIczc0X2pVWkZGWjBsNzJsOXI2S21sbE94dklSWHQxSFRlWUtqc2FBVnV4OTMtZWItckJzam5JNkYyVnMwT1BiZlhIa3ZqYnAyaTRacXJTTGlyaWQ5YVN3WEI5c2oxV2dEaGRxWEF1eGVzckFOeUI3T0tYQTY1aGNpVlhrQUlGdzE3Q3loV3FiZy0wRGx4eHNjS19XZnluMjdRTzZSZy1zN0FCMThOWFlJdURfYU1xbVNQN2Rlai15UjZFd9IBjAJBVV95cUxNQmJ5d0dkdzRhd2RCbEhUalB4WVd5UHc3dVEzU0xoN3h3T3RVbGJPQzlxRXZWQW1UaldQZFA5dGxINTZON3lhNWhqeGM5bFlPWUhyQUx0NEVLTC15S1Ryd1QyNUVuR2VrMTQ1cVBCenJrNU9fMzdBUzhvTGh0Tk10RW02VGRxUWsycVhRV1hsSURYSWk0Vy1fbWxLbTlPajRJVjNpVmZndDJTQ0ZWTjVsaXdScWZ0VFJ6T0NuQnRJdzZQZVRfdGtEMWk5cXRFSWg3T01xd2g5MjdVLTE4VkQtamxac2RHU25TYWlQSVI3RXo2WUk5bm1HOTRfVmhlYldmMVZiUVVqYkZ3dm93?oc=5",
       "source": "Moneycontrol.com",
@@ -3991,63 +4009,53 @@
       "impact": "twoway"
     },
     {
-      "title": "Silver (XAUUSD:CUR) Price Jumps Over 5% As Buyers Regain Control",
-      "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxNd19lc0tlbGNCakJpLWVmSzJTcHppYmNBZEs2b2JpTzJwZ2N3SzhzOE0tYVA1czAxNVdYNlI0ZEVndTRRclZabEdlNlpFTk5UcjRzWGU4VWRnOHBQWEl3SlNEcXFVMndhNzNSZHJlZk1yUG13ZFE1RFZTN1F5N3BtNE02WlhQT1FXTkZsZGgyNDdrM2pYeEYtYm9fRW8?oc=5",
-      "source": "Seeking Alpha",
+      "title": "Silver price jumps for fourth day as $60 breakout comes into focus",
+      "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOMTdadXB0XzN6bWczMmU4OGl0MW1VeWNER1p3elF2YlJqTW1nRnlfdW5zcjdoR2EwSGJFdldQMkFhVV9CTTVBTzFPeFBNa3BKVzBXZjVmOHlKTkZtbDhtOXBacU9iSDlNdUFZNlNVODU5Tzh5NFZVTWlJUUpidGF1ZHA4dV80cGZKOHNDXzZlcE80dGx1MEpYZUN1bEpQMlVqdW1B?oc=5",
+      "source": "Invezz",
       "trusted": false,
       "indirect": false,
-      "publishedAt": "2026-07-21T17:50:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMinAFBVV95cUxNd19lc0tlbGNCakJpLWVmSzJTcHppYmNBZEs2b2JpTzJwZ2N3SzhzOE0tYVA1czAxNVdYNlI0ZEVndTRRclZabEdlNlpFTk5UcjRzWGU4VWRnOHBQWEl3SlNEcXFVMndhNzNSZHJlZk",
+      "publishedAt": "2026-07-22T05:53:26.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiowFBVV95cUxOMTdadXB0XzN6bWczMmU4OGl0MW1VeWNER1p3elF2YlJqTW1nRnlfdW5zcjdoR2EwSGJFdldQMkFhVV9CTTVBTzFPeFBNa3BKVzBXZjVmOHlKTkZtbDhtOXBacU9iSDlNdUFZNlNVOD",
       "impact": "up"
     },
     {
-      "title": "Gold (XAUUSD), Silver, Platinum Forecasts – Gold Rallies As Traders Ignore Rising Yields",
-      "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxQUWNfMmFGV0xlYXpIbEVUNktwckRITHhpaUt5dk1YN0dxQXVYY3JJY1FESnlIckdXaHdiSFpMd0F4WWd0dWZQVVQ5bVVhSm5sbG1zTXdZQzF4UWN0SGxZWkwtUl9PU1FDbjZQSFFJN2s1N1JlLUd6YW5nOEVGODhiX1paakNsOGxuVTZhUDQ0d05BMzY0dlRFeUFxbm9MbDBuelVnVjVoa1BtdDdkLUxDUFlhMmhUNDBfb0p2RG1RemlLdjROYU5jM19IRjhoQQ?oc=5",
+      "title": "Silver’s $59.70 Breakout: A Supply Squeeze Meets a Geopolitical Tailwind",
+      "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNeVlxWXh5U29SeU8yVXFuNV9GMkdoLW5OS3VNTGdfeXgxbU04d3dLR2lCUzBSZHJsS2M4Y3RvbGlpYThVZWpjc2V6T2xIOW9Pelkwa0R5ZDA2cTBzRDdtOTlzWU9PSngwZm5vbFE0c0lQZXF3N1BBZ21ZSkd1UTdjRi1wQlJWU242RjFOcUs5VFNfekx3WTRHYkVDSDFMckFWUHpVZWp3VmRQdWwwWTVuRlZJTy05OENQTzR3ZUljVGdFZjF3TmZOeg?oc=5",
+      "source": "Ad-hoc-news.de",
+      "trusted": false,
+      "indirect": false,
+      "publishedAt": "2026-07-22T05:21:53.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiyAFBVV95cUxNeVlxWXh5U29SeU8yVXFuNV9GMkdoLW5OS3VNTGdfeXgxbU04d3dLR2lCUzBSZHJsS2M4Y3RvbGlpYThVZWpjc2V6T2xIOW9Pelkwa0R5ZDA2cTBzRDdtOTlzWU9PSngwZm5vbFE0c0",
+      "impact": "up"
+    },
+    {
+      "title": "Gold and Silver Price Forecast: Gold Eyes $4,200 as Silver Gains Momentum",
+      "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxONVEyb192eXM1TlNmaEdnLUdmb25ocVVtSzZKbDdyZko4UGp3S3dYQWhtSGd4T0lvSVpKeWx5aGJOc0hTYjZwR3JBVW5qcTZzdk1LenZRVXJYX2t4RDhJMVNnMGVKVExuT0ZHMVZycjBsSm1LRENwSEFxZ2Racll2UXYxWk1faFQwNzR3UXAzR2Z0ZDBCLXY4MmtKam1xc1NKbXZCY3ptZWVyMU45d2hkc0ZtREQwc1REeEhaZGZR?oc=5",
       "source": "FXEmpire",
       "trusted": false,
       "indirect": false,
-      "publishedAt": "2026-07-21T17:49:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMizgFBVV95cUxQUWNfMmFGV0xlYXpIbEVUNktwckRITHhpaUt5dk1YN0dxQXVYY3JJY1FESnlIckdXaHdiSFpMd0F4WWd0dWZQVVQ5bVVhSm5sbG1zTXdZQzF4UWN0SGxZWkwtUl9PU1FDbjZQSFFJN2",
-      "impact": "up"
-    },
-    {
-      "title": "If Silver’s Future Is Bullish, The SILJ ETF Offers Value (NYSEARCA:SILJ)",
-      "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxOYXBVdDVka3lKdllxZ280bWYwbUU2ZlFIQlpPaEg0MHZ6SHlZbVg0Z0NzUmlHbVZtNTVQSkJrSGpYMjROamhvMkh4c2dqbGd2V3A5TjZ3RkU5Zm12ZjRBbFJNYnpqNTMtUDh4MzZzaWpXV21nRUVEVVllZVUtTHN1dVY4Mm5mSDh3b210MndkbDl2RWZnOHc?oc=5",
-      "source": "Seeking Alpha",
-      "trusted": false,
-      "indirect": false,
-      "publishedAt": "2026-07-21T17:17:27.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMilgFBVV95cUxOYXBVdDVka3lKdllxZ280bWYwbUU2ZlFIQlpPaEg0MHZ6SHlZbVg0Z0NzUmlHbVZtNTVQSkJrSGpYMjROamhvMkh4c2dqbGd2V3A5TjZ3RkU5Zm12ZjRBbFJNYnpqNTMtUDh4MzZzaW",
-      "impact": "up"
-    },
-    {
-      "title": "Silver Price Forecast: XAG/USD Surges as Middle East Tensions Drive Safe-Haven Demand",
-      "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxNQTUxaXdqZGF5QTY1Y25aYkQ5LU90WFB3b053TlZ4QUdTVmlQblNvU3ZORXRmdUU2SUVhbnlwcGFEM3NlM1M5UGp2U2hfRTREX0s0a1NITzZzTWcyQ0RFVmI4X05oTUFuTHR5RjFRWmo2NEtyRkx2UVp2QVZITk95bmwtcjludXVNX2JfRQ?oc=5",
-      "source": "Bitcoin World",
-      "trusted": false,
-      "indirect": false,
-      "publishedAt": "2026-07-21T16:05:11.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMijAFBVV95cUxNQTUxaXdqZGF5QTY1Y25aYkQ5LU90WFB3b053TlZ4QUdTVmlQblNvU3ZORXRmdUU2SUVhbnlwcGFEM3NlM1M5UGp2U2hfRTREX0s0a1NITzZzTWcyQ0RFVmI4X05oTUFuTHR5RjFRWm",
-      "impact": "up"
-    },
-    {
-      "title": "Silver Price Nears Decision Point as Gold-Silver Ratio Tests Resistance",
-      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOdzdPdjdFNDlVSFFuSk5ndWhaUU80QU9kZVFoVTJNR0J3aEpQTm9ucThpcTlqa3VuTFkxWkRFMzNsVjJuUWVBM1V6Ukpfb011NnZSdmlZTkpBVHVrbEFkOHczdXJJZWN0QVV1YmRCLWp2eXRrWEd4ZlFMU2h3SENlSzNDc1JjdHdKcGl4SWVMOW1rc0dkV0dJb0VIcHJEQTBleUJMd3haQWw?oc=5",
-      "source": "Brave New Coin",
-      "trusted": false,
-      "indirect": false,
-      "publishedAt": "2026-07-21T14:17:41.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiqAFBVV95cUxOdzdPdjdFNDlVSFFuSk5ndWhaUU80QU9kZVFoVTJNR0J3aEpQTm9ucThpcTlqa3VuTFkxWkRFMzNsVjJuUWVBM1V6Ukpfb011NnZSdmlZTkpBVHVrbEFkOHczdXJJZWN0QVV1YmRCLW",
+      "publishedAt": "2026-07-22T03:23:00.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMivgFBVV95cUxONVEyb192eXM1TlNmaEdnLUdmb25ocVVtSzZKbDdyZko4UGp3S3dYQWhtSGd4T0lvSVpKeWx5aGJOc0hTYjZwR3JBVW5qcTZzdk1LenZRVXJYX2t4RDhJMVNnMGVKVExuT0ZHMVZycj",
       "impact": "twoway"
     },
     {
-      "title": "Silver, Gold Climb as Middle East Mediation Hopes Lift Metals",
-      "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxOVVNZbDNoZWxjZXhfUmN0WU1QUkpKeTF0YmtVa1dzVUVfc2Nrc0hIYzJPdF9GLU52OGZlaW9BdHVvNDA5NWlqV0ZDdjhTN1AwUmxyR2l1R2l0TFNyUGItamwxYkNIVVRScC1fUTluRWptcGNjbk1wSVpfTFhERDRjeVJtRmNnWmdIWWVDZnh6LWIzV0VmYUdSRGU0SzVKdw?oc=5",
-      "source": "Mexico Business News",
+      "title": "Silver Surges 5% as Dip-Buyers Step In, But Trend Reversal Remains Unclear",
+      "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOTWU5b0hKdDh1YVhIYWMtRm5OakFDbXZQa1gxWjNwbnV6NGdDUjZpZWhBejdtbHRtcVZBNVJ1b1VZTDRkZ1ZpelRhR1d6QTI2Nkk4WGlod2NpZ2dYRGVuRDR6YzlsZEk3LWx4U0J6UnRaamNsaDBKbVFoOVJLeFEwNkhCRl9oVm5pS0EwSUktRmxUaFpodHhCcUFQTDlob3k3RFhndjE5TVc?oc=5",
+      "source": "NAI500",
       "trusted": false,
       "indirect": false,
-      "publishedAt": "2026-07-21T13:57:02.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMingFBVV95cUxOVVNZbDNoZWxjZXhfUmN0WU1QUkpKeTF0YmtVa1dzVUVfc2Nrc0hIYzJPdF9GLU52OGZlaW9BdHVvNDA5NWlqV0ZDdjhTN1AwUmxyR2l1R2l0TFNyUGItamwxYkNIVVRScC1fUTluRW",
+      "publishedAt": "2026-07-22T00:47:55.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiqAFBVV95cUxOTWU5b0hKdDh1YVhIYWMtRm5OakFDbXZQa1gxWjNwbnV6NGdDUjZpZWhBejdtbHRtcVZBNVJ1b1VZTDRkZ1ZpelRhR1d6QTI2Nkk4WGlod2NpZ2dYRGVuRDR6YzlsZEk3LWx4U0J6Un",
+      "impact": "up"
+    },
+    {
+      "title": "Silver and Gold Climb on Middle East Mediation Hopes in 2026",
+      "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxNRWVUaDloRm1SVENaaVZxMWZNdVJzWmVxRVlKcmpsUFFoTUF6d0kyR3J0WXNtZlJaSF80UTBxRXNEMnRVamFDVnNDV25DSjlpOWhmTGl4cWJOZ0wwOVp4czJPUWhWa2Vvd3lHOEZsb2Exb3JTT0xWZzRBbWVCVGVrS01jOGdlTzIyTkE?oc=5",
+      "source": "discoveryalert.com.au",
+      "trusted": false,
+      "indirect": false,
+      "publishedAt": "2026-07-21T23:23:20.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiigFBVV95cUxNRWVUaDloRm1SVENaaVZxMWZNdVJzWmVxRVlKcmpsUFFoTUF6d0kyR3J0WXNtZlJaSF80UTBxRXNEMnRVamFDVnNDV25DSjlpOWhmTGl4cWJOZ0wwOVp4czJPUWhWa2Vvd3lHOEZsb2",
       "impact": "twoway"
     }
   ],
