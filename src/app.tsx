@@ -14,6 +14,7 @@ import { ThetaRing } from "./components/ThetaRing";
 import { ExpectedMoveCone } from "./components/ExpectedMoveCone";
 import { EventRadar } from "./components/EventRadar";
 import { GexCard } from "./components/GexCard";
+import { FearGauge } from "./components/FearGauge";
 import { PositionsPanel } from "./components/PositionsPanel";
 import { CorrelationPanel } from "./components/CorrelationPanel";
 import { CurveCard } from "./components/CurveCard";
@@ -106,6 +107,7 @@ export function App() {
 
             {tab === "vol" && dash.mcx && (
               <>
+                <FearGauge mcx={dash.mcx} />
                 <ExpectedMoveCone mcx={dash.mcx} events={dash.mcx.events} />
                 <GexCard gex={dash.mcx.gex} fut={dash.mcx.mcx.silverFut} />
                 <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} />
