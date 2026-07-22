@@ -15,6 +15,9 @@ import { ExpectedMoveCone } from "./components/ExpectedMoveCone";
 import { EventRadar } from "./components/EventRadar";
 import { GexCard } from "./components/GexCard";
 import { FearGauge } from "./components/FearGauge";
+import { OptionChainTable } from "./components/OptionChainTable";
+import { KeyLevels } from "./components/KeyLevels";
+import { PositioningVol } from "./components/PositioningVol";
 import { PositionsPanel } from "./components/PositionsPanel";
 import { CorrelationPanel } from "./components/CorrelationPanel";
 import { CurveCard } from "./components/CurveCard";
@@ -56,7 +59,7 @@ export function App() {
 
       <main className="flex-1 px-3 space-y-3 pb-2">
         {dash.mcx && <FeedBanner mcx={dash.mcx} />}
-        {(tab === "score" || tab === "vol") && dash.expiries && (
+        {(tab === "score" || tab === "vol" || tab === "chain") && dash.expiries && (
           <ExpirySelector
             expiries={dash.expiries}
             selected={dash.selectedExpiry}
@@ -100,6 +103,14 @@ export function App() {
                 </div>
                 {dash.mcx && <PositionsPanel mcx={dash.mcx} />}
                 <SpotStrip live={dash.live} mcx={dash.mcx} />
+              </>
+            )}
+
+            {tab === "chain" && dash.mcx && (
+              <>
+                <OptionChainTable mcx={dash.mcx} />
+                <KeyLevels mcx={dash.mcx} />
+                <PositioningVol mcx={dash.mcx} />
               </>
             )}
 
