@@ -12,6 +12,7 @@ import { basis, fairValueInrPerKg, premiumPct } from "../lib/basis";
 import type { Snapshot } from "../lib/types";
 import { cacheGet, cacheSet } from "../lib/cache";
 import type {
+  ExpiryBundle,
   Horizon,
   HorizonScore,
   LiveInputs,
@@ -72,9 +73,52 @@ function applyLiveSpot(
   return { live, mcx };
 }
 
+/**
+ * Return an mcx view with the chosen expiry's contract data swapped in, so all
+ * option cards (chain, IV, GEX, expected move, theta, market structure, basis)
+ * re-point to it. The macro direction (scores/regime) is computed from the base
+ * mcx, so it stays global. Selecting the nearest keeps the base (live-overlaid).
+ */
+function mergeExpiry(mcx: McxData | null, sel: string | null): McxData | null {
+  const exs = mcx?.expiries;
+  if (!mcx || !exs?.length || !sel || sel === mcx.mcx.optionExpiry) return mcx;
+  const b = exs.find((e) => e.optionExpiry === sel);
+  if (!b) return mcx;
+  return {
+    ...mcx,
+    mcx: {
+      ...mcx.mcx,
+      silverFut: b.silverFut,
+      prevClose: b.prevClose,
+      oi: b.oi,
+      oiChg: b.oiChg,
+      expiry: b.expiry,
+      dte: b.dte,
+      optionExpiry: b.optionExpiry,
+      optionDte: b.optionDte,
+    },
+    options: {
+      ...mcx.options,
+      atmStrike: b.atmStrike,
+      atmIv: b.atmIv,
+      ivEstimated: b.ivEstimated,
+      ivRank: b.ivRank,
+      ivPercentile: b.ivPercentile,
+      ivRankEstimated: b.ivRankEstimated,
+      expectedMove1sd: b.expectedMove1sd,
+      chain: b.chain,
+    },
+    gex: b.gex,
+    basis: b.basis,
+  };
+}
+
 export interface Dashboard {
   live: LiveInputs | null;
   mcx: McxData | null;
+  expiries: ExpiryBundle[] | null;
+  selectedExpiry: string | null;
+  setSelectedExpiry: (optionExpiry: string) => void;
   scores: Record<Horizon, HorizonScore> | null;
   regime: RegimeResult | null;
   premium: PremiumSellScore | null;
@@ -96,6 +140,7 @@ export function useDashboard(): Dashboard {
   const [mcx, setMcx] = useState<McxData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [selectedExpiry, setSelectedExpiry] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -122,9 +167,13 @@ export function useDashboard(): Dashboard {
     };
   }, [load]);
 
+  // The chosen expiry's contract data swapped into the mcx view. Option cards
+  // follow it; the direction engine below stays on the base mcx (global).
+  const viewMcx = useMemo(() => mergeExpiry(mcx, selectedExpiry), [mcx, selectedExpiry]);
+
   const scores = useMemo(() => {
     if (!live || !mcx) return null;
-    return scoreAllHorizons(live, mcx);
+    return scoreAllHorizons(live, mcx); // base mcx → direction is expiry-independent
   }, [live, mcx]);
 
   const regime = useMemo(() => {
@@ -137,29 +186,44 @@ export function useDashboard(): Dashboard {
   }, [scores, mcx]);
 
   const premium = useMemo(() => {
-    if (!mcx) return null;
-    return premiumSellScore(mcx, mcx.events, new Date());
-  }, [mcx]);
+    if (!viewMcx) return null;
+    return premiumSellScore(viewMcx, viewMcx.events, new Date());
+  }, [viewMcx]);
 
   const derived = useMemo(() => {
-    if (!live || !mcx) return null;
+    if (!live || !viewMcx) return null;
     const fv = fairValueInrPerKg(live.xagUsd, live.usdInr);
     return {
       fairValue: fv,
-      basis: basis(mcx.mcx.silverFut, fv),
-      premiumPct: premiumPct(mcx.mcx.silverFut, fv),
+      basis: basis(viewMcx.mcx.silverFut, fv),
+      premiumPct: premiumPct(viewMcx.mcx.silverFut, fv),
       gsr: live.xauUsd && live.xagUsd ? live.xauUsd / live.xagUsd : null,
     };
-  }, [live, mcx]);
+  }, [live, viewMcx]);
 
   const outlook = useMemo(() => {
-    if (!live || !mcx || !scores || !regime) return null;
-    return buildOutlook(live, mcx, scores, regime, premium, derived);
-  }, [live, mcx, scores, regime, premium, derived]);
+    if (!live || !viewMcx || !scores || !regime) return null;
+    return buildOutlook(live, viewMcx, scores, regime, premium, derived);
+  }, [live, viewMcx, scores, regime, premium, derived]);
 
   // Walk-forward self-check: how often the engine's lean matched what silver
   // actually did. Recomputed only when the snapshot changes.
   const track = useMemo(() => (live ? walkForwardHitRate(live) : null), [live]);
 
-  return { live, mcx, scores, regime, premium, outlook, track, derived, loading, lastUpdated, refresh: load };
+  return {
+    live,
+    mcx: viewMcx,
+    expiries: mcx?.expiries ?? null,
+    selectedExpiry,
+    setSelectedExpiry,
+    scores,
+    regime,
+    premium,
+    outlook,
+    track,
+    derived,
+    loading,
+    lastUpdated,
+    refresh: load,
+  };
 }

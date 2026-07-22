@@ -117,6 +117,29 @@ export function pickContract(instruments, symbol, todayIso) {
   return { future, options, expiry, optionExpiry, optionExpiries };
 }
 
+/**
+ * Front + subsequent monthly option expiries, each paired with its underlying
+ * future (MCX silver options are on the corresponding monthly future). Returns
+ * up to `maxN` upcoming expiries, nearest first — the data behind the expiry
+ * selector. Each entry: { optionExpiry, expiry (future), future, options[] }.
+ */
+export function pickChainContracts(instruments, symbol, todayIso, maxN = 4) {
+  const sym = symbol.toUpperCase();
+  const rows = instruments.map(norm).filter((r) => r.key && matchesSymbol(r, sym));
+  const futs = rows.filter((r) => r.isFuture && r.expiry).sort((a, b) => (a.expiry < b.expiry ? -1 : 1));
+  if (!futs.length) return [];
+  const optRows = rows.filter((r) => r.isOption && r.expiry && r.optionType && r.strike > 0);
+  const optExpiries = [...new Set(optRows.map((r) => r.expiry))].filter((e) => e >= todayIso).sort();
+  const out = [];
+  for (const oe of optExpiries.slice(0, maxN)) {
+    // Underlying = the future expiring on/after this option expiry (same month).
+    const future = futs.find((f) => f.expiry >= oe) ?? futs[futs.length - 1];
+    const options = optRows.filter((r) => r.expiry === oe);
+    if (options.length) out.push({ optionExpiry: oe, expiry: future.expiry, future, options });
+  }
+  return out;
+}
+
 /** Daily candles for an instrument: returns { history:[{t,v}], oiHistory:[{t,v}] }. */
 export async function dailyCandles(token, instrumentKey, fromIso, toIso) {
   const url = `${BASE}/historical-candle/${encodeURIComponent(instrumentKey)}/day/${toIso}/${fromIso}`;

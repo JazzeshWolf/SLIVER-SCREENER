@@ -19,6 +19,7 @@ import { CorrelationPanel } from "./components/CorrelationPanel";
 import { CurveCard } from "./components/CurveCard";
 import { BasisPanel } from "./components/BasisPanel";
 import { FeedBanner } from "./components/FeedBanner";
+import { ExpirySelector } from "./components/ExpirySelector";
 import { timeAgo } from "./components/ui";
 
 export function App() {
@@ -54,6 +55,13 @@ export function App() {
 
       <main className="flex-1 px-3 space-y-3 pb-2">
         {dash.mcx && <FeedBanner mcx={dash.mcx} />}
+        {(tab === "score" || tab === "vol") && dash.expiries && (
+          <ExpirySelector
+            expiries={dash.expiries}
+            selected={dash.selectedExpiry}
+            onSelect={dash.setSelectedExpiry}
+          />
+        )}
         {!dash.live && (
           <div className="text-center text-white/40 py-16">Loading market data…</div>
         )}

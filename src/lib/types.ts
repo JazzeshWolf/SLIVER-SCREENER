@@ -93,6 +93,8 @@ export interface McxData {
   curve?: CurveData | null;
   /** Live-feed / Upstox-token health, so the UI can warn when the token is dead. */
   feed?: FeedHealth | null;
+  /** Per-monthly-expiry bundles behind the expiry selector (nearest first). */
+  expiries?: ExpiryBundle[] | null;
   /** CFTC Commitments of Traders — COMEX silver speculative net positioning. */
   cot?: CotData | null;
   /** Silver-relevant news headlines with auto-tagged impact + source links. */
@@ -100,6 +102,32 @@ export interface McxData {
   /** Recent macro prints (actual vs prior) that move silver. */
   prints?: EconPrint[];
   events: MarketEvent[];
+}
+
+/**
+ * One monthly expiry's contract data — the unit the expiry selector switches
+ * between. The store merges the selected bundle into the mcx view so the option
+ * cards (chain, IV, GEX, expected move, theta, market structure) re-point to it.
+ */
+export interface ExpiryBundle {
+  expiry: string; // underlying future's expiry (ISO date)
+  optionExpiry: string; // option expiry — what a seller trades (ISO date)
+  dte: number; // days to future expiry
+  optionDte: number; // days to option expiry
+  silverFut: number | null; // ₹/kg for this contract month
+  prevClose: number | null;
+  oi: number | null;
+  oiChg: number | null;
+  atmStrike: number | null;
+  atmIv: number | null; // fraction
+  ivEstimated: boolean; // true when atmIv is a realized-vol proxy
+  ivRank: number | null;
+  ivPercentile: number | null;
+  ivRankEstimated: boolean;
+  expectedMove1sd: number | null; // ₹/kg over the option tenor
+  gex: GexData | null;
+  basis: { fairValue: number | null; basis: number | null };
+  chain: OptionQuote[];
 }
 
 /** Live-feed health for the MCX/Upstox source. */

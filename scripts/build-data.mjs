@@ -494,6 +494,54 @@ async function fetchMcxReal() {
  * token / unavailable. `usdInr` is used to express the MCX silver future as an
  * implied $/oz history for the directional engine.
  */
+// ATM IV from chain greeks (avg of the nearest-strike CE/PE that report IV).
+function atmIvFromChain(rows, ref) {
+  if (!rows.length) return null;
+  const k = rows.reduce((b, o) => (Math.abs(o.strike - ref) < Math.abs(b - ref) ? o.strike : b), rows[0].strike);
+  const ivs = rows.filter((o) => o.strike === k && o.iv != null).map((o) => o.iv);
+  return ivs.length ? ivs.reduce((a, b) => a + b, 0) / ivs.length : null;
+}
+
+/**
+ * Build a raw per-expiry bundle (price / OI / option chain / ATM IV) for one
+ * contract month. Best-effort — returns null when the future has no usable
+ * price. Far months may have thin/empty chains; that's surfaced downstream.
+ */
+async function buildRawBundle(token, c, usdInr, from, today) {
+  const [{ history: futHist, oiHistory }, q, chainRaw] = await Promise.all([
+    upstox.dailyCandles(token, c.future.key, from, today),
+    upstox.quote(token, c.future.key),
+    upstox.optionChain(token, c.future.key, c.optionExpiry),
+  ]);
+  const qd = Object.values(q)[0] ?? {};
+  const ltp = Number(qd.last_price) || (futHist.length ? futHist[futHist.length - 1].v : NaN);
+  if (!Number.isFinite(ltp) || ltp <= 0) return null;
+  const oi = Number(qd.oi) || (oiHistory.length ? oiHistory[oiHistory.length - 1].v : null);
+  const prevClose = futHist.length > 1 ? futHist[futHist.length - 2].v : Number(qd.ohlc?.close) || null;
+  const oiChg = oiHistory.length > 1 && oi != null ? oi - oiHistory[oiHistory.length - 2].v : null;
+
+  // ATM IV: chain greeks first; else solve Black-76 from real option LTPs so IV
+  // stays a TRADED number, not a realized-vol proxy.
+  let chain = chainRaw;
+  let atmIv = atmIvFromChain(chain, ltp);
+  if (atmIv == null && c.options?.length) {
+    const fb = await upstox.ivFromOptionQuotes(token, c.options, ltp, c.optionExpiry);
+    if (fb.atmIv != null) atmIv = fb.atmIv;
+    if ((!chain || !chain.length) && fb.chain.length) chain = fb.chain;
+  }
+
+  const dte = Math.max(0, Math.ceil((new Date(c.expiry).getTime() - Date.now()) / 86400000));
+  const optionDte = Math.max(0, Math.ceil((new Date(c.optionExpiry).getTime() - Date.now()) / 86400000));
+  // MCX future (₹/kg) -> implied $/oz so the engine sees real silver momentum.
+  const mult = PARITY_MULT * (usdInr || 1);
+  const silverUsdHistory = mult > 0 ? futHist.map((p) => ({ t: p.t, v: p.v / mult })) : [];
+  return {
+    expiry: c.expiry, optionExpiry: c.optionExpiry, dte, optionDte,
+    silverFut: Math.round(ltp), prevClose, oi, oiChg, atmIv, chain,
+    silverUsdHistory, futHistLen: futHist.length,
+  };
+}
+
 async function fetchUpstox(usdInr) {
   const token = process.env.UPSTOX_ACCESS_TOKEN;
   if (!token) return null;
@@ -501,60 +549,42 @@ async function fetchUpstox(usdInr) {
     const today = new Date().toISOString().slice(0, 10);
     const from = new Date(Date.now() - 200 * 86400000).toISOString().slice(0, 10);
     const instruments = await upstox.fetchInstruments();
-    const c = upstox.pickContract(instruments, MCX_SYMBOL, today);
-    if (!c) {
+    // All upcoming monthly option expiries (nearest first) + their futures.
+    const contracts = upstox.pickChainContracts(instruments, MCX_SYMBOL, today, 4);
+    if (!contracts.length) {
       const sample = instruments
         .filter((i) => JSON.stringify(i).toUpperCase().includes("SILVER"))
         .slice(0, 4)
         .map((i) => ({ name: i.name, ts: i.trading_symbol, it: i.instrument_type, us: i.underlying_symbol, ot: i.option_type }));
-      console.warn(`upstox: no ${MCX_SYMBOL} future. silver samples: ${JSON.stringify(sample)}`);
+      console.warn(`upstox: no ${MCX_SYMBOL} contracts. silver samples: ${JSON.stringify(sample)}`);
       return null;
     }
-    // MCX options expire before the future — use the options' own expiry.
-    const optExpiry = c.optionExpiry ?? c.expiry;
-    const [{ history: futHist, oiHistory }, q, chainRaw] = await Promise.all([
-      upstox.dailyCandles(token, c.future.key, from, today),
-      upstox.quote(token, c.future.key),
-      upstox.optionChain(token, c.future.key, optExpiry),
-    ]);
-    if (futHist.length < 5) {
-      console.warn("upstox: thin futures history");
+    const bundles = [];
+    for (const c of contracts) {
+      try {
+        const b = await buildRawBundle(token, c, usdInr, from, today);
+        if (b) bundles.push(b);
+      } catch (e) {
+        console.warn(`upstox bundle ${c.optionExpiry}: ${e.message}`);
+      }
+    }
+    const near = bundles[0];
+    if (!near || near.futHistLen < 5) {
+      console.warn("upstox: no usable nearest bundle (thin futures history)");
       return null;
     }
-    const qd = Object.values(q)[0] ?? {};
-    const ltp = Number(qd.last_price) || futHist[futHist.length - 1].v;
-    const oi = Number(qd.oi) || (oiHistory.length ? oiHistory[oiHistory.length - 1].v : null);
-    const prevClose = futHist.length > 1 ? futHist[futHist.length - 2].v : null;
-    const oiChg =
-      oiHistory.length > 1 && oi != null ? oi - oiHistory[oiHistory.length - 2].v : null;
-
-    // ATM IV from the chain greeks (average of nearest CE/PE that report IV).
-    let chain = chainRaw;
-    let atmIv = null;
-    const atmIvFromChain = (rows) => {
-      if (!rows.length) return null;
-      const k = rows.reduce((b, o) => (Math.abs(o.strike - ltp) < Math.abs(b - ltp) ? o.strike : b), rows[0].strike);
-      const ivs = rows.filter((o) => o.strike === k && o.iv != null).map((o) => o.iv);
-      return ivs.length ? ivs.reduce((a, b) => a + b, 0) / ivs.length : null;
+    console.log(
+      `upstox: ${MCX_SYMBOL} ${bundles.length} expiries [` +
+        bundles.map((b) => `${b.optionExpiry}:fut${b.silverFut}/oi${b.oi}/ch${b.chain.length}`).join(", ") +
+        `] atmIv=${near.atmIv}`,
+    );
+    return {
+      silverFut: near.silverFut, prevClose: near.prevClose, oi: near.oi, oiChg: near.oiChg,
+      expiry: near.expiry, optionExpiry: near.optionExpiry,
+      optionExpiries: contracts.map((c) => c.optionExpiry),
+      dte: near.dte, optionDte: near.optionDte, atmIv: near.atmIv, chain: near.chain,
+      silverUsdHistory: near.silverUsdHistory, expiries: bundles,
     };
-    atmIv = atmIvFromChain(chain);
-
-    // The /option/chain endpoint can return no greeks (off-hours, or when it
-    // wants a different underlying key). Fall back to solving Black-76 IV from
-    // real option LTPs so IV stays a TRADED number, not a realized-vol proxy.
-    if (atmIv == null && c.options?.length) {
-      const fb = await upstox.ivFromOptionQuotes(token, c.options, ltp, optExpiry);
-      if (fb.atmIv != null) atmIv = fb.atmIv;
-      if ((!chain || !chain.length) && fb.chain.length) chain = fb.chain;
-    }
-
-    const dte = Math.max(0, Math.ceil((new Date(c.expiry).getTime() - Date.now()) / 86400000));
-    // MCX future (₹/kg) -> implied $/oz so the engine sees real silver momentum.
-    const mult = PARITY_MULT * (usdInr || 1);
-    const silverUsdHistory = mult > 0 ? futHist.map((p) => ({ t: p.t, v: p.v / mult })) : [];
-
-    console.log(`upstox: ${MCX_SYMBOL} fut=${ltp} oi=${oi} dte=${dte} hist=${futHist.length} opts=${c.options?.length ?? 0} optExp=${optExpiry} chain=${chain.length} atmIv=${atmIv}`);
-    return { silverFut: Math.round(ltp), prevClose, oi, oiChg, expiry: c.expiry, optionExpiry: optExpiry, optionExpiries: c.optionExpiries ?? [], dte, atmIv, chain, silverUsdHistory };
   } catch (e) {
     console.warn(`upstox failed: ${e.message}`);
     return null;
@@ -945,6 +975,36 @@ async function main() {
     lastLiveAt: liveChainOk ? new Date().toISOString() : prev?.feed?.lastLiveAt ?? null,
   };
 
+  // Per-expiry bundles behind the expiry selector. The nearest mirrors the
+  // top-level fields above (so the default view is identical); far months are
+  // best-effort with realized-vol-based (estimated) IV rank.
+  const atmStrikeNear = silverFut != null ? Math.round(silverFut / 1000) * 1000 : null;
+  const nearBundle = {
+    expiry: expiryIso, optionExpiry: optionExpiryIso, dte, optionDte,
+    silverFut, prevClose, oi, oiChg, atmStrike: atmStrikeNear,
+    atmIv, ivEstimated, ivRank, ivPercentile, ivRankEstimated,
+    expectedMove1sd, gex, basis: { fairValue: round(fairValue, 0), basis }, chain,
+  };
+  const farBundles = (ups?.expiries ?? []).slice(1).map((b) => {
+    const tY = (b.optionDte ?? 0) / 365;
+    const bIv = b.atmIv != null ? round(b.atmIv, 4) : rv20 != null ? round(rv20 * 1.05, 4) : null;
+    return {
+      expiry: b.expiry, optionExpiry: b.optionExpiry, dte: b.dte, optionDte: b.optionDte,
+      silverFut: b.silverFut, prevClose: b.prevClose, oi: b.oi, oiChg: b.oiChg,
+      atmStrike: b.silverFut != null ? Math.round(b.silverFut / 1000) * 1000 : null,
+      atmIv: bIv, ivEstimated: b.atmIv == null,
+      ivRank: ivRankFrom(b.atmIv ?? rv20), ivPercentile: ivPctileFrom(b.atmIv ?? rv20), ivRankEstimated: true,
+      expectedMove1sd: bIv != null && b.silverFut != null ? Math.round(b.silverFut * bIv * Math.sqrt(tY)) : null,
+      gex: computeGex(b.chain, b.silverFut, tY),
+      basis: {
+        fairValue: round(fairValue, 0),
+        basis: b.silverFut != null && fairValue != null ? Math.round(b.silverFut - fairValue) : null,
+      },
+      chain: b.chain,
+    };
+  });
+  const expiries = silverFut != null ? (ups ? [nearBundle, ...farBundles] : [nearBundle]) : prev?.expiries ?? null;
+
   // `partial` reflects only CORE data (silver/gold/INR). Missing optional
   // factors (DXY, real yields) don't mark the whole snapshot as degraded.
   const corePartial = !(xauHistory.length > 5 && usdInrHistory.length > 5);
@@ -997,6 +1057,8 @@ async function main() {
     gex,
     curve, // COMEX silver futures term structure (contango/backwardation)
     feed, // live-feed / token health (auth_failed → UI warns to refresh token)
+    expiries, // per-monthly-expiry bundles behind the expiry selector
+
     cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
     news: news ?? prev?.news ?? [],
     prints: prints.length ? prints : prev?.prints ?? [],
