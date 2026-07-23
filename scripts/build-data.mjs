@@ -760,6 +760,21 @@ async function fetchSilverCurve(spotUsd) {
   return null;
 }
 
+// --- per-strike OI change vs yesterday's close --------------------------------
+/** { [strike]: { CE: oi, PE: oi } } from a chain, for day-over-day OI diffing. */
+function chainOiMap(chain) {
+  const m = {};
+  for (const o of chain || []) {
+    if (!(o.strike > 0)) continue;
+    (m[o.strike] ??= {})[o.type] = o.oi ?? 0;
+  }
+  return m;
+}
+/** Current calendar date in IST (MCX's timezone) — the "today" for OI change. */
+function istToday() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
 async function loadLatest() {
   try {
     return JSON.parse(await readFile(LATEST, "utf8"));
@@ -1008,6 +1023,27 @@ async function main() {
   const usableFar = farBundles.filter((b) => b.chain.length > 0);
   const expiries = silverFut != null ? (ups ? [nearBundle, ...usableFar] : [nearBundle]) : prev?.expiries ?? null;
 
+  // Per-strike OI change vs YESTERDAY's close. The snapshot is our state store:
+  // hold a per-expiry baseline (yesterday's closing OI) for the whole IST day and
+  // diff live OI against it, so `oiChg` means "written/unwound today", not since
+  // the last 10-min refresh. Seeds from the prior snapshot's chain on a new day.
+  const today = istToday();
+  const prevBaseline = prev?.oiBaseline ?? {};
+  const oiBaseline = {};
+  for (const b of expiries ?? []) {
+    const key = b.optionExpiry;
+    const prevBase = prevBaseline[key];
+    const base =
+      prevBase && prevBase.date === today
+        ? prevBase // baseline = yesterday's close, held all day
+        : { date: today, byStrike: chainOiMap(prev?.expiries?.find((e) => e.optionExpiry === key)?.chain) };
+    oiBaseline[key] = base;
+    for (const o of b.chain ?? []) {
+      const prevOi = base.byStrike?.[o.strike]?.[o.type];
+      o.oiChg = prevOi != null && o.oi != null ? o.oi - prevOi : null;
+    }
+  }
+
   // `partial` reflects only CORE data (silver/gold/INR). Missing optional
   // factors (DXY, real yields) don't mark the whole snapshot as degraded.
   const corePartial = !(xauHistory.length > 5 && usdInrHistory.length > 5);
@@ -1061,6 +1097,7 @@ async function main() {
     curve, // COMEX silver futures term structure (contango/backwardation)
     feed, // live-feed / token health (auth_failed → UI warns to refresh token)
     expiries, // per-monthly-expiry bundles behind the expiry selector
+    oiBaseline, // per-expiry yesterday's-close OI baseline (drives per-strike oiChg)
 
     cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
     news: news ?? prev?.news ?? [],

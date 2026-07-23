@@ -76,6 +76,23 @@ export function topByOi(chain: OptionQuote[], type: "CE" | "PE", n = 3): { strik
     .slice(0, n);
 }
 
+/** Net OI change written today per side (Σ oiChg). Nulls skipped. */
+export function oiWritten(chain: OptionQuote[]): { call: number; put: number } {
+  let call = 0;
+  let put = 0;
+  for (const o of chain) {
+    if (o.oiChg == null || !Number.isFinite(o.oiChg)) continue;
+    if (o.type === "PE") put += o.oiChg;
+    else call += o.oiChg;
+  }
+  return { call, put };
+}
+
+/** True when any leg carries a real (non-null) OI change — enables the Δ view. */
+export function hasOiChg(chain: OptionQuote[]): boolean {
+  return chain.some((o) => o.oiChg != null && Number.isFinite(o.oiChg));
+}
+
 /** Compact Indian OI formatting: 380000 → "3.8L", 15000 → "15k", 900 → "900". */
 export function fmtOi(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
@@ -84,4 +101,11 @@ export function fmtOi(n: number | null | undefined): string {
   if (a >= 1e5) return `${(n / 1e5).toFixed(1)}L`;
   if (a >= 1e3) return `${Math.round(n / 1e3)}k`;
   return `${Math.round(n)}`;
+}
+
+/** Signed compact OI, e.g. +15k / −3k (for OI-change display). */
+export function fmtOiSigned(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  if (n === 0) return "0";
+  return (n > 0 ? "+" : "−") + fmtOi(Math.abs(n));
 }

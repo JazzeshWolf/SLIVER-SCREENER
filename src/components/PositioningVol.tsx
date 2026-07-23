@@ -1,5 +1,5 @@
 import type { McxData } from "../lib/types";
-import { pcr, straddleAtm, skew25 } from "../lib/chain";
+import { pcr, straddleAtm, skew25, oiWritten, hasOiChg, fmtOiSigned } from "../lib/chain";
 import { Card, SectionTitle } from "./ui";
 
 export function PositioningVol({ mcx }: { mcx: McxData }) {
@@ -26,6 +26,28 @@ export function PositioningVol({ mcx }: { mcx: McxData }) {
         <Stat label="ATM IV" value={o.atmIv != null ? `${(o.atmIv * 100).toFixed(1)}%` : "—"} sub={o.ivEstimated ? "estimated" : "live"} />
         <Stat label="Straddle" value={fmt(straddle)} sub="priced move" />
       </div>
+
+      {hasOiChg(chain) && (
+        <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/5">
+          {(() => {
+            const w = oiWritten(chain);
+            return (
+              <>
+                <div>
+                  <div className="text-[9px] uppercase tracking-wide text-white/35">Put OI today</div>
+                  <div className={`text-lg font-bold tnum ${w.put >= 0 ? "text-emerald-300" : "text-rose-300"}`}>{fmtOiSigned(w.put)}</div>
+                  <div className="text-[9px] text-white/30">{w.put >= 0 ? "writing = support" : "unwinding"}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] uppercase tracking-wide text-white/35">Call OI today</div>
+                  <div className={`text-lg font-bold tnum ${w.call >= 0 ? "text-rose-300" : "text-emerald-300"}`}>{fmtOiSigned(w.call)}</div>
+                  <div className="text-[9px] text-white/30">{w.call >= 0 ? "writing = ceiling" : "unwinding"}</div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
 
       {lo != null && hi != null && (
         <div className="mt-3 pt-3 border-t border-white/5">

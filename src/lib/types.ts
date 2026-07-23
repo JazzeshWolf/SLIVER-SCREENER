@@ -37,6 +37,7 @@ export interface OptionQuote {
   ltp: number; // last price (premium), ₹
   iv: number | null; // implied vol, fraction (0.30 = 30%)
   oi: number;
+  oiChg?: number | null; // OI change vs yesterday's close (server-computed; null until seeded)
 }
 
 /** MCX-specific data, produced server-side by the GitHub Action -> latest.json. */
