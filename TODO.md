@@ -9,11 +9,16 @@
   - **Ugly** — what is broken, stale, faked, or could silently mislead a real trade.
 
 ## 🟡 Nice to have
+- [ ] **Capture bid/ask + volume from Upstox** (`upstox.mjs` already reads `market_data`, but keeps
+  only `ltp`/`oi`). Would let the sell screener price off the mid, apply a real spread filter, and
+  demote the off-smile heuristic to a secondary check.
 - [ ] AI brief upgrade for News (Anthropic key → smart impact score + "why it matters" per headline).
 - [ ] Visual polish pass (spacing, charts, motion).
 - [ ] COMEX / SLV inventory feed (best-effort — no clean free API yet).
 
 ## ✅ Done
+- [x] **Sell-candidate screener** — ranks every OTM strike on CONV (risk-adjusted return on margin
+  under a forecast measure), with an off-smile filter for stale prints and a modelled SPAN margin.
 - [x] Position tracker — sold-strike analytics (P&L, breach odds, SAFE/WATCH/DANGER).
 - [x] Trusted-source news filter (Reuters/Bloomberg/Zee Business/ET/Mint… ranked first).
 - [x] Event Radar v2 — recent macro prints (CPI/NFP/Fed, actual vs prior) + dynamic calendar.

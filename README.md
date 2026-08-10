@@ -62,9 +62,36 @@ npm run build:data # run the data builder locally (fail-soft without an MCX sour
 - **Premium-Sell score `P` (0–100):** `0.40·IVrank + 0.25·(IV/RV) + 0.20·thetaZone + 0.15·eventClear`,
   renormalized over whatever components are available.
 
-Options math (`src/lib/options.ts`) is Black-76: IV solver (Newton + bisection fallback), expected
-move, probability-of-touch, strike cushion. Basis math (`src/lib/basis.ts`):
-`FV = XAGUSD × 32.1507 × USD-INR × (1 + duty + GST)`.
+Options math (`src/lib/options.ts`) is Black-76: IV solver (Newton + bisection fallback), delta,
+expected move, probability-of-touch, strike cushion, and a closed-form CVaR for a short leg. Basis
+math (`src/lib/basis.ts`): `FV = XAGUSD × 32.1507 × USD-INR × (1 + duty + GST)`.
+
+## The sell screener (`src/lib/sellCandidates.ts`)
+
+The **Sell** tab ranks every OTM leg on the chain and surfaces the *balanced* strikes. Sorting on
+any single column degenerates: premium picks ATM (where short options blow up), P(OTM) picks the
+furthest strike (which earns nothing), and *edge* is worst of all — MCX silver IV sits well above
+realized vol, so every strike shows positive edge and the sort collapses into "furthest and least
+liquid wins". So `CONV` (0–100) blends six normalized sub-scores: return on margin (0.28), forecast
+P(OTM) (0.22), tail loss (0.18), liquidity (0.12), that strike's own vol richness (0.10) and
+probability-of-touch (0.10) — then shrinks the result by a data-confidence factor and applies a
+bounded ±8-point tilt for agreeing with the regime.
+
+- **Forecast measure.** `P(OTM)`, fair value and CVaR are computed under `σ = 0.6·RV20 + 0.4·ATM IV`
+  with a drift from the direction engine capped at 0.5σ — deliberately *not* risk-neutral, so
+  P(OTM) is a forecast rather than a restatement of 1−|Δ|. Probability-of-touch stays risk-neutral
+  at the strike's own IV, because "will the market test me" is a market-price question.
+- **Filters.** A leg is rejected (with the reason shown, never silently dropped) for: no solvable
+  IV, OI < 25, premium < 0.15% of the future, cushion < 0.6σ, or sitting **off the fitted smile** —
+  a least-squares quadratic in log-moneyness. That last test is the important one: a leg that last
+  traded days ago shows a large fake edge, and an OI floor alone doesn't catch it.
+- **Margin is modelled, not the exchange's.** MCX SPAN isn't in any free feed, so `spanScanMargin`
+  revalues the short leg across a ±6% price × ±25% vol scan grid, floors it at 0.5% of the future
+  and adds the blocked premium. Every margin-derived column is labelled `est.`; type your broker's
+  real ₹/lot into the override to replace it.
+
+> The CONV weights are hand-set priors, not backtested — same caveat as the direction engine. Trust
+> the shortlist and the columns, not the second decimal.
 
 ## The MCX data source (token-free Bhavcopy)
 

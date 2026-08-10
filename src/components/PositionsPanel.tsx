@@ -8,6 +8,7 @@ import {
   probabilityOfTouch,
 } from "../lib/options";
 import { cacheGet, cacheSet } from "../lib/cache";
+import { LOT_KG, SYMBOL_LABELS } from "../lib/instrument";
 import { Card, SectionTitle, Pill, fmtInt } from "./ui";
 
 /** A sold option the user is carrying. Prices are in ₹/kg (MCX quote units). */
@@ -284,9 +285,11 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
                 onChange={(e) => setForm({ ...form, lotKg: (e.target as HTMLSelectElement).value })}
                 className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-2 py-1.5 text-sm text-white"
               >
-                <option value="30">SILVER (30 kg)</option>
-                <option value="5">SILVERM (5 kg)</option>
-                <option value="1">SILVERMIC (1 kg)</option>
+                {SYMBOL_LABELS.map(({ symbol, label }) => (
+                  <option key={symbol} value={String(LOT_KG[symbol])}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="text-[10px] uppercase text-white/40 col-span-2">

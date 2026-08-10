@@ -16,6 +16,7 @@ import { EventRadar } from "./components/EventRadar";
 import { GexCard } from "./components/GexCard";
 import { FearGauge } from "./components/FearGauge";
 import { OptionChainTable } from "./components/OptionChainTable";
+import { SellCandidates } from "./components/SellCandidates";
 import { KeyLevels } from "./components/KeyLevels";
 import { PositioningVol } from "./components/PositioningVol";
 import { PositionsPanel } from "./components/PositionsPanel";
@@ -59,7 +60,7 @@ export function App() {
 
       <main className="flex-1 px-3 space-y-3 pb-2">
         {dash.mcx && <FeedBanner mcx={dash.mcx} />}
-        {(tab === "score" || tab === "vol" || tab === "chain") && dash.expiries && (
+        {(tab === "score" || tab === "sell" || tab === "vol" || tab === "chain") && dash.expiries && (
           <ExpirySelector
             expiries={dash.expiries}
             selected={dash.selectedExpiry}
@@ -103,6 +104,23 @@ export function App() {
                 </div>
                 {dash.mcx && <PositionsPanel mcx={dash.mcx} />}
                 <SpotStrip live={dash.live} mcx={dash.mcx} />
+              </>
+            )}
+
+            {tab === "sell" && dash.mcx && (
+              <>
+                <SellCandidates
+                  mcx={dash.mcx}
+                  score={dash.regime ? dash.scores?.[dash.regime.dteHorizon].score ?? null : null}
+                  regime={dash.regime}
+                />
+                {dash.premium && (
+                  <SellWindow
+                    premium={dash.premium}
+                    ivEstimated={dash.mcx.options.ivRankEstimated ?? dash.mcx.options.ivEstimated}
+                  />
+                )}
+                <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} />
               </>
             )}
 

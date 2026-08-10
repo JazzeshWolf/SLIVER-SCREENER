@@ -238,6 +238,55 @@ export interface RegimeResult {
   directionalLeanAllowed: boolean;
 }
 
+/**
+ * One ranked short-option candidate. Probabilities (`pOtm`) are under the app's
+ * FORECAST measure (realized-vol-weighted vol + a bounded directional drift),
+ * not risk-neutral — deliberately different from 1−|delta|. `touch` stays
+ * risk-neutral at the strike's own IV, because "will the market test me" is a
+ * market-price question. `margin` is MODELLED, never the exchange's number.
+ */
+export interface SellCandidate {
+  strike: number;
+  type: "CE" | "PE";
+  conv: number; // 0..100 conviction, confidence-scaled
+  premium: number; // ₹/kg (the chain's last price)
+  credit: number; // ₹ per lot = premium × lot kg
+  iv: number; // the IV actually used for this strike
+  ivQuoted: number | null; // as quoted on the chain (null when unsolvable)
+  ivFitted: number | null; // the smile's value at this strike
+  delta: number; // Black-76 delta of the LONG option
+  cushion: number; // distance from the future in σ
+  pOtm: number; // forecast probability of expiring worthless
+  touch: number; // risk-neutral probability of being tested before expiry
+  fair: number; // expected payoff under the forecast measure, ₹/kg
+  edge: number; // premium − fair, ₹/kg
+  edgePct: number; // edge as % of margin
+  romAnnual: number; // annualized return on margin, %
+  margin: number; // modelled margin, ₹/kg
+  marginPerLot: number; // ₹ per lot (override wins when supplied)
+  marginModelled: boolean; // false once the user supplies a real margin
+  cvar: number; // expected loss in the worst 5%, ₹/kg
+  tailPct: number; // cvar as % of margin
+  breakeven: number; // strike ± premium
+  oi: number;
+  oiChg: number | null;
+  thin: boolean; // real but shallow book — size down
+  withRegime: boolean | null; // agrees with the regime's lean (null = no lean)
+  ok: boolean; // survived every filter
+  reasons: string[]; // why it was rejected, when it wasn't
+  sub: Record<string, number>; // the 0..1 sub-scores behind `conv`
+}
+
+/** Result of one pass of the sell screener over a chain. */
+export interface SellScreen {
+  candidates: SellCandidate[]; // every OTM leg, best CONV first (rejects included)
+  forecastVol: number | null; // the vol the probabilities were computed at
+  drift: number | null; // annualized drift applied
+  lotKg: number;
+  confidence: number; // 0..1 data-quality shrink applied to every CONV
+  smileFitted: boolean; // false when the chain was too thin to fit a smile
+}
+
 export interface PremiumSellScore {
   score: number; // 0..100
   band: "green" | "amber" | "red";
