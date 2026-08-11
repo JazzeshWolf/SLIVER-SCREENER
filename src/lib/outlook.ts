@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 // Market Outlook engine. Synthesizes the live factor engine + structural themes
-// into a weighted, narrative 30-day silver outlook.
+// into a weighted, narrative 30-day outlook for whichever metal is selected.
+// The per-metal prose lives in copy.ts — silver's story is not copper's.
 //
 // Framework adapted from a 5-month "reports vs price" backtest (crude oil):
 //   * weight timely surprises (macro/inventory/geopolitics) heaviest,
@@ -8,8 +9,9 @@
 //   * positioning (CoT / OI) as a contrarian override,
 //   * an ensemble beats any single signal (~70% vs ~60% hit, ~0.35 corr),
 //   * vol-timing from news has no edge -> sell premium on IV richness.
-// Silver analogues: inventories -> COMEX/SLV flows; OPEC/IEA -> Silver
-// Institute / solar demand; macro (yields/DXY/gold) is silver's biggest driver.
+// Metal analogues: inventories -> exchange stocks / ETF flows; supply outlooks
+// -> Silver Institute, central-bank buying, copper concentrate TC/RCs; macro
+// (real yields / dollar) dominates bullion, the dollar and China dominate copper.
 // ---------------------------------------------------------------------------
 
 import type {
@@ -20,6 +22,8 @@ import type {
   PremiumSellScore,
   RegimeResult,
 } from "./types";
+import { copyFor, say } from "./copy";
+import { metalForSymbol } from "./instrument";
 
 export type Stance = "up" | "down" | "neutral";
 
@@ -73,36 +77,38 @@ export function buildOutlook(
   const add = (category: string, weight: number, stance: Stance | null, curated: Stance, note: string) =>
     drivers.push({ category, weight, stance: stance ?? curated, live: stance !== null, note });
 
-  // 1) Monetary — silver's biggest driver (real yields, dollar, Fed path).
+  // Which metal's story to tell. Before this existed, every metal's Outlook
+  // said "supply deficit + solar demand" — true of silver, wrong on copper.
+  const metal = metalForSymbol(mcx.mcx.symbol);
+  const c = copyFor(metal.id);
+
+  // 1) Monetary — real yields + the dollar. Heaviest for gold, lightest for
+  //    copper, which is why the weight comes from the copy table.
   const mon = liveStance(["real10y", "dxy"]);
-  add("Monetary · Fed & real yields", 22, mon, "down",
+  add(c.monetary.label, c.monetary.weight, mon, "down",
     mon === null
-      ? "Fed holding with a hawkish lean and sticky real yields — a headwind. A turn lower in yields/USD would flip this the single biggest tailwind. (Add a FRED key to make this live.)"
-      : mon === "down"
-        ? "Real yields / a firm dollar are weighing on silver — the dominant macro headwind right now."
-        : "Easing real yields / a softer dollar are supporting silver — the dominant macro tailwind.");
+      ? `${c.monetary.down} (Macro series unavailable right now — this is the curated prior, not a live read.)`
+      : say(c.monetary, mon));
 
-  // 2) Gold leadership — silver is a high-beta follower.
-  const gold = liveStance(["goldMomo"]);
-  add("Gold leadership", 12, gold, "neutral",
-    gold === "up" ? "Gold is trending up and silver follows with higher beta — supportive."
-      : gold === "down" ? "Gold is rolling over; silver tends to fall harder — a drag."
-        : "Gold is rangebound — little directional pull on silver.");
+  // 2) Cross-metal driver: gold leadership for silver, the copper/gold growth
+  //    ratio for copper, nothing for gold (it leads the complex itself).
+  if (c.lead) {
+    const lead = liveStance([c.lead.key]);
+    add(c.lead.label, c.lead.weight, lead, "neutral", say(c.lead, lead));
+  }
 
-  // 3) Silver's own trend.
-  const sil = liveStance(["silverMomo"]);
-  add("Silver price trend", 16, sil, "neutral",
-    sil === "up" ? "Silver's own momentum is positive (above its moving averages)."
-      : sil === "down" ? "Silver is trending below its moving averages — momentum is negative."
-        : "Silver is consolidating — no clear momentum either way.");
+  // 3) The metal's own trend.
+  const own = liveStance(["metalMomo"]);
+  add(c.trend.label, 16, own, "neutral", say(c.trend, own));
 
-  // 4) Structural deficit + industrial demand — a slow floor.
-  add("Structural deficit & industrial demand", 16, "up", "up",
-    "6th straight annual supply deficit + solar/EV/AI demand = a slow structural floor under price. PV thrifting is a mild offset; not a 30-day catalyst, but it caps downside over time.");
+  // 4) Structural story — constant, no live input, per metal.
+  add(c.structural.label, c.structural.weight, "up", "up", c.structural.note);
 
-  // 5) Inventory & ETF flows — the most timely surprise signal (watch).
-  add("Inventory & ETF flows", 4, null, "neutral",
-    "Watch COMEX/LBMA stocks & SLV holdings — the most timely surprise signal (a sudden draw is bullish, a build bearish). Not yet wired live — the next data add.");
+  // 5) Physical / flows. NOT WIRED LIVE — no free feed serves exchange stocks
+  //    or ETF tonnage on a schedule we can rely on, so this states what to
+  //    watch and admits it is not measured. Inventing a number here would be
+  //    the single easiest way to make this whole page untrustworthy.
+  add(c.flows.label, c.flows.weight, null, "neutral", `${c.flows.note} Not yet wired live — read it yourself before sizing on it.`);
 
   // 6) Positioning — CoT extremes (contrarian override) + MCX OI.
   const pos = liveStance(["mcxPositioning"]);
@@ -129,20 +135,20 @@ export function buildOutlook(
   // 7) India local — duty, INR, basis premium.
   const inr = liveStance(["usdInr"]);
   const pp = derived?.premiumPct ?? null;
+  const duty = (metal.duty * 100).toFixed(0);
   const indiaStance: Stance = pp != null && pp > 0.5 ? "up" : pp != null && pp < -0.5 ? "down" : (inr ?? "neutral");
-  add("India local · INR, duty & basis", 14, indiaStance, indiaStance,
+  add(c.local.label, c.local.weight, indiaStance, indiaStance,
     pp != null && pp > 0.5
-      ? `MCX holds a ${pp.toFixed(1)}% premium to import-parity — local tightness (15% duty + curbs) is supportive; a weaker rupee lifts it further even if global silver is flat.`
+      ? `MCX holds a ${pp.toFixed(1)}% premium to import-parity — ${c.local.premium.replace("{duty}", duty)}`
       : pp != null && pp < -0.5
-        ? `MCX trades at a ${Math.abs(pp).toFixed(1)}% discount — soft local demand; MCX may lag global silver.`
-        : "MCX near import-parity; INR direction is the swing factor for the local price.");
+        ? `MCX trades at a ${Math.abs(pp).toFixed(1)}% discount — ${c.local.discount.replace("{duty}", duty)}`
+        : c.local.parity.replace("{duty}", duty));
 
-  // 8) Relative value — GSR.
-  const gsr = liveStance(["gsr"]);
-  add("Relative value · gold-silver ratio", 6, gsr, "neutral",
-    gsr === "up" ? "Silver looks cheap vs gold — mild mean-reversion tailwind."
-      : gsr === "down" ? "Silver looks rich vs gold — relative valuation is stretched."
-        : "Silver fairly valued vs gold.");
+  // 8) Relative value — the bullion ratio, where it means anything.
+  if (c.ratio) {
+    const rv = liveStance([c.ratio.key]);
+    add(c.ratio.label, c.ratio.weight, rv, "neutral", say(c.ratio, rv));
+  }
 
   // Weighted net bias.
   const totW = drivers.reduce((a, d) => a + d.weight, 0) || 1;
