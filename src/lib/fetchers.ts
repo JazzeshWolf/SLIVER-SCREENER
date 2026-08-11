@@ -33,16 +33,43 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/**
+ * Accept the pre-metals field names as well as the current ones.
+ *
+ * The snapshot on disk is written by the cron, so between deploying this client
+ * and the next successful builder run the live file still says `silverFut` /
+ * `xagUsd` / `xagHistory`. Without this the app would render blank against its
+ * own data. Also covers a stale localStorage snapshot from an older visit.
+ */
+function migrateLegacyNames(j: any): any {
+  if (!j || typeof j !== "object") return j;
+  const mcx = j.mcx && typeof j.mcx === "object" ? { ...j.mcx } : j.mcx;
+  if (mcx && mcx.fut == null && mcx.silverFut != null) mcx.fut = mcx.silverFut;
+
+  const live = j.live && typeof j.live === "object" ? { ...j.live } : j.live;
+  if (live) {
+    if (live.metalUsd == null && live.xagUsd != null) live.metalUsd = live.xagUsd;
+    if (!live.metalHistory?.length && live.xagHistory?.length) live.metalHistory = live.xagHistory;
+  }
+
+  const expiries = Array.isArray(j.expiries)
+    ? j.expiries.map((e: any) => (e && e.fut == null && e.silverFut != null ? { ...e, fut: e.silverFut } : e))
+    : j.expiries;
+
+  return { ...j, mcx, live, expiries };
+}
+
 /** Normalize a parsed latest.json into our Snapshot shape (defensive). */
-function toSnapshot(j: McxData & { live?: LiveInputs }): Snapshot {
+function toSnapshot(raw: McxData & { live?: LiveInputs }): Snapshot {
+  const j = migrateLegacyNames(raw) as McxData & { live?: LiveInputs };
   const live: LiveInputs = j.live ?? {
-    xagUsd: null,
+    metalUsd: null,
     xauUsd: null,
     usdInr: null,
     dxy: null,
     real10y: null,
     breakeven10y: null,
-    xagHistory: [],
+    metalHistory: [],
     xauHistory: [],
     dxyHistory: [],
     real10yHistory: [],
@@ -61,7 +88,7 @@ function toSnapshot(j: McxData & { live?: LiveInputs }): Snapshot {
  * falls back to the server values — never throws, never blocks.
  */
 export async function fetchLiveSpot(): Promise<
-  { xagUsd: number | null; xauUsd: number | null; usdInr: number | null } | null
+  { metalUsd: number | null; xauUsd: number | null; usdInr: number | null } | null
 > {
   const j = async (url: string) => (await timed(fetch(url, { cache: "no-store" }), 6000)).json();
   const [xag, xau, inr] = await Promise.allSettled([
@@ -71,12 +98,12 @@ export async function fetchLiveSpot(): Promise<
   ]);
   const price = (r: PromiseSettledResult<any>) =>
     r.status === "fulfilled" && typeof r.value?.price === "number" && r.value.price > 0 ? r.value.price : null;
-  const xagUsd = price(xag);
+  const metalUsd = price(xag);
   const xauUsd = price(xau);
   const usdInr =
     inr.status === "fulfilled" && typeof inr.value?.rates?.INR === "number" ? inr.value.rates.INR : null;
-  if (xagUsd == null && xauUsd == null && usdInr == null) return null; // everything blocked
-  return { xagUsd, xauUsd, usdInr };
+  if (metalUsd == null && xauUsd == null && usdInr == null) return null; // everything blocked
+  return { metalUsd, xauUsd, usdInr };
 }
 
 /**

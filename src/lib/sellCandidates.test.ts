@@ -34,7 +34,7 @@ function mcxFixture(over: Partial<McxData> = {}): McxData {
     partial: false,
     mcx: {
       symbol: "SILVERM",
-      silverFut: 235900,
+      fut: 235900,
       prevClose: 227510,
       expiry: "2026-08-31",
       dte: 21,
@@ -105,7 +105,7 @@ describe("buildForecast", () => {
   });
 
   it("returns null when the contract can't support a forecast", () => {
-    expect(buildForecast(mcxFixture({ mcx: { ...mcxFixture().mcx, silverFut: null } }), 0)).toBeNull();
+    expect(buildForecast(mcxFixture({ mcx: { ...mcxFixture().mcx, fut: null } }), 0)).toBeNull();
     expect(
       buildForecast(
         mcxFixture({ options: { ...mcxFixture().options, atmIv: null, rv20: null } }),
@@ -236,7 +236,7 @@ describe("screenSellCandidates — honesty and degradation", () => {
       mcxFixture({ mcx: { ...mcxFixture().mcx, symbol: "SILVER" } }),
       { score: 0 },
     );
-    expect(big.lotKg).toBe(30);
+    expect(big.lotUnits).toBe(30);
     expect(byStrike(big.candidates, 215000, "PE").credit).toBe(974 * 30);
   });
 
@@ -254,7 +254,7 @@ describe("screenSellCandidates — honesty and degradation", () => {
     );
     expect(empty.candidates).toEqual([]);
     const noFut = screenSellCandidates(
-      mcxFixture({ mcx: { ...mcxFixture().mcx, silverFut: null } }),
+      mcxFixture({ mcx: { ...mcxFixture().mcx, fut: null } }),
       {},
     );
     expect(noFut.candidates).toEqual([]);

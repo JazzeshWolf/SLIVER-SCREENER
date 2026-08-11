@@ -1,7 +1,8 @@
 import { useMemo, useState } from "preact/hooks";
 import type { McxData, RegimeResult, SellCandidate } from "../lib/types";
 import { screenSellCandidates, candidateTone } from "../lib/sellCandidates";
-import { SYMBOL_LABELS, lotKgFor } from "../lib/instrument";
+import { contractsFor, lotUnitsFor, metalForSymbol } from "../lib/instrument";
+import type { MetalConfig } from "../lib/instrument";
 import { fmtOi } from "../lib/chain";
 import { Card, Pill, fmt, fmtInt } from "./ui";
 
@@ -29,7 +30,10 @@ export function SellCandidates({
   regime: RegimeResult | null;
 }) {
   const [side, setSide] = useState<"PE" | "CE">("PE");
-  const [lotKg, setLotKg] = useState<number | null>(null);
+  const [lotUnits, setLotUnits] = useState<number | null>(null);
+  // Which metal's contract specs apply — resolved from the feed's own symbol so
+  // the lot multiplier can never come from a different metal than the chain.
+  const metal = metalForSymbol(mcx.mcx.symbol);
   const [marginOverride, setMarginOverride] = useState<string>("");
   const [openStrike, setOpenStrike] = useState<number | null>(null);
   const [showRejects, setShowRejects] = useState(false);
@@ -40,10 +44,10 @@ export function SellCandidates({
       screenSellCandidates(mcx, {
         score,
         regime,
-        lotKg: lotKg ?? undefined,
+        lotUnits: lotUnits ?? undefined,
         marginOverridePerLot: override > 0 ? override : null,
       }),
-    [mcx, score, regime, lotKg, override],
+    [mcx, score, regime, lotUnits, override],
   );
 
   const rows = screen.candidates.filter((c) => c.ok && c.type === side);
@@ -126,14 +130,15 @@ export function SellCandidates({
       )}
 
       <Controls
-        lotKg={lotKg ?? lotKgFor(mcx.mcx.symbol)}
-        onLot={setLotKg}
+        metal={metal}
+        lotUnits={lotUnits ?? lotUnitsFor(metal, mcx.mcx.symbol)}
+        onLot={setLotUnits}
         marginOverride={marginOverride}
         onMargin={setMarginOverride}
       />
 
       <div className="px-2 pt-2 mt-1 border-t border-white/5 text-[9px] leading-relaxed text-white/30">
-        Prem × lot ({screen.lotKg}) = credit/lot. <b className="text-white/40">Touch</b> = risk-neutral
+        Prem × lot ({screen.lotUnits}) = credit/lot. <b className="text-white/40">Touch</b> = risk-neutral
         probability of the strike being tested before expiry.{" "}
         <b className="text-white/40">P(OTM)</b> is the <i>forecast</i> probability — our vol estimate{" "}
         {screen.forecastVol != null && `(${(screen.forecastVol * 100).toFixed(1)}%, blended down from IV
@@ -245,13 +250,15 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 function Controls({
-  lotKg,
+  metal,
+  lotUnits,
   onLot,
   marginOverride,
   onMargin,
 }: {
-  lotKg: number;
-  onLot: (kg: number) => void;
+  metal: MetalConfig;
+  lotUnits: number;
+  onLot: (units: number) => void;
   marginOverride: string;
   onMargin: (v: string) => void;
 }) {
@@ -259,12 +266,12 @@ function Controls({
     <div className="flex items-center gap-2 px-2 pt-2 mt-2 border-t border-white/5">
       <label className="text-[9px] uppercase tracking-wide text-white/30">Contract</label>
       <select
-        value={String(lotKg)}
+        value={String(lotUnits)}
         onChange={(e) => onLot(Number((e.target as HTMLSelectElement).value))}
         className="bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-[10px] text-white/70"
       >
-        {SYMBOL_LABELS.map(({ symbol, label }) => (
-          <option key={symbol} value={String(lotKgFor(symbol))}>
+        {contractsFor(metal).map(({ symbol, label }) => (
+          <option key={symbol} value={String(lotUnitsFor(metal, symbol))}>
             {label}
           </option>
         ))}

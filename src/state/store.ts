@@ -8,7 +8,9 @@ import { fetchSnapshot, fetchLiveSpot } from "../lib/fetchers";
 import { deriveRegime, premiumSellScore, scoreAllHorizons } from "../lib/scoring";
 import { walkForwardHitRate, type TrackResult } from "../lib/track";
 import { buildOutlook, type Outlook } from "../lib/outlook";
-import { basis, fairValueInrPerKg, premiumPct } from "../lib/basis";
+import { basis, fairValue, premiumPct } from "../lib/basis";
+import { metalForSymbol } from "../lib/instrument";
+import type { MetalConfig } from "../lib/instrument";
 import type { Snapshot } from "../lib/types";
 import { cacheGet, cacheSet } from "../lib/cache";
 import type {
@@ -40,34 +42,35 @@ function withLive(hist: { t: string; v: number }[], v: number | null): { t: stri
  */
 function applyLiveSpot(
   snap: Snapshot,
-  spot: { xagUsd: number | null; xauUsd: number | null; usdInr: number | null },
+  spot: { metalUsd: number | null; xauUsd: number | null; usdInr: number | null },
 ): Snapshot {
-  const xagUsd = spot.xagUsd ?? snap.live.xagUsd;
+  const metalUsd = spot.metalUsd ?? snap.live.metalUsd;
   const xauUsd = spot.xauUsd ?? snap.live.xauUsd;
   const usdInr = spot.usdInr ?? snap.live.usdInr;
   const live = {
     ...snap.live,
-    xagUsd,
+    metalUsd,
     xauUsd,
     usdInr,
-    xagHistory: withLive(snap.live.xagHistory, spot.xagUsd),
+    metalHistory: withLive(snap.live.metalHistory, spot.metalUsd),
     xauHistory: withLive(snap.live.xauHistory, spot.xauUsd),
     usdInrHistory: withLive(snap.live.usdInrHistory, spot.usdInr),
     asOf: new Date().toISOString(),
   };
 
   const ageMin = (Date.now() - new Date(snap.mcx.asOf).getTime()) / 60000;
-  const canImply = spot.xagUsd != null && spot.usdInr != null && snap.mcx.mcx.silverFut != null;
+  const canImply = spot.metalUsd != null && spot.usdInr != null && snap.mcx.mcx.fut != null;
   if (ageMin <= SERVER_STALE_MIN || !canImply) return { live, mcx: snap.mcx };
 
   // Server MCX is stale — carry the last basis onto live parity for a live price.
-  const liveFv = fairValueInrPerKg(xagUsd, usdInr);
+  // Parity constants come from whichever metal the snapshot is actually for.
+  const liveFv = fairValue(metalForSymbol(snap.mcx.mcx.symbol), metalUsd, usdInr);
   const serverBasis = snap.mcx.basis.basis ?? 0;
-  const impliedFut = liveFv != null ? Math.round(liveFv + serverBasis) : snap.mcx.mcx.silverFut;
+  const impliedFut = liveFv != null ? Math.round(liveFv + serverBasis) : snap.mcx.mcx.fut;
   const mcx = {
     ...snap.mcx,
     liveParity: true,
-    mcx: { ...snap.mcx.mcx, silverFut: impliedFut },
+    mcx: { ...snap.mcx.mcx, fut: impliedFut },
     basis: { fairValue: liveFv != null ? Math.round(liveFv) : snap.mcx.basis.fairValue, basis: serverBasis },
   };
   return { live, mcx };
@@ -88,7 +91,7 @@ function mergeExpiry(mcx: McxData | null, sel: string | null): McxData | null {
     ...mcx,
     mcx: {
       ...mcx.mcx,
-      silverFut: b.silverFut,
+      fut: b.fut,
       prevClose: b.prevClose,
       oi: b.oi,
       oiChg: b.oiChg,
@@ -125,6 +128,8 @@ export interface Dashboard {
   outlook: Outlook | null;
   track: TrackResult | null;
   derived: {
+    /** The metal this snapshot is for, resolved from the feed's own symbol. */
+    metal: MetalConfig;
     fairValue: number | null;
     basis: number | null;
     premiumPct: number | null;
@@ -192,12 +197,17 @@ export function useDashboard(): Dashboard {
 
   const derived = useMemo(() => {
     if (!live || !viewMcx) return null;
-    const fv = fairValueInrPerKg(live.xagUsd, live.usdInr);
+    const metal = metalForSymbol(viewMcx.mcx.symbol);
+    const fv = fairValue(metal, live.metalUsd, live.usdInr);
     return {
+      metal,
       fairValue: fv,
-      basis: basis(viewMcx.mcx.silverFut, fv),
-      premiumPct: premiumPct(viewMcx.mcx.silverFut, fv),
-      gsr: live.xauUsd && live.xagUsd ? live.xauUsd / live.xagUsd : null,
+      basis: basis(viewMcx.mcx.fut, fv),
+      premiumPct: premiumPct(viewMcx.mcx.fut, fv),
+      // Gold/silver ratio stays gold-over-silver regardless of which metal is
+      // selected, so it reads the same on every screen. Only meaningful when
+      // the active metal IS silver; other metals show it as context.
+      gsr: live.xauUsd && live.metalUsd ? live.xauUsd / live.metalUsd : null,
     };
   }, [live, viewMcx]);
 

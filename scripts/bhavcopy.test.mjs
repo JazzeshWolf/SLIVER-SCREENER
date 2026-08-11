@@ -63,7 +63,7 @@ describe("toRaw", () => {
         : r,
     );
     const raw = toRaw(ROWS, "SILVER", TODAY, prev);
-    expect(raw.silverFut).toBe(275500);
+    expect(raw.fut).toBe(275500);
     expect(raw.expiry).toBe("2026-07-04");
     expect(raw.oiChg).toBe(18420 - 17000);
     expect(raw.chain).toHaveLength(3);

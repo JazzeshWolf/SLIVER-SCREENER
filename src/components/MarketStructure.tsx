@@ -8,7 +8,7 @@ import { Card, SectionTitle, Implication, fmtInt } from "./ui";
  * the pinning/max-pain read from the option chain. All from live Upstox data.
  */
 export function MarketStructure({ mcx }: { mcx: McxData }) {
-  const F = mcx.mcx.silverFut;
+  const F = mcx.mcx.fut;
   const pc = mcx.mcx.prevClose;
   const oi = mcx.mcx.oi;
   const oiChg = mcx.mcx.oiChg;

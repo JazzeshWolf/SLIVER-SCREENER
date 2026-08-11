@@ -5,7 +5,7 @@ import { Card, SectionTitle } from "./ui";
 export function KeyLevels({ mcx }: { mcx: McxData }) {
   const chain = mcx.options.chain ?? [];
   const gex = mcx.gex;
-  const spot = mcx.mcx.silverFut;
+  const spot = mcx.mcx.fut;
   if (!chain.length) return null;
 
   const supports = topByOi(chain, "PE", 3);

@@ -5,10 +5,10 @@ import { Sparkline } from "./Sparkline";
 
 export function CorrelationPanel({ live, gsr }: { live: LiveInputs; gsr: number | null }) {
   // Build GSR series from aligned histories.
-  const n = Math.min(live.xagHistory.length, live.xauHistory.length);
+  const n = Math.min(live.metalHistory.length, live.xauHistory.length);
   const gsrSeries = [];
   for (let i = 0; i < n; i++) {
-    const ag = live.xagHistory[live.xagHistory.length - n + i]?.v;
+    const ag = live.metalHistory[live.metalHistory.length - n + i]?.v;
     const au = live.xauHistory[live.xauHistory.length - n + i]?.v;
     if (ag && au && ag > 0) gsrSeries.push({ t: `i${i}`, v: au / ag });
   }
@@ -19,8 +19,8 @@ export function CorrelationPanel({ live, gsr }: { live: LiveInputs; gsr: number 
   const gsrPast = gsrValues.length > 11 ? gsrValues[gsrValues.length - 11] : null;
   const gsrTrendUp = gsr != null && gsrPast != null ? gsr > gsrPast : null;
 
-  const corr20 = correlation(tail(live.xagHistory, 20), tail(live.xauHistory, 20));
-  const corr60 = correlation(tail(live.xagHistory, 60), tail(live.xauHistory, 60));
+  const corr20 = correlation(tail(live.metalHistory, 20), tail(live.xauHistory, 20));
+  const corr60 = correlation(tail(live.metalHistory, 60), tail(live.xauHistory, 60));
 
   // --- GSR implication ---
   let gsrTone: "bull" | "bear" | "neutral" | "warn" = "neutral";

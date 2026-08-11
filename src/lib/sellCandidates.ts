@@ -33,7 +33,7 @@ import {
   type Measure,
 } from "./options";
 import { clamp } from "./stats";
-import { lotKgFor } from "./instrument";
+import { lotUnitsForSymbol } from "./instrument";
 
 // --- Tunables ---------------------------------------------------------------
 
@@ -71,7 +71,7 @@ export interface ScreenOptions {
   score?: number | null;
   regime?: RegimeResult | null;
   /** Contract size in kg. Defaults to the feed symbol's lot. */
-  lotKg?: number;
+  lotUnits?: number;
   /** Broker's real margin per lot, if known — replaces the modelled estimate. */
   marginOverridePerLot?: number | null;
 }
@@ -154,7 +154,7 @@ export interface Forecast {
  * bridge that makes P(OTM) a FORECAST rather than a restatement of 1−|Δ|.
  */
 export function buildForecast(mcx: McxData, score: number | null | undefined): Forecast | null {
-  const F = mcx.mcx.silverFut;
+  const F = mcx.mcx.fut;
   const dte = mcx.mcx.optionDte ?? mcx.mcx.dte;
   const iv = mcx.options.atmIv;
   const rv = mcx.options.rv20;
@@ -189,15 +189,15 @@ function dataConfidence(mcx: McxData): number {
 // --- The screen -------------------------------------------------------------
 
 export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): SellScreen {
-  const F = mcx.mcx.silverFut;
+  const F = mcx.mcx.fut;
   const chain = mcx.options.chain ?? [];
   const forecast = buildForecast(mcx, opts.score);
-  const lotKg = opts.lotKg ?? lotKgFor(mcx.mcx.symbol);
+  const lotUnits = opts.lotUnits ?? lotUnitsForSymbol(mcx.mcx.symbol);
   const confidence = dataConfidence(mcx);
 
   if (F == null || !forecast || !chain.length) {
     return { candidates: [], forecastVol: forecast?.vol ?? null, drift: forecast?.drift ?? null,
-      lotKg, confidence, smileFitted: false };
+      lotUnits, confidence, smileFitted: false };
   }
 
   const { measure, vol: sigF, t } = forecast;
@@ -271,7 +271,7 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
       type: o.type,
       conv: Math.round(conv),
       premium: o.ltp,
-      credit: o.ltp * lotKg,
+      credit: o.ltp * lotUnits,
       iv: strikeIv,
       ivQuoted: o.iv,
       ivFitted: smile ? smile.at(x) : null,
@@ -284,7 +284,7 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
       edgePct,
       romAnnual,
       margin,
-      marginPerLot: (opts.marginOverridePerLot ?? null) ?? margin * lotKg,
+      marginPerLot: (opts.marginOverridePerLot ?? null) ?? margin * lotUnits,
       marginModelled: opts.marginOverridePerLot == null,
       cvar,
       tailPct,
@@ -306,7 +306,7 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
     candidates,
     forecastVol: sigF,
     drift: forecast.drift,
-    lotKg,
+    lotUnits,
     confidence,
     smileFitted: smile != null,
   };

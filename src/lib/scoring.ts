@@ -122,20 +122,20 @@ function factorSignal(
       return z === null ? null : -zToSignal(z); // inverse: yields down = bullish
     }
     case "silverMomo":
-      return momentumSignal(live.xagHistory, window);
+      return momentumSignal(live.metalHistory, window);
     case "goldMomo":
       return momentumSignal(live.xauHistory, window);
     case "longTrend": {
       // Price vs its long (~200-day) moving average — the classic trend gate.
       // Requires meaningful history; uses what exists once past 100 points.
-      const n = live.xagHistory.length;
+      const n = live.metalHistory.length;
       if (n < 100) return null;
-      const v = vsMovingAverage(live.xagHistory, Math.min(window, n));
+      const v = vsMovingAverage(live.metalHistory, Math.min(window, n));
       return v === null ? null : clamp(v * 8, -1, 1); // ±12.5% from the MA saturates
     }
     case "mcxPositioning": {
       const oiChg = mcx.mcx.oiChg;
-      const fut = mcx.mcx.silverFut;
+      const fut = mcx.mcx.fut;
       const prev = mcx.mcx.prevClose;
       if (oiChg === null || fut === null || prev === null || prev === 0) return null;
       const priceDir = Math.sign(fut - prev);
@@ -151,11 +151,11 @@ function factorSignal(
     }
     case "gsr": {
       // Contrarian: GSR high vs its mean => silver cheap vs gold => mild bullish.
-      if (live.xagHistory.length < window || live.xauHistory.length < window) return null;
+      if (live.metalHistory.length < window || live.xauHistory.length < window) return null;
       const ratios: number[] = [];
-      const n = Math.min(live.xagHistory.length, live.xauHistory.length);
+      const n = Math.min(live.metalHistory.length, live.xauHistory.length);
       for (let i = n - window; i < n; i++) {
-        const ag = live.xagHistory[i]?.v;
+        const ag = live.metalHistory[i]?.v;
         const au = live.xauHistory[i]?.v;
         if (ag && au && ag > 0) ratios.push(au / ag);
       }
@@ -277,7 +277,7 @@ export function scoreHorizon(
   // Best available history across all inputs — confidence should reflect the
   // series actually backing the present factors (e.g. gold/INR), not only silver.
   const maxHistory = Math.max(
-    live.xagHistory.length,
+    live.metalHistory.length,
     live.xauHistory.length,
     live.dxyHistory.length,
     live.usdInrHistory.length,

@@ -20,7 +20,7 @@ const KIND_ICON: Record<string, string> = {
  * beyond each strike (the seller's real risk) plus the chance of being touched.
  */
 export function ExpectedMoveCone({ mcx, events = [] }: { mcx: McxData; events?: MarketEvent[] }) {
-  const F = mcx.mcx.silverFut;
+  const F = mcx.mcx.fut;
   const iv = mcx.options.atmIv;
   // Cone runs to the OPTION expiry (the contract being sold), not the future's.
   const dte = mcx.mcx.optionDte ?? mcx.mcx.dte;

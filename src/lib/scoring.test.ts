@@ -22,13 +22,13 @@ function momentum(base: number, end: number, n = 60): Point[] {
 
 function emptyLive(over: Partial<LiveInputs> = {}): LiveInputs {
   return {
-    xagUsd: 65,
+    metalUsd: 65,
     xauUsd: 4100,
     usdInr: 86,
     dxy: 97,
     real10y: 1.5,
     breakeven10y: 2.3,
-    xagHistory: [],
+    metalHistory: [],
     xauHistory: [],
     dxyHistory: [],
     real10yHistory: [],
@@ -44,7 +44,7 @@ function mcxFixture(over: Partial<McxData["mcx"]> = {}): McxData {
     asOf: new Date().toISOString(),
     stale: false,
     partial: false,
-    mcx: { symbol: "SILVER", silverFut: 90000, prevClose: 89000, expiry: null, dte: 30, oi: 12000, oiChg: 1000, ...over },
+    mcx: { symbol: "SILVER", fut: 90000, prevClose: 89000, expiry: null, dte: 30, oi: 12000, oiChg: 1000, ...over },
     options: { atmStrike: 90000, atmIv: 0.4, ivRank: 70, ivPercentile: 65, rv20: 0.3, expectedMove1sd: 4000, chain: [] },
     basis: { fairValue: 88000, basis: 2000 },
     events: [],
@@ -68,7 +68,7 @@ function makeHS(horizon: HorizonScore["horizon"], score: number): HorizonScore {
 describe("scoreHorizon", () => {
   it("reads bullish when momentum + positioning + deficit bias all point up", () => {
     const live = emptyLive({
-      xagHistory: momentum(60, 80),
+      metalHistory: momentum(60, 80),
       xauHistory: momentum(4000, 4400),
     });
     const hs = scoreHorizon("1M", live, mcxFixture());
@@ -79,18 +79,18 @@ describe("scoreHorizon", () => {
   it("reads bearish when momentum points down (on 1D, where structural bias is off)", () => {
     // On 1D the standing bullish deficit-bias weight is 0, so price action dominates.
     const live = emptyLive({
-      xagHistory: momentum(80, 60),
+      metalHistory: momentum(80, 60),
       xauHistory: momentum(4400, 4000),
     });
-    const hs = scoreHorizon("1D", live, mcxFixture({ silverFut: 87000, prevClose: 90000, oiChg: 1000 }));
+    const hs = scoreHorizon("1D", live, mcxFixture({ fut: 87000, prevClose: 90000, oiChg: 1000 }));
     expect(hs.bucket).toBe("bearish");
     expect(hs.score).toBeLessThan(-3);
   });
 
   it("structural deficit bias cushions bearish momentum on the 1M horizon", () => {
-    const bear = emptyLive({ xagHistory: momentum(80, 60), xauHistory: momentum(4400, 4000) });
-    const bull = emptyLive({ xagHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
-    const bearScore = scoreHorizon("1M", bear, mcxFixture({ silverFut: 89000, prevClose: 90000 })).score;
+    const bear = emptyLive({ metalHistory: momentum(80, 60), xauHistory: momentum(4400, 4000) });
+    const bull = emptyLive({ metalHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
+    const bearScore = scoreHorizon("1M", bear, mcxFixture({ fut: 89000, prevClose: 90000 })).score;
     const bullScore = scoreHorizon("1M", bull, mcxFixture()).score;
     expect(bearScore).toBeLessThan(bullScore);
     expect(bearScore).toBeLessThan(0); // still net bearish, just dampened
@@ -98,7 +98,7 @@ describe("scoreHorizon", () => {
 
   it("redistributes weight across present factors and zeroes the missing ones", () => {
     // Only momentum + positioning + deficit bias are available (no FX/yield history).
-    const live = emptyLive({ xagHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
+    const live = emptyLive({ metalHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
     const hs = scoreHorizon("1M", live, mcxFixture());
     const present = hs.factors.filter((f) => f.present);
     const missing = hs.factors.filter((f) => !f.present);
@@ -108,7 +108,7 @@ describe("scoreHorizon", () => {
   });
 
   it("confidence-gates: stale data shrinks the score toward zero", () => {
-    const live = emptyLive({ xagHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
+    const live = emptyLive({ metalHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
     const fresh = scoreHorizon("1M", live, mcxFixture());
     const stale = scoreHorizon("1M", live, { ...mcxFixture(), stale: true });
     expect(stale.confidence).toBeLessThan(fresh.confidence);
@@ -116,7 +116,7 @@ describe("scoreHorizon", () => {
   });
 
   it("never lets |score| exceed |rawScore| (confidence in [0,1])", () => {
-    const live = emptyLive({ xagHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
+    const live = emptyLive({ metalHistory: momentum(60, 80), xauHistory: momentum(4000, 4400) });
     const all = scoreAllHorizons(live, mcxFixture());
     for (const h of Object.values(all)) {
       expect(Math.abs(h.score)).toBeLessThanOrEqual(Math.abs(h.rawScore) + 1e-9);
@@ -135,12 +135,12 @@ describe("scoreHorizon", () => {
   it("long-trend factor activates with deep history and stays out on short history", () => {
     const long: Point[] = [];
     for (let i = 0; i < 250; i++) long.push({ t: `d${i}`, v: 60 + i * 0.1 }); // steady uptrend
-    const withDeep = scoreHorizon("1M", emptyLive({ xagHistory: long }), mcxFixture());
+    const withDeep = scoreHorizon("1M", emptyLive({ metalHistory: long }), mcxFixture());
     const lt = withDeep.factors.find((f) => f.key === "longTrend");
     expect(lt?.present).toBe(true);
     expect(lt!.s).toBeGreaterThan(0); // price above its long MA
 
-    const short = scoreHorizon("1M", emptyLive({ xagHistory: momentum(60, 80) }), mcxFixture());
+    const short = scoreHorizon("1M", emptyLive({ metalHistory: momentum(60, 80) }), mcxFixture());
     expect(short.factors.find((f) => f.key === "longTrend")?.present).toBe(false);
   });
 
@@ -152,8 +152,8 @@ describe("scoreHorizon", () => {
     const wild: Point[] = [];
     for (let i = 0; i < 59; i++) wild.push({ t: `d${i}`, v: 100 + Math.sin(i * 1.3) * 8 });
     wild.push({ t: "d59", v: 105 });
-    const sQuiet = scoreHorizon("1W", emptyLive({ xagHistory: quiet }), mcxFixture());
-    const sWild = scoreHorizon("1W", emptyLive({ xagHistory: wild }), mcxFixture());
+    const sQuiet = scoreHorizon("1W", emptyLive({ metalHistory: quiet }), mcxFixture());
+    const sWild = scoreHorizon("1W", emptyLive({ metalHistory: wild }), mcxFixture());
     const fQuiet = sQuiet.factors.find((f) => f.key === "silverMomo")!;
     const fWild = sWild.factors.find((f) => f.key === "silverMomo")!;
     expect(fQuiet.s).toBeGreaterThan(fWild.s);
@@ -162,7 +162,7 @@ describe("scoreHorizon", () => {
   it("gives zero score and confidence when no factors are available", () => {
     const hs = scoreHorizon("1D", emptyLive(), {
       ...mcxFixture(),
-      mcx: { symbol: "S", silverFut: null, prevClose: null, expiry: null, dte: null, oi: null, oiChg: null },
+      mcx: { symbol: "S", fut: null, prevClose: null, expiry: null, dte: null, oi: null, oiChg: null },
     });
     expect(hs.score).toBe(0);
     expect(hs.confidence).toBe(0);

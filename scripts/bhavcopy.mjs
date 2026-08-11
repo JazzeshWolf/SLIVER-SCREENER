@@ -130,7 +130,7 @@ export function toRaw(rows, symbol, todayIso, prevRows = null) {
 
   return {
     symbol: cur.symbol,
-    silverFut: cur.future.close,
+    fut: cur.future.close,
     prevClose: cur.future.prevClose ?? null,
     expiry: cur.expiry,
     oi: cur.future.oi ?? null,

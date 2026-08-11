@@ -14,7 +14,7 @@ export interface Point {
 
 /** Live, browser-fetched market inputs (international + FX + rates). */
 export interface LiveInputs {
-  xagUsd: number | null; // silver spot, $/oz
+  metalUsd: number | null; // silver spot, $/oz
   xauUsd: number | null; // gold spot, $/oz
   usdInr: number | null; // ₹ per $
   dxy: number | null; // dollar index (ICE DXY, or Fed Broad USD when usdBroad)
@@ -22,7 +22,7 @@ export interface LiveInputs {
   real10y: number | null; // 10y TIPS real yield, % (FRED DFII10)
   breakeven10y: number | null; // 10y breakeven inflation, % (DGS10 - DFII10)
   // Short history for momentum/z-scores (oldest -> newest). May be empty.
-  xagHistory: Point[];
+  metalHistory: Point[];
   xauHistory: Point[];
   dxyHistory: Point[];
   real10yHistory: Point[];
@@ -48,12 +48,12 @@ export interface McxData {
   // When true, MCX price/IV are derived from international parity + realized vol
   // (no live exchange feed available), and should be labelled as estimates.
   estimated?: boolean;
-  // Set client-side: the server snapshot was stale, so silverFut/fairValue were
+  // Set client-side: the server snapshot was stale, so fut/fairValue were
   // recomputed from live browser spot × parity + last basis. OI/IV stay server.
   liveParity?: boolean;
   mcx: {
     symbol: string;
-    silverFut: number | null; // ₹/kg
+    fut: number | null; // ₹/kg
     prevClose: number | null;
     expiry: string | null; // future expiry — drives basis convergence
     dte: number | null; // days to FUTURE expiry
@@ -115,7 +115,7 @@ export interface ExpiryBundle {
   optionExpiry: string; // option expiry — what a seller trades (ISO date)
   dte: number; // days to future expiry
   optionDte: number; // days to option expiry
-  silverFut: number | null; // ₹/kg for this contract month
+  fut: number | null; // ₹/kg for this contract month
   prevClose: number | null;
   oi: number | null;
   oiChg: number | null;
@@ -282,7 +282,7 @@ export interface SellScreen {
   candidates: SellCandidate[]; // every OTM leg, best CONV first (rejects included)
   forecastVol: number | null; // the vol the probabilities were computed at
   drift: number | null; // annualized drift applied
-  lotKg: number;
+  lotUnits: number;
   confidence: number; // 0..1 data-quality shrink applied to every CONV
   smileFitted: boolean; // false when the chain was too thin to fit a smile
 }

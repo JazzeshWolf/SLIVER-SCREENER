@@ -7,7 +7,7 @@ const WINDOW = 18; // strikes each side of ATM
 
 export function OptionChainTable({ mcx }: { mcx: McxData }) {
   const chain = mcx.options.chain ?? [];
-  const spot = mcx.mcx.silverFut;
+  const spot = mcx.mcx.fut;
   const [delta, setDelta] = useState(false);
   const canDelta = hasOiChg(chain);
   const showDelta = delta && canDelta;

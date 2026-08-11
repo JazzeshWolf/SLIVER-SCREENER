@@ -72,40 +72,81 @@ function expiryToIso(e) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
-const norm = (r) => {
+export const norm = (r) => {
   const type = String(r.instrument_type ?? r.instrumentType ?? "").toUpperCase();
   const optType = String(r.option_type ?? r.optionType ?? "").toUpperCase();
   const names = [r.name, r.underlying_symbol, r.underlyingSymbol, r.asset_symbol, r.assetSymbol]
     .filter(Boolean)
     .map((x) => String(x).toUpperCase());
+  // An option on a future is typed "OPTFUT" by some feeds — which CONTAINS
+  // "FUT". Classifying options first and excluding them from isFuture stops an
+  // option row being picked as its own underlying future (which would price the
+  // whole chain off an option's LTP). Upstox currently sends CE/PE for MCX, so
+  // this never fired in production, but the failure would have been silent.
+  const isOption =
+    type.includes("OPT") || optType === "CE" || optType === "PE" || type === "CE" || type === "PE";
   return {
     key: r.instrument_key ?? r.instrumentKey,
     names,
     tradingSymbol: String(r.trading_symbol ?? r.tradingsymbol ?? "").toUpperCase(),
     type,
     optionType: optType === "CE" || optType === "PE" ? optType : type === "CE" || type === "PE" ? type : null,
-    isFuture: type.includes("FUT"),
-    isOption: type.includes("OPT") || optType === "CE" || optType === "PE" || type === "CE" || type === "PE",
+    isFuture: !isOption && type.includes("FUT"),
+    isOption,
     expiry: expiryToIso(r.expiry),
     strike: Number(r.strike_price ?? r.strikePrice ?? 0) || 0,
   };
 };
 
-function matchesSymbol(r, sym) {
-  return r.names.includes(sym) || r.tradingSymbol.startsWith(sym);
+function rawMatch(r, sym) {
+  if (r.names.includes(sym)) return true;
+  const ts = r.tradingSymbol;
+  if (!ts.startsWith(sym)) return false;
+  // A trading symbol continues into an expiry (a digit), never into another
+  // letter — so a non-letter here marks a real symbol boundary.
+  const next = ts.charAt(sym.length);
+  return next === "" || !/[A-Z]/.test(next);
 }
 
-/** Front-month future + option instrument keys for `symbol` (e.g. SILVERM). */
-export function pickContract(instruments, symbol, todayIso) {
+/**
+ * Does instrument row `r` belong to contract `sym` (e.g. "SILVERM", "GOLDM")?
+ *
+ * This is the single most safety-critical predicate in the pipeline. It used to
+ * be `names.includes(sym) || tradingSymbol.startsWith(sym)`, which made "GOLD"
+ * match GOLDM/GOLDPETAL and "SILVER" match SILVERM/SILVERMIC — mixing contracts
+ * whose lot sizes differ by 10–30× into one chain. Every ₹-per-lot number
+ * downstream (credit, margin, position P&L) would then be silently wrong.
+ *
+ * Two defences, because the two match paths fail differently:
+ *  1. Trading-symbol matches must land on a symbol boundary (see rawMatch).
+ *  2. `siblings` — other contract symbols in the registry. A row that also
+ *     matches a LONGER sibling belongs to that sibling, not here. This covers
+ *     the case the boundary rule can't: a feed that puts the base commodity
+ *     ("GOLD") in the `name` field of a GOLDM row.
+ */
+export function matchesSymbol(r, sym, siblings = []) {
+  if (!rawMatch(r, sym)) return false;
+  for (const s of siblings) {
+    if (s.length > sym.length && rawMatch(r, s)) return false;
+  }
+  return true;
+}
+
+/**
+ * Front-month future + option instrument keys for `symbol` (e.g. SILVERM).
+ * `siblings` = every other contract symbol the registry knows, so a longer
+ * relative (SILVERMIC vs SILVERM) can never leak into this contract's chain.
+ */
+export function pickContract(instruments, symbol, todayIso, siblings = []) {
   const sym = symbol.toUpperCase();
-  const rows = instruments.map(norm).filter((r) => r.key && matchesSymbol(r, sym));
+  const rows = instruments.map(norm).filter((r) => r.key && matchesSymbol(r, sym, siblings));
   const futs = rows.filter((r) => r.isFuture && r.expiry);
   if (!futs.length) return null;
   const expiries = [...new Set(futs.map((f) => f.expiry))].sort();
   const expiry = expiries.find((e) => e >= todayIso) ?? expiries[0];
   const future = futs.find((f) => f.expiry === expiry);
   if (!future) return null;
-  // MCX silver OPTIONS expire a few days BEFORE the future, so they do NOT share
+  // MCX metal OPTIONS can expire days BEFORE the future, so they do NOT share
   // the future's expiry — pick the options' own nearest expiry independently.
   const optRows = rows.filter((r) => r.isOption && r.expiry && r.optionType && r.strike > 0);
   const optExpiries = [...new Set(optRows.map((r) => r.expiry))].sort();
@@ -119,13 +160,13 @@ export function pickContract(instruments, symbol, todayIso) {
 
 /**
  * Front + subsequent monthly option expiries, each paired with its underlying
- * future (MCX silver options are on the corresponding monthly future). Returns
+ * future (MCX metal options are on the corresponding monthly future). Returns
  * up to `maxN` upcoming expiries, nearest first — the data behind the expiry
  * selector. Each entry: { optionExpiry, expiry (future), future, options[] }.
  */
-export function pickChainContracts(instruments, symbol, todayIso, maxN = 4) {
+export function pickChainContracts(instruments, symbol, todayIso, maxN = 4, siblings = []) {
   const sym = symbol.toUpperCase();
-  const rows = instruments.map(norm).filter((r) => r.key && matchesSymbol(r, sym));
+  const rows = instruments.map(norm).filter((r) => r.key && matchesSymbol(r, sym, siblings));
   const futs = rows.filter((r) => r.isFuture && r.expiry).sort((a, b) => (a.expiry < b.expiry ? -1 : 1));
   if (!futs.length) return [];
   const optRows = rows.filter((r) => r.isOption && r.expiry && r.optionType && r.strike > 0);

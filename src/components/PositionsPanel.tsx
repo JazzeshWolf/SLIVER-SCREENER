@@ -8,20 +8,21 @@ import {
   probabilityOfTouch,
 } from "../lib/options";
 import { cacheGet, cacheSet } from "../lib/cache";
-import { LOT_KG, SYMBOL_LABELS } from "../lib/instrument";
+import { contractsFor, lotUnitsFor, metalForSymbol } from "../lib/instrument";
 import { Card, SectionTitle, Pill, fmtInt } from "./ui";
 
-/** A sold option the user is carrying. Prices are in ₹/kg (MCX quote units). */
+/** A sold option the user is carrying. Prices are in the metal's quote unit
+ * (₹/kg for silver & copper, ₹/10g for gold) — see metals.mjs. */
 export interface SoldPosition {
   id: string;
   type: "CE" | "PE";
   strike: number;
-  premium: number; // the price the option was SOLD at, ₹/kg
+  premium: number; // the price the option was SOLD at, per quote unit
   lots: number;
-  lotKg: number; // 1 = SILVERMIC, 5 = SILVERM, 30 = SILVER
+  lotUnits: number; // ₹ quote units per lot (SILVERM 5, GOLDM 10, COPPER 2500)
   expiry: string; // ISO date of the option expiry
   openedAt: string; // ISO date
-  manualCmp?: number | null; // user-entered current option price (₹/kg)
+  manualCmp?: number | null; // user-entered current option price, per quote unit
   manualCmpAt?: string | null; // ISO date the CMP was entered
 }
 
@@ -58,7 +59,11 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
 
-  const F = mcx.mcx.silverFut;
+  const F = mcx.mcx.fut;
+  // Contract specs come from the feed's own symbol, so a position can never
+  // be priced with a different metal's lot multiplier than the chain it sits on.
+  const metal = metalForSymbol(mcx.mcx.symbol);
+  const defaultLotUnits = lotUnitsFor(metal, mcx.mcx.symbol);
   const atmIv = mcx.options.atmIv;
   const chain = mcx.options.chain ?? [];
 
@@ -77,7 +82,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
     premium: "",
     cmp: "",
     lots: "1",
-    lotKg: "5",
+    lotUnits: String(defaultLotUnits),
     expiry: expiries[0] ?? "",
   });
   const [cmpEdit, setCmpEdit] = useState<{ id: string; value: string } | null>(null);
@@ -93,15 +98,15 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
     const cmp = Number(form.cmp);
     const expiry = form.expiry || expiries[0];
     if (!(strike > 0)) return setError("Enter the strike you sold.");
-    if (!(premium > 0)) return setError("Enter the price you SOLD the option at (₹/kg) — e.g. 2500.");
+    if (!(premium > 0)) return setError(`Enter the price you SOLD the option at (${metal.quoteUnit}).`);
     if (!expiry) return setError("Pick an expiry month.");
     const lots = Math.max(1, Math.round(Number(form.lots) || 1));
-    const lotKg = Number(form.lotKg) || 5;
+    const lotUnits = Number(form.lotUnits) || defaultLotUnits;
     const today = new Date().toISOString().slice(0, 10);
     save([
       ...positions,
       {
-        id: `${Date.now()}`, type: form.type, strike, premium, lots, lotKg, expiry, openedAt: today,
+        id: `${Date.now()}`, type: form.type, strike, premium, lots, lotUnits, expiry, openedAt: today,
         manualCmp: cmp > 0 ? cmp : null,
         manualCmpAt: cmp > 0 ? today : null,
       },
@@ -162,9 +167,9 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
         source = "model est.";
       }
 
-      const pnlPerKg = p.premium - current;
-      const pnl = pnlPerKg * p.lotKg * p.lots;
-      const captured = p.premium > 0 ? (pnlPerKg / p.premium) * 100 : null;
+      const pnlPerUnit = p.premium - current;
+      const pnl = pnlPerUnit * p.lotUnits * p.lots;
+      const captured = p.premium > 0 ? (pnlPerUnit / p.premium) * 100 : null;
       const probItm = p.type === "CE" ? probabilityAbove(F, p.strike, iv, t) : probabilityBelow(F, p.strike, iv, t);
       const touch = probabilityOfTouch(F, p.strike, iv, t);
       const cushion = cushionSigma(F, p.strike, iv, t);
@@ -202,7 +207,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
                 <span className="text-sm font-semibold text-white/90">
                   {r.p.type === "CE" ? "Sold CALL" : "Sold PUT"} <span className="tnum">{fmtInt(r.p.strike)}</span>
                   <span className="text-white/40 text-[10px] font-normal ml-1.5">
-                    {r.p.lots}×{r.p.lotKg}kg · prem {fmtInt(r.p.premium)}
+                    {r.p.lots}×{r.p.lotUnits}{metal.lotNoun} · prem {fmtInt(r.p.premium)}
                   </span>
                 </span>
                 <span className="flex items-center gap-2">
@@ -274,19 +279,19 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Strike (₹/kg)" value={form.strike} onInput={(v) => setForm({ ...form, strike: v })} placeholder={F ? String(Math.round((F * (form.type === "CE" ? 1.06 : 0.94)) / 500) * 500) : ""} />
+            <Field label={`Strike (${metal.quoteUnit})`} value={form.strike} onInput={(v) => setForm({ ...form, strike: v })} placeholder={F ? String(Math.round((F * (form.type === "CE" ? 1.06 : 0.94)) / 500) * 500) : ""} />
             <Field label="Sold at (option price) *" value={form.premium} onInput={(v) => setForm({ ...form, premium: v })} placeholder="e.g. 2500" />
             <Field label="Option CMP now (optional)" value={form.cmp} onInput={(v) => setForm({ ...form, cmp: v })} placeholder="today's price" />
             <Field label="Lots" value={form.lots} onInput={(v) => setForm({ ...form, lots: v })} />
             <label className="text-[10px] uppercase text-white/40">
               Contract
               <select
-                value={form.lotKg}
-                onChange={(e) => setForm({ ...form, lotKg: (e.target as HTMLSelectElement).value })}
+                value={form.lotUnits}
+                onChange={(e) => setForm({ ...form, lotUnits: (e.target as HTMLSelectElement).value })}
                 className="mt-1 w-full rounded-lg bg-black/30 border border-white/10 px-2 py-1.5 text-sm text-white"
               >
-                {SYMBOL_LABELS.map(({ symbol, label }) => (
-                  <option key={symbol} value={String(LOT_KG[symbol])}>
+                {contractsFor(metal).map(({ symbol, label }) => (
+                  <option key={symbol} value={String(lotUnitsFor(metal, symbol))}>
                     {label}
                   </option>
                 ))}
@@ -315,7 +320,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
             </button>
           </div>
           <p className="text-[10px] text-white/30">
-            * "Sold at" = the option's price when you sold it (that price IS your premium, in ₹/kg).
+            * "Sold at" = the option's price when you sold it (that price IS your premium, in {metal.quoteUnit}).
             CMP is optional — if the strike is quoted live we use the exchange price automatically.
           </p>
         </div>
@@ -327,7 +332,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
 
       {rows.length > 0 && (
         <p className="text-[10px] text-white/30 mt-2">
-          P&L = (sold at − current) × kg. Current price source shown per row: live mkt (exchange quote)
+          P&L = (sold at − current) × {metal.lotNoun}. Current price source shown per row: live mkt (exchange quote)
           → your CMP → model est. Breach/touch odds from Black-76 at live IV. Excludes brokerage/taxes.
           Stored only on this device.
         </p>

@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import type { McxData } from "../lib/types";
+import type { MetalConfig } from "../lib/instrument";
 import { Card, SectionTitle, Pill, Implication, fmtInt, pct } from "./ui";
 
 export function BasisPanel({
@@ -7,11 +8,17 @@ export function BasisPanel({
   derived,
 }: {
   mcx: McxData;
-  derived: { fairValue: number | null; basis: number | null; premiumPct: number | null };
+  derived: {
+    metal: MetalConfig;
+    fairValue: number | null;
+    basis: number | null;
+    premiumPct: number | null;
+  };
 }) {
+  const metal = derived.metal;
   const b = derived.basis;
   const fv = derived.fairValue;
-  const fut = mcx.mcx.silverFut;
+  const fut = mcx.mcx.fut;
   const pp = derived.premiumPct;
   const dte = mcx.mcx.dte;
 
@@ -23,10 +30,10 @@ export function BasisPanel({
   if (pp != null) {
     if (pp > 0.5) {
       bTone = "bull";
-      bText = `MCX trades ~${pp.toFixed(1)}% ABOVE landed-import fair value — a domestic PREMIUM. Local tightness (15% duty + import curbs) is making physical silver scarce, so buyers pay up. Supportive for MCX vs global; and for a short-call seller a rich premium that deflates into expiry is a tailwind.`;
+      bText = `MCX trades ~${pp.toFixed(1)}% ABOVE landed-import fair value — a domestic PREMIUM. Local tightness (${(metal.duty * 100).toFixed(0)}% duty + import curbs) is making physical ${metal.label.toLowerCase()} scarce, so buyers pay up. Supportive for MCX vs global; and for a short-call seller a rich premium that deflates into expiry is a tailwind.`;
     } else if (pp < -0.5) {
       bTone = "bear";
-      bText = `MCX trades ~${Math.abs(pp).toFixed(1)}% BELOW fair value — a DISCOUNT. Weak local demand or ample supply; MCX may lag global silver. A soft local signal.`;
+      bText = `MCX trades ~${Math.abs(pp).toFixed(1)}% BELOW fair value — a DISCOUNT. Weak local demand or ample supply; MCX may lag global ${metal.label.toLowerCase()}. A soft local signal.`;
     } else {
       bTone = "neutral";
       bText = `MCX is trading right on import-parity fair value — cleanly tracking global silver with no domestic premium or discount distorting the price.`;
@@ -57,9 +64,17 @@ export function BasisPanel({
         </div>
         <Implication tone={bTone}>{bText}</Implication>
         <p className="text-[10px] text-white/30 mt-2">
-          FV = spot × 32.1507 × USD-INR × (1 + 15% duty + 3% GST). Basis = how far MCX sits above/below
-          that landed-import cost.
+          FV = spot ({metal.intlUnit}) × {metal.unitMult.toFixed(6).replace(/0+$/, "")} × USD-INR × (1 +{" "}
+          {(metal.duty * 100).toFixed(0)}% duty + {(metal.gst * 100).toFixed(0)}% GST) → {metal.quoteUnit}.
+          Basis = how far MCX sits above/below that landed-import cost.
         </p>
+        {metal.parityConfidence === "approximate" && (
+          <p className="text-[10px] text-amber-300/70 mt-1.5 leading-relaxed">
+            ⚠ Approximate for {metal.label.toLowerCase()}: the free price feed is COMEX, but MCX tracks
+            LME, and the US §232 tariff has held those far apart. Read the DIRECTION of this basis, not
+            its level.
+          </p>
+        )}
       </Card>
 
       <Card>

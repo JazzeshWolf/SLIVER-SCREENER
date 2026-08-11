@@ -138,7 +138,7 @@ export function App() {
               <>
                 <FearGauge mcx={dash.mcx} />
                 <ExpectedMoveCone mcx={dash.mcx} events={dash.mcx.events} />
-                <GexCard gex={dash.mcx.gex} fut={dash.mcx.mcx.silverFut} />
+                <GexCard gex={dash.mcx.gex} fut={dash.mcx.mcx.fut} />
                 <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} />
               </>
             )}

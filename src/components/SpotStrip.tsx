@@ -30,11 +30,11 @@ function dirOf(hist: { v: number }[]): number | null {
 }
 
 export function SpotStrip({ live, mcx }: { live: LiveInputs; mcx: McxData | null }) {
-  const gsr = live.xauUsd && live.xagUsd ? live.xauUsd / live.xagUsd : null;
+  const gsr = live.xauUsd && live.metalUsd ? live.xauUsd / live.metalUsd : null;
   return (
     <Card>
       <div className="grid grid-cols-3 gap-y-3 gap-x-2">
-        <Cell label="Silver $/oz" value={fmt(live.xagUsd)} dir={dirOf(live.xagHistory)} />
+        <Cell label="Silver $/oz" value={fmt(live.metalUsd)} dir={dirOf(live.metalHistory)} />
         <Cell label="Gold $/oz" value={fmt(live.xauUsd, 0)} dir={dirOf(live.xauHistory)} />
         <Cell label="GSR" value={fmt(gsr, 1)} />
         <Cell label={live.usdBroad ? "USD idx" : "DXY"} value={fmt(live.dxy, 1)} dir={dirOf(live.dxyHistory)} />
@@ -42,8 +42,8 @@ export function SpotStrip({ live, mcx }: { live: LiveInputs; mcx: McxData | null
         <Cell label="Real 10y" value={live.real10y == null ? "—" : `${fmt(live.real10y)}%`} />
         <Cell
           label="MCX ₹/kg"
-          value={fmtInt(mcx?.mcx.silverFut ?? null)}
-          sub={mcx?.mcx.silverFut && mcx.mcx.prevClose ? `${arrow(mcx.mcx.silverFut - mcx.mcx.prevClose)} prev ${fmtInt(mcx.mcx.prevClose)}` : undefined}
+          value={fmtInt(mcx?.mcx.fut ?? null)}
+          sub={mcx?.mcx.fut && mcx.mcx.prevClose ? `${arrow(mcx.mcx.fut - mcx.mcx.prevClose)} prev ${fmtInt(mcx.mcx.prevClose)}` : undefined}
         />
         <Cell label="MCX OI" value={fmtInt(mcx?.mcx.oi ?? null)} sub={mcx?.mcx.oiChg != null ? `${arrow(mcx.mcx.oiChg)} ${fmtInt(Math.abs(mcx.mcx.oiChg))}` : undefined} />
         <Cell

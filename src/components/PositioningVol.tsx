@@ -6,7 +6,7 @@ export function PositioningVol({ mcx }: { mcx: McxData }) {
   const chain = mcx.options.chain ?? [];
   if (!chain.length) return null;
   const o = mcx.options;
-  const spot = mcx.mcx.silverFut;
+  const spot = mcx.mcx.fut;
 
   const ratio = pcr(chain);
   const pcrLabel = ratio == null ? "—" : ratio > 1.15 ? "put-heavy (support)" : ratio < 0.85 ? "call-heavy (pressure)" : "balanced";

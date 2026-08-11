@@ -1,32 +1,35 @@
 // ---------------------------------------------------------------------------
-// MCX silver contract specs. One source of truth for lot size, so the position
-// tracker and the sell screener always agree on what "one lot" means.
+// Contract specs, resolved through the metal registry (metals.mjs). One source
+// of truth for how a quoted premium becomes ₹ per lot, so the position tracker
+// and the sell screener can never disagree about what "one lot" means.
+//
+// Everything here is a thin, typed wrapper over the registry — the constants
+// themselves live in metals.mjs because scripts/build-data.mjs needs them too.
 // ---------------------------------------------------------------------------
 
-export type SilverSymbol = "SILVER" | "SILVERM" | "SILVERMIC";
+import { metalFor, metalForSymbol, quoteUnitsPerLot } from "./metals.mjs";
+import type { MetalConfig, MetalContract } from "./metals.mjs";
 
-/** Contract size in kg. Premiums and futures are quoted in ₹/kg on MCX. */
-export const LOT_KG: Record<SilverSymbol, number> = {
-  SILVER: 30,
-  SILVERM: 5,
-  SILVERMIC: 1,
-};
+export { metalFor, metalForSymbol };
+export type { MetalConfig, MetalContract };
 
-export const SYMBOL_LABELS: { symbol: SilverSymbol; label: string }[] = [
-  { symbol: "SILVER", label: "SILVER (30 kg)" },
-  { symbol: "SILVERM", label: "SILVERM (5 kg)" },
-  { symbol: "SILVERMIC", label: "SILVERMIC (1 kg)" },
-];
-
-/** Normalize whatever the feed calls the contract into a known symbol. */
-export function normalizeSymbol(symbol: string | null | undefined): SilverSymbol {
-  const s = (symbol ?? "").toUpperCase();
-  if (s.includes("MIC")) return "SILVERMIC";
-  if (s.includes("SILVERM") || s.endsWith("M")) return "SILVERM";
-  return "SILVER";
+/** The contracts a metal lists, for the lot-size dropdowns. */
+export function contractsFor(metal: MetalConfig): MetalContract[] {
+  return metal.contracts;
 }
 
-/** Lot size in kg for the feed's symbol, defaulting to the mini contract. */
-export function lotKgFor(symbol: string | null | undefined): number {
-  return LOT_KG[normalizeSymbol(symbol)];
+/**
+ * ₹ quote units in one lot — the multiplier from a quoted premium to ₹/lot.
+ *
+ * Deliberately NOT called "lot size in kg": MCX quotes gold in ₹ per 10 g but
+ * sells it in 100 g lots, so this returns 10 for GOLDM, not 100. Every ₹/lot
+ * figure in the app (credit, margin, position P&L) routes through here.
+ */
+export function lotUnitsFor(metal: MetalConfig, symbol: string | null | undefined): number {
+  return quoteUnitsPerLot(metal, symbol);
+}
+
+/** Lot units for a bare MCX symbol, resolving its metal first. */
+export function lotUnitsForSymbol(symbol: string | null | undefined): number {
+  return quoteUnitsPerLot(metalForSymbol(symbol), symbol);
 }

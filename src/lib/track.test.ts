@@ -15,13 +15,13 @@ function liveFixture(n = 220): LiveInputs {
   // Drifting-up silver with realistic wobble; supportive macro backdrop.
   const noise = (i: number) => Math.sin(i * 0.7) * 1.2 + Math.sin(i * 0.23) * 2.1;
   return {
-    xagUsd: 70,
+    metalUsd: 70,
     xauUsd: 4300,
     usdInr: 88,
     dxy: 100,
     real10y: 1.5,
     breakeven10y: 2.3,
-    xagHistory: series(n, (i) => 60 + i * 0.08 + noise(i)),
+    metalHistory: series(n, (i) => 60 + i * 0.08 + noise(i)),
     xauHistory: series(n, (i) => 4000 + i * 2 + noise(i) * 8),
     dxyHistory: series(n, (i) => 106 - i * 0.03 + Math.sin(i * 0.5) * 0.4),
     real10yHistory: series(n, (i) => 2.4 - i * 0.004 + Math.sin(i * 0.4) * 0.05),

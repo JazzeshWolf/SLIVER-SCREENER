@@ -32,7 +32,7 @@ const MCX_STUB: McxData = {
   asOf: "",
   stale: false,
   partial: false,
-  mcx: { symbol: "XAG", silverFut: null, prevClose: null, expiry: null, dte: null, oi: null, oiChg: null },
+  mcx: { symbol: "XAG", fut: null, prevClose: null, expiry: null, dte: null, oi: null, oiChg: null },
   options: { atmStrike: null, atmIv: null, ivRank: null, ivPercentile: null, rv20: null, expectedMove1sd: null, chain: [] },
   basis: { fairValue: null, basis: null },
   events: [],
@@ -42,7 +42,7 @@ function truncate(live: LiveInputs, date: string): LiveInputs {
   const cut = (pts: Point[]) => pts.filter((p) => p.t <= date);
   return {
     ...live,
-    xagHistory: cut(live.xagHistory),
+    metalHistory: cut(live.metalHistory),
     xauHistory: cut(live.xauHistory),
     dxyHistory: cut(live.dxyHistory),
     real10yHistory: cut(live.real10yHistory),
@@ -52,7 +52,7 @@ function truncate(live: LiveInputs, date: string): LiveInputs {
 }
 
 export function walkForwardHitRate(live: LiveInputs, sampleDays = 60): TrackResult | null {
-  const xag = live.xagHistory;
+  const xag = live.metalHistory;
   if (xag.length < 90) return null; // need history + lookahead to say anything
 
   const counts = { "1W": { n: 0, hits: 0 }, "1M": { n: 0, hits: 0 } };

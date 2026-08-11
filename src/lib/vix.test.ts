@@ -6,7 +6,7 @@ import type { ExpiryBundle } from "./types";
 function ex(optionDte: number, atmIv: number | null, ivEstimated = false): ExpiryBundle {
   return {
     expiry: "", optionExpiry: "", dte: optionDte, optionDte,
-    silverFut: null, prevClose: null, oi: null, oiChg: null, atmStrike: null,
+    fut: null, prevClose: null, oi: null, oiChg: null, atmStrike: null,
     atmIv, ivEstimated, ivRank: null, ivPercentile: null, ivRankEstimated: true,
     expectedMove1sd: null, gex: null, basis: { fairValue: null, basis: null }, chain: [],
   };
