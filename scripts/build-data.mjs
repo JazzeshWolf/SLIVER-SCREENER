@@ -23,24 +23,36 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { toRaw } from "./bhavcopy.mjs";
 import * as upstox from "./upstox.mjs";
-import { metalFor, parityMult, allContractSymbols } from "../src/lib/metals.mjs";
+import {
+  METALS,
+  METAL_IDS,
+  DEFAULT_METAL,
+  parityMult,
+  strikeStep,
+  allContractSymbols,
+} from "../src/lib/metals.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, "../public/data");
 const LATEST = resolve(DATA_DIR, "latest.json");
 
-// Which metal this run builds. The parity constants (oz/kg, duty, GST) used
-// to be duplicated here and in src/lib/basis.ts and had to be kept in sync by
-// hand; they now come from the shared registry so client and builder cannot
-// disagree. MCX_SYMBOL still overrides the contract for one-off runs.
-const METAL = metalFor(process.env.METAL || "silver");
-const MCX_SYMBOL = (process.env.MCX_SYMBOL || METAL.feedSymbol).toUpperCase();
-const PARITY_MULT = parityMult(METAL);
+// Which metals this run builds. Defaults to all of them; set METALS_ONLY to a
+// comma-separated list (e.g. "silver,gold") to narrow a debugging run.
+// The parity constants (oz/kg, duty, GST) used to be duplicated here and in
+// src/lib/basis.ts and kept in sync by hand; they now come from the shared
+// registry so client and builder cannot disagree.
+const BUILD_METALS = (process.env.METALS_ONLY || METAL_IDS.join(","))
+  .split(",")
+  .map((x) => x.trim().toLowerCase())
+  .filter((x) => METAL_IDS.includes(x));
 // Every contract symbol the registry knows — passed to the instrument matcher
 // so a longer relative (SILVERMIC vs SILVERM) never leaks into this chain.
 const CONTRACT_SYMBOLS = allContractSymbols();
 
 // --- small stats -----------------------------------------------------------
+/** Newest value of a {t,v} series, or null when empty. */
+const last = (h) => (h && h.length ? h[h.length - 1].v : null);
+
 function std(xs) {
   if (xs.length < 2) return NaN;
   const m = xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -199,22 +211,22 @@ async function fredSeries(id) {
   }
 }
 
-// --- CFTC Commitments of Traders (silver positioning, weekly) --------------
+// --- CFTC Commitments of Traders (weekly speculative positioning) ---------
 // Free Socrata JSON API. Managed-money net (disaggregated) preferred; legacy
-// non-commercial net as fallback. COMEX silver contract code = 084691.
-async function fetchCot() {
-  const SILVER = "084691";
+// non-commercial net as fallback. Contract codes come from the registry
+// (silver 084691, gold 088691, copper 085692) — same endpoint, same shape.
+async function fetchCot(contractCode) {
   const sources = [
     { id: "72hh-3qpy", long: "m_money_positions_long_all", short: "m_money_positions_short_all", label: "managed money" },
     { id: "6dca-aqww", long: "noncomm_positions_long_all", short: "noncomm_positions_short_all", label: "non-commercial" },
   ];
   for (const s of sources) {
     try {
-      const q = `cftc_contract_market_code=${SILVER}&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=170`;
+      const q = `cftc_contract_market_code=${contractCode}&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=170`;
       const url = `https://publicreporting.cftc.gov/resource/${s.id}.json?${q}`;
       const j = await getJson(url, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
       if (!Array.isArray(j) || !j.length) {
-        console.warn(`cot ${s.id}: empty`);
+        console.warn(`cot ${contractCode}/${s.id}: empty`);
         continue;
       }
       const rows = j
@@ -229,7 +241,7 @@ async function fetchCot() {
       const latest = nets[nets.length - 1];
       const below = nets.filter((x) => x <= latest).length;
       const percentile = Math.round((below / nets.length) * 100);
-      console.log(`cot: ${s.label} net=${latest} pctile=${percentile} n=${rows.length} asOf=${rows[rows.length - 1].t}`);
+      console.log(`cot ${contractCode}: ${s.label} net=${latest} pctile=${percentile} n=${rows.length} asOf=${rows[rows.length - 1].t}`);
       return {
         net: Math.round(latest),
         percentile,
@@ -238,7 +250,7 @@ async function fetchCot() {
         history: rows.slice(-78).map((r) => ({ t: r.t, v: Math.round(r.net) })),
       };
     } catch (e) {
-      console.warn(`cot ${s.id}: ${e.message}`);
+      console.warn(`cot ${contractCode}/${s.id}: ${e.message}`);
     }
   }
   return null;
@@ -339,21 +351,28 @@ const TRUSTED_SOURCES = [
   /marketwatch/i, /wall street journal|wsj/i, /financial times/i, /investing\.com/i,
 ];
 const isTrusted = (source) => TRUSTED_SOURCES.some((re) => re.test(source || ""));
-async function fetchNews(prevNews) {
+async function fetchNews(prevNews, metal) {
+  const n = metal.news;
+  const rss = (q, region) =>
+    `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-${region}&gl=${region}&ceid=${region}:en`;
   const queries = [
-    `https://news.google.com/rss/search?q=${encodeURIComponent("silver price OR silver MCX OR silver demand OR silver squeeze")}&hl=en-IN&gl=IN&ceid=IN:en`,
-    `https://news.google.com/rss/search?q=${encodeURIComponent("silver price forecast OR silver Fed OR silver dollar OR silver rally")}&hl=en-US&gl=US&ceid=US:en`,
+    rss(n.query, "IN"),
+    rss(n.forecastQuery, "US"),
     // Targeted pull from the most-trusted outlets so they're well represented.
-    `https://news.google.com/rss/search?q=${encodeURIComponent('silver (source:Reuters OR source:Bloomberg OR source:"Zee Business" OR source:"The Economic Times" OR source:Mint)')}&hl=en-IN&gl=IN&ceid=IN:en`,
-    // Indirect drivers: Fed/rates/inflation/dollar/gold move silver too.
-    `https://news.google.com/rss/search?q=${encodeURIComponent("Federal Reserve rate decision OR US inflation CPI OR dollar index OR gold price outlook")}&hl=en-US&gl=US&ceid=US:en`,
+    rss(
+      `${n.trustedSubject} (source:Reuters OR source:Bloomberg OR source:"Zee Business" OR source:"The Economic Times" OR source:Mint)`,
+      "IN",
+    ),
+    // Indirect drivers. These differ completely by metal: bullion follows the
+    // Fed and the dollar, copper follows China, inventories and tariffs.
+    rss(n.indirectQuery, "US"),
   ];
   // Freshness: nothing older than ~2.5 weeks makes the feed.
   const MAX_AGE_MS = 18 * 86400000;
   const cutoff = Date.now() - MAX_AGE_MS;
-  // Direct = names silver itself; indirect = a macro driver that moves silver.
-  const DIRECT_RE = /silver|bullion|MCX/i;
-  const INDIRECT_RE = /\bgold\b|precious metal|federal reserve|fomc|rate (cut|hike|decision)|inflation|\bcpi\b|dollar index|treasury yield|real yield|tariff|geopolit|safe[- ]?haven/i;
+  // Direct = names the metal itself; indirect = a driver that moves it.
+  const DIRECT_RE = new RegExp(n.directPattern, "i");
+  const INDIRECT_RE = new RegExp(n.indirectPattern, "i");
   const items = [];
   const seen = new Set();
   for (const url of queries) {
@@ -487,7 +506,7 @@ async function fetchMcxReal() {
   for (const iso of recentTradingDays(6)) {
     try {
       const rows = await fetchBhavRows(iso, cookie);
-      if (rows.length) return toRaw(rows, MCX_SYMBOL, today, null);
+      if (rows.length) return toRaw(rows, METALS[DEFAULT_METAL].feedSymbol, today, null);
     } catch (e) {
       console.warn(`  ${e.message}`);
     }
@@ -513,7 +532,7 @@ function atmIvFromChain(rows, ref) {
  * contract month. Best-effort — returns null when the future has no usable
  * price. Far months may have thin/empty chains; that's surfaced downstream.
  */
-async function buildRawBundle(token, c, usdInr, from, today) {
+async function buildRawBundle(metal, token, c, usdInr, from, today) {
   const [{ history: futHist, oiHistory }, q, chainRaw] = await Promise.all([
     upstox.dailyCandles(token, c.future.key, from, today),
     upstox.quote(token, c.future.key),
@@ -538,8 +557,9 @@ async function buildRawBundle(token, c, usdInr, from, today) {
 
   const dte = Math.max(0, Math.ceil((new Date(c.expiry).getTime() - Date.now()) / 86400000));
   const optionDte = Math.max(0, Math.ceil((new Date(c.optionExpiry).getTime() - Date.now()) / 86400000));
-  // MCX future (₹/kg) -> implied $/oz so the engine sees real silver momentum.
-  const mult = PARITY_MULT * (usdInr || 1);
+  // MCX future (₹/quote-unit) -> implied international price, so the engine
+  // sees the metal's own traded momentum rather than a spot proxy.
+  const mult = parityMult(metal) * (usdInr || 1);
   const metalUsdHistory = mult > 0 ? futHist.map((p) => ({ t: p.t, v: p.v / mult })) : [];
   return {
     expiry: c.expiry, optionExpiry: c.optionExpiry, dte, optionDte,
@@ -548,39 +568,44 @@ async function buildRawBundle(token, c, usdInr, from, today) {
   };
 }
 
-async function fetchUpstox(usdInr) {
+/**
+ * Live MCX data for one metal. `instruments` is the shared MCX master, fetched
+ * once per run and passed in — it is ~all of MCX, so re-downloading it per
+ * metal would triple the largest fetch in the pipeline for no new data.
+ */
+async function fetchUpstox(metal, usdInr, instruments) {
   const token = process.env.UPSTOX_ACCESS_TOKEN;
   if (!token) return null;
+  const symbol = metal.feedSymbol;
   try {
     const today = new Date().toISOString().slice(0, 10);
     const from = new Date(Date.now() - 200 * 86400000).toISOString().slice(0, 10);
-    const instruments = await upstox.fetchInstruments();
     // All upcoming monthly option expiries (nearest first) + their futures.
-    const contracts = upstox.pickChainContracts(instruments, MCX_SYMBOL, today, 4, CONTRACT_SYMBOLS);
+    const contracts = upstox.pickChainContracts(instruments, symbol, today, 4, CONTRACT_SYMBOLS);
     if (!contracts.length) {
       const sample = instruments
-        .filter((i) => JSON.stringify(i).toUpperCase().includes("SILVER"))
+        .filter((i) => JSON.stringify(i).toUpperCase().includes(metal.family))
         .slice(0, 4)
         .map((i) => ({ name: i.name, ts: i.trading_symbol, it: i.instrument_type, us: i.underlying_symbol, ot: i.option_type }));
-      console.warn(`upstox: no ${MCX_SYMBOL} contracts. silver samples: ${JSON.stringify(sample)}`);
+      console.warn(`upstox: no ${symbol} contracts. ${metal.family} samples: ${JSON.stringify(sample)}`);
       return null;
     }
     const bundles = [];
     for (const c of contracts) {
       try {
-        const b = await buildRawBundle(token, c, usdInr, from, today);
+        const b = await buildRawBundle(metal, token, c, usdInr, from, today);
         if (b) bundles.push(b);
       } catch (e) {
-        console.warn(`upstox bundle ${c.optionExpiry}: ${e.message}`);
+        console.warn(`upstox ${symbol} bundle ${c.optionExpiry}: ${e.message}`);
       }
     }
     const near = bundles[0];
     if (!near || near.futHistLen < 5) {
-      console.warn("upstox: no usable nearest bundle (thin futures history)");
+      console.warn(`upstox ${symbol}: no usable nearest bundle (thin futures history)`);
       return null;
     }
     console.log(
-      `upstox: ${MCX_SYMBOL} ${bundles.length} expiries [` +
+      `upstox: ${symbol} ${bundles.length} expiries [` +
         bundles.map((b) => `${b.optionExpiry}:fut${b.fut}/oi${b.oi}/ch${b.chain.length}`).join(", ") +
         `] atmIv=${near.atmIv}`,
     );
@@ -592,7 +617,7 @@ async function fetchUpstox(usdInr) {
       metalUsdHistory: near.metalUsdHistory, expiries: bundles,
     };
   } catch (e) {
-    console.warn(`upstox failed: ${e.message}`);
+    console.warn(`upstox ${symbol} failed: ${e.message}`);
     return null;
   }
 }
@@ -698,17 +723,17 @@ function computeGex(chain, F, tYears) {
 // squeeze risk — a genuine warning for short-call sellers. Best-effort: falls
 // back to a front-future-vs-spot carry read, then to null (UI hides the card).
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const SI_MONTH_CODE = { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" }; // liquid COMEX silver delivery months
-
-function nextSilverContracts(from = new Date(), n = 5) {
+/** Upcoming liquid COMEX delivery months for a metal, nearest first. */
+function nextComexContracts(metal, from = new Date(), n = 5) {
+  const { root, months } = metal.comex;
   const out = [];
   const y0 = from.getUTCFullYear(), m0 = from.getUTCMonth();
   for (let i = 0; out.length < n && i < 24; i++) {
     const mi = (m0 + i) % 12;
     const yy = y0 + Math.floor((m0 + i) / 12);
-    if (SI_MONTH_CODE[mi]) {
+    if (months[mi]) {
       out.push({
-        sym: `SI${SI_MONTH_CODE[mi]}${String(yy).slice(2)}.CMX`,
+        sym: `${root}${months[mi]}${String(yy).slice(2)}.CMX`,
         label: `${MONTHS[mi]}'${String(yy).slice(2)}`,
         monthsOut: i + 0.5, // mid-delivery-month, in months from now
       });
@@ -735,8 +760,8 @@ function curveResult(front, annualizedPct, months, source) {
   return { front: round(front, 2), structure, annualizedPct, months, source };
 }
 
-async function fetchSilverCurve(spotUsd) {
-  const contracts = nextSilverContracts();
+async function fetchCurve(metal, spotUsd) {
+  const contracts = nextComexContracts(metal);
   const prices = await Promise.all(contracts.map((c) => yahooQuote(c.sym)));
   const months = contracts
     .map((c, i) => ({ label: c.label, monthsOut: c.monthsOut, price: prices[i] }))
@@ -746,12 +771,12 @@ async function fetchSilverCurve(spotUsd) {
     const near = months[0], far = months[months.length - 1];
     const dm = far.monthsOut - near.monthsOut;
     const annualizedPct = dm > 0 ? round((far.price / near.price - 1) * (12 / dm) * 100, 2) : null;
-    console.log(`curve: ${months.length} contracts, annualized ${annualizedPct}%`);
+    console.log(`curve ${metal.id}: ${months.length} contracts, annualized ${annualizedPct}%`);
     return curveResult(near.price, annualizedPct, months.map((m) => ({ label: m.label, price: round(m.price, 2) })), "curve");
   }
 
   // Fallback: nearest listed future vs spot → a rough one-month carry read.
-  const front = await yahooQuote("SI=F");
+  const front = await yahooQuote(metal.comex.spot);
   if (front != null && spotUsd != null && spotUsd > 0) {
     const annualizedPct = round((front / spotUsd - 1) * 12 * 100, 2);
     console.log(`curve: carry fallback (front vs spot), annualized ${annualizedPct}%`);
@@ -762,7 +787,7 @@ async function fetchSilverCurve(spotUsd) {
       "carry",
     );
   }
-  console.warn("curve: no futures data available");
+  console.warn(`curve ${metal.id}: no futures data available`);
   return null;
 }
 
@@ -781,22 +806,60 @@ function istToday() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
-async function loadLatest() {
-  try {
-    return JSON.parse(await readFile(LATEST, "utf8"));
-  } catch {
-    return null;
+/** Path of one metal's snapshot file. */
+const metalFile = (id) => resolve(DATA_DIR, `${id}.json`);
+
+/**
+ * Previous snapshot for a metal. Falls back to latest.json for silver so the
+ * very first multi-metal run inherits the accumulated history (real IV series,
+ * silver price history, OI baselines) instead of starting from nothing.
+ */
+async function loadSnapshot(metalId) {
+  for (const f of metalId === DEFAULT_METAL ? [metalFile(metalId), LATEST] : [metalFile(metalId)]) {
+    try {
+      return migrateLegacy(JSON.parse(await readFile(f, "utf8")));
+    } catch {
+      /* try next */
+    }
   }
+  return null;
 }
 
-async function main() {
-  await mkdir(DATA_DIR, { recursive: true });
-  const prev = await loadLatest();
+/**
+ * Read the pre-metals field names (`silverFut`, `xagUsd`, `xagHistory`).
+ *
+ * This is not cosmetic. The snapshot IS the pipeline's state store: it carries
+ * the accumulated price history, the real ATM-IV series that IV rank needs ~20
+ * days of, and the per-expiry OI baselines. On the first run after the rename,
+ * reading the old file without this would silently find those keys missing and
+ * start every accumulator from zero — throwing away months of history with no
+ * error anywhere.
+ */
+function migrateLegacy(j) {
+  if (!j || typeof j !== "object") return j;
+  if (j.mcx && j.mcx.fut == null && j.mcx.silverFut != null) j.mcx.fut = j.mcx.silverFut;
+  if (j.live) {
+    if (j.live.metalUsd == null && j.live.xagUsd != null) j.live.metalUsd = j.live.xagUsd;
+    if (!j.live.metalHistory?.length && j.live.xagHistory?.length) {
+      j.live.metalHistory = j.live.xagHistory;
+    }
+  }
+  for (const b of j.expiries ?? []) {
+    if (b && b.fut == null && b.silverFut != null) b.fut = b.silverFut;
+  }
+  return j;
+}
 
-  // 1) Histories (server-side, reliable).
-  const [metalH, xauH, dxyH, inrH, fredReal, fredNom, fredUsd] = await Promise.all([
-    fetchSeries("xag", { td: ["XAG/USD", "XAGUSD", "SILVER", "XAG"], yahoo: "SI=F", stooq: "xagusd" }),
-    fetchSeries("xau", { td: ["XAU/USD"], yahoo: "GC=F", stooq: "xauusd" }),
+/**
+ * Everything that is NOT metal-specific: the dollar, rates, the rupee, gold as
+ * a cross-asset reference, and the US macro prints. Fetched ONCE per run and
+ * handed to every metal — these are the same numbers whichever metal you are
+ * looking at, and re-fetching them per metal would triple the request count
+ * against the free tiers for no new information.
+ */
+async function fetchShared(prevShared) {
+  const [xauH, dxyH, inrH, fredReal, fredNom, fredUsd] = await Promise.all([
+    fetchSeries("xau", METALS.gold.intlFeeds),
     // Only the genuine dollar index — aliases like DX/USDX map to unrelated
     // tickers on Twelve Data, so we'd rather drop DXY than use bad data.
     fetchSeries("dxy", { td: ["DXY"], yahoo: "DX-Y.NYB", stooq: "^dxy" }),
@@ -810,57 +873,91 @@ async function main() {
     fredSeries("DTWEXBGS"),
   ]);
 
-  // 2) Latest spot/FX ticks + CFTC positioning + silver news + macro prints.
-  const [metalSpot, xauSpot, inrSpot, cotNew, news, prints] = await Promise.all([
-    goldApi("XAG"),
-    goldApi("XAU"),
+  const [xauSpot, inrSpot, prints] = await Promise.all([
+    goldApi(METALS.gold.intlFeeds.goldApi),
     frankfurterInr(),
-    fetchCot(),
-    fetchNews(prev?.news),
     fetchEconPrints(),
   ]);
 
+  const prevLive = prevShared ?? {};
+  const grow = (fetched, prevKey, spot) =>
+    withLatest(fetched.length > 5 ? fetched : prevLive[prevKey] ?? [], spot);
+
+  const xauHistory = grow(xauH, "xauHistory", xauSpot);
+  const usdInrHistory = grow(inrH, "usdInrHistory", inrSpot);
+  const dxyHistory = dxyH.length > 5 ? dxyH : fredUsd.length > 5 ? fredUsd : [];
+  const usdBroad = !(dxyH.length > 5) && fredUsd.length > 5;
+
+  const real10y = fredReal.length ? fredReal[fredReal.length - 1].v : null;
+  const nominal10y = fredNom.length ? fredNom[fredNom.length - 1].v : null;
+
+  return {
+    xauHistory,
+    usdInrHistory,
+    dxyHistory,
+    real10yHistory: fredReal,
+    usdBroad,
+    xauUsd: last(xauHistory),
+    usdInr: last(usdInrHistory),
+    dxy: last(dxyHistory),
+    real10y,
+    breakeven10y: nominal10y != null && real10y != null ? round(nominal10y - real10y, 2) : null,
+    xauSpot,
+    prints,
+  };
+}
+
+/**
+ * Build one metal's complete snapshot. Everything below was `main()` before the
+ * three-metal split; the only structural change is that shared macro arrives as
+ * a parameter instead of being fetched inline, and every silver constant now
+ * comes from `metal`.
+ */
+async function buildMetal(metal, shared, prev, instruments) {
+  const MCX_SYMBOL = metal.feedSymbol;
+  const PARITY_MULT = parityMult(metal);
+
+  // The metal's own international price history. Gold is already in `shared`
+  // (it doubles as the cross-asset reference), so don't fetch it twice.
+  const isGold = metal.id === "gold";
+  const [metalH, metalSpot, cotNew, news] = await Promise.all([
+    isGold ? Promise.resolve([]) : fetchSeries(metal.id, metal.intlFeeds),
+    isGold
+      ? Promise.resolve(shared.xauSpot)
+      : metal.intlFeeds.goldApi
+        ? goldApi(metal.intlFeeds.goldApi)
+        : Promise.resolve(null),
+    fetchCot(metal.cotCode),
+    fetchNews(prev?.news, metal),
+  ]);
+
+  const { xauHistory, usdInrHistory, dxyHistory, real10yHistory, usdBroad, prints } = shared;
+
   // Use the fetched history when a provider returned a real series; otherwise
-  // accumulate day-by-day from the live spot (persisted across runs) so e.g.
-  // silver builds a genuine history even though no free API serves it.
+  // accumulate day-by-day from the live spot (persisted across runs) so the
+  // metal builds a genuine history even though no free API serves it.
   const prevLive = prev?.live ?? {};
   function buildHistory(fetched, prevKey, spot) {
     const base = fetched.length > 5 ? fetched : prevLive[prevKey] ?? [];
     return withLatest(base, spot);
   }
-  let metalHistory = buildHistory(metalH, "metalHistory", metalSpot);
-  const xauHistory = buildHistory(xauH, "xauHistory", xauSpot);
-  const usdInrHistory = buildHistory(inrH, "usdInrHistory", inrSpot);
-  // Dollar index: prefer genuine ICE DXY if a provider served it; otherwise use
-  // the Fed Broad USD Index (FRED, reliable). `usdBroad` flags which one, so the
-  // UI can label the value honestly (the two are on different scales).
-  const dxyHistory = dxyH.length > 5 ? dxyH : fredUsd.length > 5 ? fredUsd : [];
-  const usdBroad = !(dxyH.length > 5) && fredUsd.length > 5;
+  let metalHistory = isGold
+    ? xauHistory
+    : buildHistory(metalH, "metalHistory", metalSpot);
+  const { xauUsd, usdInr, dxy, real10y, breakeven10y } = shared;
 
-  // Publish when we have enough to drive the engine. Silver history is ideal,
-  // but gold + USD-INR alone still yield a meaningful (if weaker) bias.
+  // Publish when we have enough to drive the engine. The metal's own history is
+  // ideal, but gold + USD-INR alone still yield a meaningful (if weaker) bias.
   const haveCore = metalHistory.length > 5 || (xauHistory.length > 5 && usdInrHistory.length > 5);
   if (!haveCore) {
-    if (prev) {
-      await writeFile(LATEST, JSON.stringify({ ...prev, mcx: { ...prev.mcx, stale: true } }, null, 2) + "\n");
-      console.warn("Core history unavailable; preserved last-good as stale.");
-    } else {
-      console.warn("Core history unavailable and no prior snapshot.");
-    }
-    return;
+    // Preserve this metal's own last-good rather than dropping it — one metal's
+    // dead feed must never take the others down with it.
+    console.warn(`${metal.id}: core history unavailable; ${prev ? "preserved last-good as stale" : "no prior snapshot"}.`);
+    return prev ? { ...prev, stale: true } : null;
   }
 
-  const last = (h) => (h.length ? h[h.length - 1].v : null);
-  const xauUsd = last(xauHistory);
-  const usdInr = last(usdInrHistory);
-  const dxy = last(dxyHistory);
-  const real10y = fredReal.length ? fredReal[fredReal.length - 1].v : null;
-  const nominal10y = fredNom.length ? fredNom[fredNom.length - 1].v : null;
-  const breakeven10y = nominal10y != null && real10y != null ? round(nominal10y - real10y, 2) : null;
-  const real10yHistory = fredReal;
-
-  // 3) MCX: real Upstox data (preferred) -> reuse last-good real -> parity.
-  const ups = await fetchUpstox(usdInr);
+  // MCX: real Upstox data (preferred) -> reuse last-good real -> parity.
+  const ups = await fetchUpstox(metal, usdInr, instruments);
   const prevReal = prev && prev.estimated === false ? prev : null;
 
   // Persist silver history: union of prior real silver + Upstox silver + today's
@@ -886,7 +983,11 @@ async function main() {
 
   const metalCloses = metalHistory.map((p) => p.v);
   const xauCloses = xauHistory.map((p) => p.v);
-  const SILVER_GOLD_VOL = 1.6; // silver realized vol ~1.6x gold's, historically
+  // Rough realized-vol beta to gold, used ONLY as a fallback when the metal's
+  // own history is too short to compute RV. Silver runs ~1.6x gold, copper
+  // ~1.3x; gold is itself, so 1.0. Hand-set and deliberately crude — it only
+  // ever seeds an estimate that is flagged `ivEstimated`.
+  const VOL_BETA_TO_GOLD = { silver: 1.6, gold: 1.0, copper: 1.3 }[metal.id] ?? 1.5;
   function volSeries(closes, scale = 1) {
     const out = [];
     for (let i = 21; i < closes.length; i++) {
@@ -901,8 +1002,8 @@ async function main() {
   let rvSeries = volSeries(metalCloses);
   if (rv20 == null || rvSeries.length < 5) {
     const g = realizedVol(xauCloses, 20);
-    if (g != null) rv20 = g * SILVER_GOLD_VOL;
-    rvSeries = volSeries(xauCloses, SILVER_GOLD_VOL);
+    if (g != null) rv20 = g * VOL_BETA_TO_GOLD;
+    rvSeries = volSeries(xauCloses, VOL_BETA_TO_GOLD);
   }
   const rvClean = rvSeries.filter((x) => Number.isFinite(x));
 
@@ -982,7 +1083,7 @@ async function main() {
   const basis = fut != null && fairValue != null ? Math.round(fut - fairValue) : null;
   const gex = computeGex(chain, fut, t);
   // COMEX silver term structure — carry last-good if the fetch comes back empty.
-  const curve = (await fetchSilverCurve(metalUsd)) ?? prev?.curve ?? null;
+  const curve = (await fetchCurve(metal, metalUsd)) ?? prev?.curve ?? null;
 
   // Live-feed health — lets the UI say "token not working" instead of silently
   // showing stale last-good. A 401/403 on any authed Upstox call = bad token.
@@ -999,7 +1100,11 @@ async function main() {
   // Per-expiry bundles behind the expiry selector. The nearest mirrors the
   // top-level fields above (so the default view is identical); far months are
   // best-effort with realized-vol-based (estimated) IV rank.
-  const atmStrikeNear = fut != null ? Math.round(fut / 1000) * 1000 : null;
+  // Strike step is DERIVED from the listed strikes — MCX changes it (gold went
+  // ₹100 → ₹500 in Jan 2026), so a hardcoded 1000 would put the ATM marker on
+  // a strike that does not exist.
+  const step = strikeStep(metal, chain);
+  const atmStrikeNear = fut != null ? Math.round(fut / step) * step : null;
   const nearBundle = {
     expiry: expiryIso, optionExpiry: optionExpiryIso, dte, optionDte,
     fut, prevClose, oi, oiChg, atmStrike: atmStrikeNear,
@@ -1012,7 +1117,7 @@ async function main() {
     return {
       expiry: b.expiry, optionExpiry: b.optionExpiry, dte: b.dte, optionDte: b.optionDte,
       fut: b.fut, prevClose: b.prevClose, oi: b.oi, oiChg: b.oiChg,
-      atmStrike: b.fut != null ? Math.round(b.fut / 1000) * 1000 : null,
+      atmStrike: b.fut != null ? (() => { const st = strikeStep(metal, b.chain); return Math.round(b.fut / st) * st; })() : null,
       atmIv: bIv, ivEstimated: b.atmIv == null,
       ivRank: ivRankFrom(b.atmIv ?? rv20), ivPercentile: ivPctileFrom(b.atmIv ?? rv20), ivRankEstimated: true,
       expectedMove1sd: bIv != null && b.fut != null ? Math.round(b.fut * bIv * Math.sqrt(tY)) : null,
@@ -1087,7 +1192,7 @@ async function main() {
       oiChg,
     },
     options: {
-      atmStrike: fut != null ? Math.round(fut / 1000) * 1000 : null,
+      atmStrike: atmStrikeNear,
       atmIv,
       ivEstimated,
       ivRank,
@@ -1111,10 +1216,103 @@ async function main() {
     events: buildEvents(optionExpiryIso),
   };
 
-  await writeFile(LATEST, JSON.stringify(snapshot, null, 2) + "\n");
   console.log(
-    `Wrote snapshot: xag=${metalUsd} inr=${usdInr} mcx=${fut} (${estimated ? "parity-est" : "live"}) ` +
-      `iv=${atmIv} ivRank=${ivRank} dte=${dte} histLen=${metalHistory.length} feed=${feed.upstox}`,
+    `${metal.id}: intl=${metalUsd} inr=${usdInr} mcx=${fut} (${estimated ? "parity-est" : "live"}) ` +
+      `iv=${atmIv} ivRank=${ivRank} dte=${dte} step=${step} chain=${chain.length} histLen=${metalHistory.length} feed=${feed.upstox}`,
+  );
+  return snapshot;
+}
+
+/** Compact per-metal card for the picker screen (public/data/index.json). */
+function summaryOf(metal, snap) {
+  if (!snap) return { id: metal.id, label: metal.label, emoji: metal.emoji, ok: false };
+  const fut = snap.mcx?.fut ?? null;
+  const prev = snap.mcx?.prevClose ?? null;
+  const iv = snap.options?.atmIv ?? null;
+  const rv = snap.options?.rv20 ?? null;
+  return {
+    id: metal.id,
+    label: metal.label,
+    emoji: metal.emoji,
+    ok: true,
+    symbol: snap.mcx?.symbol ?? metal.feedSymbol,
+    quoteUnit: metal.quoteUnit,
+    fut,
+    changePct: fut != null && prev ? round(((fut - prev) / prev) * 100, 2) : null,
+    atmIv: iv,
+    ivRank: snap.options?.ivRank ?? null,
+    ivEstimated: snap.options?.ivEstimated ?? true,
+    // VRP in vol points — the picker's "is there anything to sell here" read.
+    vrp: iv != null && rv != null ? round((iv - rv) * 100, 2) : null,
+    optionDte: snap.mcx?.optionDte ?? null,
+    chainLegs: snap.options?.chain?.length ?? 0,
+    stale: snap.stale === true,
+    estimated: snap.estimated === true,
+    feed: snap.feed?.upstox ?? null,
+    asOf: snap.asOf,
+  };
+}
+
+async function main() {
+  await mkdir(DATA_DIR, { recursive: true });
+
+  // Load every metal's previous snapshot first — each is its own state store
+  // (accumulated price history, real ATM-IV series, OI baselines, last-good
+  // news/COT), so they must not be crossed over.
+  const prevs = {};
+  for (const id of BUILD_METALS) prevs[id] = await loadSnapshot(id);
+
+  // Shared macro, fetched ONCE. Seeded from whichever snapshot has it so the
+  // accumulated gold/INR/dollar histories survive across runs.
+  const seed = prevs[DEFAULT_METAL]?.live ?? Object.values(prevs).find((p) => p?.live)?.live ?? null;
+  const shared = await fetchShared(seed);
+
+  // The MCX instrument master is ~all of MCX and is the largest fetch in the
+  // pipeline — pull it once and hand the same array to every metal.
+  const instruments = process.env.UPSTOX_ACCESS_TOKEN ? await upstox.fetchInstruments() : [];
+
+  const summaries = [];
+  let silverSnap = null;
+
+  // Sequential, not parallel: three metals x up to four expiries x ~50 option
+  // quotes each would burst Upstox's rate limit, and the cron has ten minutes.
+  for (const id of BUILD_METALS) {
+    const metal = METALS[id];
+    let snap = null;
+    try {
+      snap = await buildMetal(metal, shared, prevs[id], instruments);
+    } catch (e) {
+      console.error(`${id}: build failed — ${e.message}`);
+    }
+    // Fail soft PER METAL. A dead copper feed must never blank out silver.
+    if (!snap) snap = prevs[id] ? { ...prevs[id], stale: true } : null;
+    if (snap) {
+      await writeFile(metalFile(id), JSON.stringify(snap, null, 2) + "\n");
+      if (id === DEFAULT_METAL) silverSnap = snap;
+    } else {
+      console.warn(`${id}: nothing to write (no live data and no prior snapshot).`);
+    }
+    summaries.push(summaryOf(metal, snap));
+  }
+
+  // The picker's data. Small on purpose — it is fetched before the user has
+  // chosen a metal, so it must not carry any chain or history.
+  await writeFile(
+    resolve(DATA_DIR, "index.json"),
+    JSON.stringify({ asOf: new Date().toISOString(), metals: summaries }, null, 2) + "\n",
+  );
+
+  // Back-compat: any already-deployed client still reads latest.json and knows
+  // only about silver. Keep it a byte-for-byte copy of the silver snapshot.
+  if (silverSnap) {
+    await writeFile(LATEST, JSON.stringify(silverSnap, null, 2) + "\n");
+  }
+
+  console.log(
+    "wrote " +
+      summaries.map((m) => `${m.id}${m.ok ? "" : "(none)"}${m.stale ? "*" : ""}`).join(", ") +
+      " + index.json" +
+      (silverSnap ? " + latest.json" : ""),
   );
 }
 

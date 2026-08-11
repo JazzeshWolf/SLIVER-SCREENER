@@ -63,6 +63,22 @@ export const METALS = {
     parityConfidence: "verified",
 
     // --- feeds -------------------------------------------------------------
+    // COMEX reference for the term-structure ladder (contango/backwardation).
+    comex: { root: "SI", spot: "SI=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
+
+    // Google News queries + the regexes that split "about this metal" from
+    // "about a driver of this metal". Copper's drivers are nothing like
+    // bullion's, so these cannot be shared.
+    news: {
+      query: "silver price OR silver MCX OR silver demand OR silver squeeze",
+      forecastQuery: "silver price forecast OR silver Fed OR silver dollar OR silver rally",
+      trustedSubject: "silver",
+      indirectQuery: "Federal Reserve rate decision OR US inflation CPI OR dollar index OR gold price outlook",
+      directPattern: "silver|bullion|MCX",
+      indirectPattern:
+        "\\bgold\\b|precious metal|federal reserve|fomc|rate (cut|hike|decision)|inflation|\\bcpi\\b|dollar index|treasury yield|real yield|tariff|geopolit|safe[- ]?haven",
+    },
+
     intlFeeds: {
       goldApi: "XAG", // also the browser-side live overlay (CORS-enabled)
       td: ["XAG/USD", "XAGUSD", "SILVER", "XAG"],
@@ -97,6 +113,18 @@ export const METALS = {
     duty: 0.15, // same bullion regime as silver since 2026-05-13
     gst: 0.03,
     parityConfidence: "verified",
+
+    comex: { root: "GC", spot: "GC=F", months: { 1: "G", 3: "J", 5: "M", 7: "Q", 11: "Z" } },
+
+    news: {
+      query: "gold price OR gold MCX OR gold demand OR central bank gold buying",
+      forecastQuery: "gold price forecast OR gold Fed OR gold dollar OR gold rally",
+      trustedSubject: "gold",
+      indirectQuery: "Federal Reserve rate decision OR US inflation CPI OR dollar index OR real yields TIPS",
+      directPattern: "gold|bullion|MCX",
+      indirectPattern:
+        "precious metal|federal reserve|fomc|rate (cut|hike|decision)|inflation|\\bcpi\\b|dollar index|treasury yield|real yield|central bank|\\betf\\b|geopolit|safe[- ]?haven",
+    },
 
     intlFeeds: {
       goldApi: "XAU",
@@ -134,6 +162,21 @@ export const METALS = {
     duty: 0.05,
     gst: 0.18,
     parityConfidence: "approximate",
+
+    comex: { root: "HG", spot: "HG=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
+
+    // Copper is an industrial metal: its news is mines, smelters, tariffs,
+    // inventories and China — not the Fed and not safe-haven flows.
+    news: {
+      query: "copper price OR copper LME OR copper MCX OR copper smelter OR copper mine supply",
+      forecastQuery: "copper price forecast OR copper demand China OR copper inventories OR copper tariff",
+      trustedSubject: "copper",
+      indirectQuery:
+        "China manufacturing PMI OR China stimulus copper OR LME inventories OR Section 232 copper tariff OR grid investment data centre demand",
+      directPattern: "copper|\\bLME\\b|MCX",
+      indirectPattern:
+        "china|pmi|manufactur|smelter|treatment charge|tc/rc|inventor|warehouse|stockpile|tariff|section 232|dollar index|grid|data cent(er|re)|electric vehicle|construction|stimulus",
+    },
 
     intlFeeds: {
       goldApi: null, // no free CORS spot API → copper has no browser live overlay

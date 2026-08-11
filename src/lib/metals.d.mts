@@ -25,6 +25,26 @@ export interface MetalIntlFeeds {
   stooq: string | null;
 }
 
+/** COMEX reference contract, for the term-structure ladder. */
+export interface MetalComex {
+  root: string; // e.g. "SI"
+  spot: string; // Yahoo continuous symbol, e.g. "SI=F"
+  /** monthIndex (0-11) -> delivery month code, for the liquid months only. */
+  months: Record<number, string>;
+}
+
+/** Per-metal news queries and the direct/indirect classification patterns. */
+export interface MetalNews {
+  query: string;
+  forecastQuery: string;
+  trustedSubject: string;
+  indirectQuery: string;
+  /** RegExp source: headline is ABOUT this metal. */
+  directPattern: string;
+  /** RegExp source: headline is about a DRIVER of this metal. */
+  indirectPattern: string;
+}
+
 export interface MetalConfig {
   id: string;
   label: string;
@@ -49,6 +69,8 @@ export interface MetalConfig {
   gst: number;
   parityConfidence: ParityConfidence;
 
+  comex: MetalComex;
+  news: MetalNews;
   intlFeeds: MetalIntlFeeds;
   /** CFTC contract market code for the COT report. */
   cotCode: string;
