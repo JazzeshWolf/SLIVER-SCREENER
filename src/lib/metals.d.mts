@@ -45,6 +45,31 @@ export interface MetalNews {
   indirectPattern: string;
 }
 
+/** Per-metal direction-engine configuration. */
+export interface MetalEngine {
+  /** Constant structural prior in [-1,1], applied on 1W/1M only. */
+  structuralBias: number;
+  structuralLabel: string;
+  structuralNote: string;
+  /** factorKey -> per-horizon weight. Each horizon column must sum to 1. */
+  weights: Record<string, Record<string, number>>;
+}
+
+/** Sell-screener calibration. Silver's numbers are the app's originals. */
+export interface MetalScreen {
+  /** Below this OI a single leg is untradeable. */
+  minOi: number;
+  /** Real but shallow — surfaced with a THIN warning. */
+  thinOi: number;
+  /** Total chain OI below which the screener refuses to rank at all (0 = off). */
+  minChainOi: number;
+  /** Annualized return-on-margin that normalizes to a full sub-score. */
+  romDivisor: number;
+  /** SPAN-like margin scan grid. */
+  priceScan: number;
+  volScan: number;
+}
+
 export interface MetalConfig {
   id: string;
   label: string;
@@ -69,6 +94,8 @@ export interface MetalConfig {
   gst: number;
   parityConfidence: ParityConfidence;
 
+  screen: MetalScreen;
+  engine: MetalEngine;
   comex: MetalComex;
   news: MetalNews;
   intlFeeds: MetalIntlFeeds;

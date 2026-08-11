@@ -64,6 +64,42 @@ export const METALS = {
 
     // --- feeds -------------------------------------------------------------
     // COMEX reference for the term-structure ladder (contango/backwardation).
+    // --- direction engine --------------------------------------------------
+    // FULL weight table per horizon, written out rather than expressed as
+    // deltas from a base: each column must sum to 1, and that is far easier to
+    // verify (and test) when the numbers are all visible. Hand-set priors, NOT
+    // backtested — same caveat as everywhere else in this app.
+    // Sell-screener calibration. Silver's values are the app's originals — the
+    // ones the CONV weights and filters were tuned against.
+    screen: {
+      minOi: 25,
+      thinOi: 500,
+      // The chain as a whole is too illiquid to rank honestly below this.
+      minChainOi: 0,
+      romDivisor: 250,
+      // SPAN-like scan grid: how far to revalue the short leg.
+      priceScan: 0.06,
+      volScan: 0.25,
+    },
+
+    engine: {
+      structuralBias: 0.6,
+      structuralLabel: "Structural deficit bias",
+      structuralNote:
+        "Silver has run a multi-year physical supply deficit. A small, constant bullish prior; slow-moving, 1W/1M only.",
+      weights: {
+        dxy: { "1D": 0.24, "1W": 0.17, "1M": 0.13 },
+        real10y: { "1D": 0.18, "1W": 0.14, "1M": 0.12 },
+        metalMomo: { "1D": 0.22, "1W": 0.16, "1M": 0.12 },
+        goldMomo: { "1D": 0.16, "1W": 0.13, "1M": 0.1 },
+        longTrend: { "1D": 0.0, "1W": 0.05, "1M": 0.1 },
+        mcxPositioning: { "1D": 0.12, "1W": 0.12, "1M": 0.12 },
+        usdInr: { "1D": 0.08, "1W": 0.1, "1M": 0.1 },
+        gsr: { "1D": 0.0, "1W": 0.05, "1M": 0.06 },
+        structuralBias: { "1D": 0.0, "1W": 0.08, "1M": 0.15 },
+      },
+    },
+
     comex: { root: "SI", spot: "SI=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
 
     // Google News queries + the regexes that split "about this metal" from
@@ -114,6 +150,39 @@ export const METALS = {
     gst: 0.03,
     parityConfidence: "verified",
 
+    // Gold is a pure macro instrument: real yields carry the most weight of any
+    // single factor in the app. There is no "gold leadership" factor here — it
+    // IS gold — and the gold/silver ratio flips sign (a high ratio means gold
+    // is expensive relative to silver, a mild headwind rather than a tailwind).
+    // Gold is far calmer than silver, so the vol scan is narrower and a given
+    // annualized return on margin is harder to come by — hence a lower ROM
+    // divisor, or every leg would normalize to nearly zero.
+    screen: {
+      minOi: 25,
+      thinOi: 300,
+      minChainOi: 0,
+      romDivisor: 150,
+      priceScan: 0.04,
+      volScan: 0.2,
+    },
+
+    engine: {
+      structuralBias: 0.2,
+      structuralLabel: "Central-bank bid",
+      structuralNote:
+        "Sustained official-sector buying has been a persistent floor under gold. Small and constant — it is a level story, not a timing signal, so it is weighted well below silver's deficit prior.",
+      weights: {
+        dxy: { "1D": 0.26, "1W": 0.18, "1M": 0.14 },
+        real10y: { "1D": 0.26, "1W": 0.25, "1M": 0.23 },
+        metalMomo: { "1D": 0.24, "1W": 0.18, "1M": 0.14 },
+        longTrend: { "1D": 0.0, "1W": 0.06, "1M": 0.11 },
+        mcxPositioning: { "1D": 0.12, "1W": 0.12, "1M": 0.12 },
+        usdInr: { "1D": 0.12, "1W": 0.12, "1M": 0.12 },
+        gsrGold: { "1D": 0.0, "1W": 0.04, "1M": 0.05 },
+        structuralBias: { "1D": 0.0, "1W": 0.05, "1M": 0.09 },
+      },
+    },
+
     comex: { root: "GC", spot: "GC=F", months: { 1: "G", 3: "J", 5: "M", 7: "Q", 11: "Z" } },
 
     news: {
@@ -162,6 +231,43 @@ export const METALS = {
     duty: 0.05,
     gst: 0.18,
     parityConfidence: "approximate",
+
+    // Copper is an industrial metal, so the bullion factor set does not
+    // transfer. Real yields barely matter (there is no opportunity-cost story
+    // for a metal you buy to consume); the dollar matters MORE, because copper
+    // has no safe-haven bid to offset dollar strength. Gold leadership is
+    // replaced by the copper/gold ratio, the cleanest free growth proxy.
+    // COPPER LIQUIDITY GATE. MCX copper options are genuinely thin — order of a
+    // couple of thousand OTM contracts across the whole chain, against silver's
+    // deep book. Silver's OI>=25 floor would happily surface copper legs nobody
+    // will fill, and a ranked shortlist reads as a recommendation. So the floor
+    // is raised, "thin" starts much earlier, and minChainOi lets the UI refuse
+    // to rank at all when the whole chain is too quiet to trust.
+    screen: {
+      minOi: 100,
+      thinOi: 250,
+      minChainOi: 1500,
+      romDivisor: 120,
+      priceScan: 0.05,
+      volScan: 0.22,
+    },
+
+    engine: {
+      structuralBias: 0.3,
+      structuralLabel: "Tight concentrate / electrification demand",
+      structuralNote:
+        "Concentrate is scarce (spot treatment charges have gone negative) while grid build-out, EVs and data centres add demand. A modest constant bullish prior — deliberately half silver's, because copper's tightness is more cyclical and can unwind fast.",
+      weights: {
+        dxy: { "1D": 0.26, "1W": 0.22, "1M": 0.18 },
+        real10y: { "1D": 0.06, "1W": 0.05, "1M": 0.04 },
+        metalMomo: { "1D": 0.26, "1W": 0.2, "1M": 0.16 },
+        copperGold: { "1D": 0.14, "1W": 0.12, "1M": 0.1 },
+        longTrend: { "1D": 0.0, "1W": 0.06, "1M": 0.11 },
+        mcxPositioning: { "1D": 0.16, "1W": 0.14, "1M": 0.14 },
+        usdInr: { "1D": 0.12, "1W": 0.12, "1M": 0.12 },
+        structuralBias: { "1D": 0.0, "1W": 0.09, "1M": 0.15 },
+      },
+    },
 
     comex: { root: "HG", spot: "HG=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
 

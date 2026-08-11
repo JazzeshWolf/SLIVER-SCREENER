@@ -74,7 +74,7 @@ const byStrike = <T extends { strike: number; type: string }>(rows: T[], strike:
 
 describe("fitSmile", () => {
   it("fits the OTM smile and ignores legs too quiet to be trusted", () => {
-    const fit = fitSmile(CHAIN, 235900)!;
+    const fit = fitSmile(CHAIN, 235900, 25)!;
     expect(fit).not.toBeNull();
     expect(fit.n).toBe(13); // the three OI<25 stale prints never define the smile
     // Fitted IV near the money sits close to the quoted ATM IV.
@@ -83,8 +83,8 @@ describe("fitSmile", () => {
   });
 
   it("returns null rather than fabricating a fit on a thin chain", () => {
-    expect(fitSmile(CHAIN.slice(0, 3), 235900)).toBeNull();
-    expect(fitSmile(CHAIN, 0)).toBeNull();
+    expect(fitSmile(CHAIN.slice(0, 3), 235900, 25)).toBeNull();
+    expect(fitSmile(CHAIN, 0, 25)).toBeNull();
   });
 });
 
@@ -273,5 +273,62 @@ describe("screenSellCandidates — honesty and degradation", () => {
     expect(noIv.smileFitted).toBe(false);
     expect(noIv.candidates.length).toBe(CHAIN.length);
     expect(noIv.candidates.every((c) => c.reasons.includes("noIV"))).toBe(true);
+  });
+});
+
+describe("per-metal screener calibration", () => {
+  /** The silver fixture chain, retagged as another metal's contract. */
+  const asMetal = (symbol: string, scale = 1): McxData => {
+    const base = mcxFixture();
+    return {
+      ...base,
+      mcx: { ...base.mcx, symbol },
+      options: {
+        ...base.options,
+        chain: base.options.chain.map((o) => ({ ...o, oi: Math.round(o.oi * scale) })),
+      },
+    };
+  };
+
+  it("refuses to rank a copper chain that is too thin to trade", () => {
+    // Copper's registry sets minChainOi; silver's is 0 (gate off). The same
+    // chain must therefore rank for silver and be refused for copper.
+    const thin = asMetal("COPPER", 0.05);
+    const screen = screenSellCandidates(thin);
+    expect(screen.tooThin).toBe(true);
+    expect(screen.candidates).toEqual([]);
+    expect(screen.chainOi).toBeLessThan(screen.minChainOi!);
+  });
+
+  it("does not apply the chain gate to silver", () => {
+    const screen = screenSellCandidates(asMetal("SILVERM", 0.05));
+    expect(screen.tooThin).toBe(false);
+    expect(screen.candidates.length).toBeGreaterThan(0);
+  });
+
+  it("ranks copper when the book is genuinely deep enough", () => {
+    const screen = screenSellCandidates(asMetal("COPPER", 40));
+    expect(screen.tooThin).toBe(false);
+    expect(screen.candidates.length).toBeGreaterThan(0);
+  });
+
+  it("holds copper legs to a higher per-strike OI floor than silver", () => {
+    // A leg with OI 50 is tradeable silver (floor 25) and untradeable copper
+    // (floor 100) — the same number, judged against the right book.
+    const one = (symbol: string): McxData => {
+      const base = mcxFixture();
+      return {
+        ...base,
+        mcx: { ...base.mcx, symbol },
+        options: {
+          ...base.options,
+          chain: base.options.chain.map((o) => ({ ...o, oi: 50 })),
+        },
+      };
+    };
+    const ag = screenSellCandidates(one("SILVERM")).candidates;
+    const cu = screenSellCandidates(one("COPPER")).candidates;
+    expect(ag.some((c) => !c.reasons.includes("thinOI"))).toBe(true);
+    expect(cu.every((c) => c.reasons.includes("thinOI"))).toBe(true);
   });
 });

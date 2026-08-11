@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Horizon, HorizonScore, LiveInputs, MarketEvent, McxData, Point } from "./types";
+import { METAL_IDS } from "./metals.mjs";
 import {
-  FACTOR_CONFIG,
+  factorConfigFor,
   deriveRegime,
   eventGate,
   premiumSellScore,
@@ -127,11 +128,47 @@ describe("scoreHorizon", () => {
     }
   });
 
-  it("keeps nominal factor weights summing to 1 per horizon", () => {
-    for (const h of ["1D", "1W", "1M"] as Horizon[]) {
-      const sum = FACTOR_CONFIG.reduce((a, c) => a + c.weights[h], 0);
-      expect(sum).toBeCloseTo(1, 9);
+  it("keeps nominal factor weights summing to 1 per horizon, for EVERY metal", () => {
+    // A metal whose column does not sum to 1 silently rescales its whole score,
+    // so this guards all three tables at once.
+    for (const id of METAL_IDS) {
+      for (const h of ["1D", "1W", "1M"] as Horizon[]) {
+        const sum = factorConfigFor(id).reduce((a, c) => a + c.weights[h], 0);
+        expect(sum, `${id} ${h}`).toBeCloseTo(1, 9);
+      }
     }
+  });
+
+  it("gives each metal its own factor set", () => {
+    const keys = (id: string) => factorConfigFor(id).map((c) => c.key);
+    // Gold leadership is meaningless for gold itself and for copper.
+    expect(keys("silver")).toContain("goldMomo");
+    expect(keys("gold")).not.toContain("goldMomo");
+    expect(keys("copper")).not.toContain("goldMomo");
+    // Copper swaps the bullion ratio for the growth proxy.
+    expect(keys("copper")).toContain("copperGold");
+    expect(keys("copper")).not.toContain("gsr");
+    // Real yields dominate gold and are near-irrelevant to copper.
+    const w = (id: string, k: string) => factorConfigFor(id).find((c) => c.key === k)!.weights["1M"];
+    expect(w("gold", "real10y")).toBeGreaterThan(w("silver", "real10y"));
+    expect(w("copper", "real10y")).toBeLessThan(w("silver", "real10y"));
+    expect(w("copper", "dxy")).toBeGreaterThan(w("silver", "dxy"));
+  });
+
+  it("flips the gold-silver ratio sign between silver and gold", () => {
+    // Same ratio, opposite meaning: silver cheap vs gold is bullish silver and
+    // mildly bearish gold. Sharing one key would silently invert one of them.
+    const live = emptyLive({
+      metalHistory: momentum(60, 80, 300),
+      xauHistory: momentum(4000, 4400, 300),
+    });
+    const ag = scoreHorizon("1M", live, mcxFixture({ symbol: "SILVERM" }), "silver");
+    const au = scoreHorizon("1M", live, mcxFixture({ symbol: "GOLDM" }), "gold");
+    const sAg = ag.factors.find((f) => f.key === "gsr");
+    const sAu = au.factors.find((f) => f.key === "gsrGold");
+    expect(sAg?.present).toBe(true);
+    expect(sAu?.present).toBe(true);
+    expect(Math.sign(sAg!.s)).toBe(-Math.sign(sAu!.s));
   });
 
   it("long-trend factor activates with deep history and stays out on short history", () => {
@@ -156,8 +193,8 @@ describe("scoreHorizon", () => {
     wild.push({ t: "d59", v: 105 });
     const sQuiet = scoreHorizon("1W", emptyLive({ metalHistory: quiet }), mcxFixture());
     const sWild = scoreHorizon("1W", emptyLive({ metalHistory: wild }), mcxFixture());
-    const fQuiet = sQuiet.factors.find((f) => f.key === "silverMomo")!;
-    const fWild = sWild.factors.find((f) => f.key === "silverMomo")!;
+    const fQuiet = sQuiet.factors.find((f) => f.key === "metalMomo")!;
+    const fWild = sWild.factors.find((f) => f.key === "metalMomo")!;
     expect(fQuiet.s).toBeGreaterThan(fWild.s);
   });
 

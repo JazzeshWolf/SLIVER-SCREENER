@@ -4,17 +4,28 @@ import { PILLAR_LABELS } from "../lib/types";
 import { Card, SectionTitle } from "./ui";
 
 // Plain-English decode of each engine factor — what it measures and how it
-// moves silver. Keyed to FACTOR_CONFIG.key in src/lib/scoring.ts.
+// moves the metal. Keyed to the factor keys in src/lib/scoring.ts.
 const DECODE: Record<string, string> = {
-  dxy: "Dollar direction (inverse). Silver is priced in USD, so a falling dollar lifts it and a rising dollar weighs on it. Measured as z-scored DXY momentum.",
-  real10y: "Real 10-year yield (inverse). Higher real yields raise the opportunity cost of holding non-yielding silver → bearish; falling real yields → bullish.",
-  silverMomo: "Silver's own price momentum over the window. Trend-following — recent strength leans bullish, weakness bearish.",
-  goldMomo: "Gold momentum. Gold leads the precious-metals complex and silver usually follows, with a higher beta.",
-  longTrend: "Price vs its ~200-day average — the long-trend gate. Above = structurally bullish, below = bearish. Slow; only counts on 1W/1M.",
-  mcxPositioning: "MCX futures open interest vs price — are participants adding or cutting risk. Rising OI that confirms the price move adds conviction.",
-  usdInr: "USD-INR. A weaker rupee lifts MCX (₹/kg) silver even when international silver is flat; a stronger rupee is a headwind.",
+  dxy: "Dollar direction (inverse). Metals are priced in USD, so a falling dollar lifts them and a rising dollar weighs on them. Measured as z-scored dollar-index momentum.",
+  real10y:
+    "Real 10-year yield (inverse). Higher real yields raise the opportunity cost of holding a non-yielding asset → bearish; falling real yields → bullish. This is gold's single heaviest factor, and near-irrelevant for copper, which you buy to consume rather than to hold.",
+  metalMomo:
+    "This metal's own price momentum over the window, z-scored against its own history so a move counts more after a quiet stretch than a wild one. Trend-following.",
+  goldMomo:
+    "Gold momentum. Gold leads the precious-metals complex and silver usually follows it with a higher beta. Not used for gold itself, and dropped entirely for copper — gold says nothing about an industrial metal.",
+  longTrend:
+    "Price vs its ~200-day average — the long-trend gate. Above = structurally bullish, below = bearish. Slow; only counts on 1W/1M and only once enough history accrues.",
+  mcxPositioning:
+    "MCX futures open interest vs price — are participants adding or cutting risk. Rising OI that confirms the price move adds conviction; rising OI against it is fresh opposing positioning.",
+  usdInr:
+    "USD-INR. A weaker rupee lifts the MCX rupee price even when the international price is flat; a stronger rupee is a headwind. This is why MCX and COMEX can disagree.",
   gsr: "Gold-silver ratio, mean-reverting. A stretched ratio (silver cheap vs gold) is a contrarian-bullish tell for silver.",
-  deficitBias: "Structural supply deficit — silver has run a multi-year physical deficit. A small, constant bullish prior; slow-moving, 1W/1M only.",
+  gsrGold:
+    "Gold-silver ratio seen from gold's side. A high ratio means gold is rich relative to silver — a mild headwind for gold, the mirror image of the same signal on the silver screen.",
+  copperGold:
+    "Copper/gold ratio — the market's cleanest free growth proxy. Rising = reflation and risk-on, bullish the industrial metal; falling = a growth scare. Replaces gold leadership, which tells you nothing about copper.",
+  structuralBias:
+    "A small, constant prior for this metal's structural story. Slow-moving and deliberately modest, applied on 1W/1M only. It is a hand-set opinion, not a measurement — the one factor here that never reacts to today's data.",
 };
 
 /** Signed diverging bar for a signal in [-1, +1]. */

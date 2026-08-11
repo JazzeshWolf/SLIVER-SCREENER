@@ -327,6 +327,16 @@ export interface SellScreen {
   lotUnits: number;
   confidence: number; // 0..1 data-quality shrink applied to every CONV
   smileFitted: boolean; // false when the chain was too thin to fit a smile
+  /** Total OI across the chain — the whole-book liquidity read. */
+  chainOi?: number;
+  /**
+   * True when the entire chain is too illiquid to rank honestly (copper's
+   * book is genuinely this thin). The screener returns no candidates rather
+   * than a confident-looking shortlist of strikes nobody will fill.
+   */
+  tooThin?: boolean;
+  /** The chain-OI floor this metal was judged against (0 = gate disabled). */
+  minChainOi?: number;
 }
 
 /**

@@ -30,6 +30,31 @@ import {
   zToSignal,
   zScore,
 } from "./stats";
+import { metalFor } from "./metals.mjs";
+import type { MetalConfig } from "./metals.mjs";
+import { metalForSymbol } from "./instrument";
+
+/**
+ * z-score of the CURRENT numerator/denominator ratio against its own recent
+ * distribution. Shared by every cross-metal ratio factor so they can never
+ * drift apart in construction — only in which series goes on top.
+ */
+function ratioZ(
+  numerator: { v: number }[],
+  denominator: { v: number }[],
+  window: number,
+): number | null {
+  if (numerator.length < window || denominator.length < window) return null;
+  const n = Math.min(numerator.length, denominator.length);
+  const ratios: number[] = [];
+  for (let i = n - window; i < n; i++) {
+    const a = numerator[i]?.v;
+    const b = denominator[i]?.v;
+    if (a && b && b > 0) ratios.push(a / b);
+  }
+  if (ratios.length < 5) return null;
+  return zScore(ratios[ratios.length - 1], ratios);
+}
 
 // --- Per-horizon configuration ---------------------------------------------
 // `window` is the lookback the normalization uses; `weight` is the prior.
@@ -49,34 +74,36 @@ interface FactorConfig {
   weights: Record<Horizon, number>;
 }
 
-export const FACTOR_CONFIG: FactorConfig[] = [
+/**
+ * Every factor the engine knows, with its label, pillar and normalization
+ * window. WEIGHTS are NOT here — they live per metal in the registry, because
+ * the three metals genuinely weigh these differently: real yields dominate
+ * gold, barely register for copper, and sit mid-table for silver.
+ */
+const FACTOR_DEFS: Omit<FactorConfig, "weights">[] = [
   {
     key: "dxy",
     pillar: "global",
     label: "Dollar (USD index, inverse)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
-    weights: { "1D": 0.24, "1W": 0.17, "1M": 0.13 },
   },
   {
     key: "real10y",
     pillar: "global",
     label: "Real yield (inverse)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
-    weights: { "1D": 0.18, "1W": 0.14, "1M": 0.12 },
   },
   {
-    key: "silverMomo",
+    key: "metalMomo",
     pillar: "tech",
-    label: "Silver momentum",
+    label: "Price momentum",
     windows: { "1D": 5, "1W": 20, "1M": 50 },
-    weights: { "1D": 0.22, "1W": 0.16, "1M": 0.12 },
   },
   {
     key: "goldMomo",
     pillar: "global",
-    label: "Gold momentum",
+    label: "Gold leadership",
     windows: { "1D": 5, "1W": 20, "1M": 50 },
-    weights: { "1D": 0.16, "1W": 0.13, "1M": 0.1 },
   },
   {
     // Classic long-trend regime filter: price vs its ~200-day average. Slow by
@@ -85,41 +112,74 @@ export const FACTOR_CONFIG: FactorConfig[] = [
     pillar: "tech",
     label: "Long trend (200-DMA)",
     windows: { "1D": 0, "1W": 200, "1M": 200 },
-    weights: { "1D": 0.0, "1W": 0.05, "1M": 0.1 },
   },
   {
     key: "mcxPositioning",
     pillar: "deriv",
     label: "MCX OI / price",
     windows: { "1D": 1, "1W": 5, "1M": 20 },
-    weights: { "1D": 0.12, "1W": 0.12, "1M": 0.12 },
   },
   {
     key: "usdInr",
     pillar: "local",
     label: "USD-INR (MCX)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
-    weights: { "1D": 0.08, "1W": 0.1, "1M": 0.1 },
   },
   {
+    // Silver's read: a stretched ratio means silver is cheap vs gold →
+    // contrarian-bullish for silver.
     key: "gsr",
     pillar: "global",
     label: "Gold-silver ratio (revert)",
     windows: { "1D": 20, "1W": 60, "1M": 252 },
-    weights: { "1D": 0.0, "1W": 0.05, "1M": 0.06 },
   },
   {
-    key: "deficitBias",
+    // The SAME ratio seen from gold's side, so the sign flips: a high ratio
+    // means gold is expensive relative to silver — a mild headwind, not a
+    // tailwind. Sharing one key across both metals would silently invert one.
+    key: "gsrGold",
     pillar: "global",
-    label: "Structural deficit bias",
+    label: "Gold-silver ratio (gold rich)",
+    windows: { "1D": 20, "1W": 60, "1M": 252 },
+  },
+  {
+    // Copper's growth proxy. Rising copper/gold = reflation, risk-on, bullish
+    // copper; falling = growth scare. Replaces gold leadership, which tells you
+    // nothing about an industrial metal.
+    key: "copperGold",
+    pillar: "global",
+    label: "Copper/gold ratio (growth)",
+    windows: { "1D": 20, "1W": 60, "1M": 252 },
+  },
+  {
+    key: "structuralBias",
+    pillar: "global",
+    label: "Structural bias",
     windows: { "1D": 0, "1W": 0, "1M": 0 },
-    weights: { "1D": 0.0, "1W": 0.08, "1M": 0.15 },
   },
 ];
 
-// Standing structural bias: silver runs a multi-year supply deficit. Slow,
-// constant, deliberately modest. Only applied on 1W/1M (weight 0 on 1D).
-const DEFICIT_BIAS_SIGNAL = 0.6;
+/**
+ * The factor table for one metal: every factor the registry gives a weight,
+ * with that metal's label for the structural prior. Cached because the direction
+ * engine calls it per horizon on every render.
+ */
+const configCache = new Map<string, FactorConfig[]>();
+
+export function factorConfigFor(metalId: string): FactorConfig[] {
+  const metal = metalFor(metalId);
+  const cached = configCache.get(metal.id);
+  if (cached) return cached;
+  const weights = metal.engine.weights;
+  const out = FACTOR_DEFS.filter((d) => weights[d.key]).map((d) => ({
+    ...d,
+    label: d.key === "structuralBias" ? metal.engine.structuralLabel : d.label,
+    weights: weights[d.key] as Record<Horizon, number>,
+  }));
+  configCache.set(metal.id, out);
+  return out;
+}
+
 
 const BULLISH_THRESHOLD = 3;
 const MIN_OBS_FOR_FULL_CONFIDENCE = 30;
@@ -130,6 +190,7 @@ function factorSignal(
   window: number,
   live: LiveInputs,
   mcx: McxData,
+  metal: MetalConfig,
 ): number | null {
   switch (key) {
     case "dxy": {
@@ -142,7 +203,7 @@ function factorSignal(
       const z = ch === null ? null : zScore(ch, windowChanges(live.real10yHistory, window));
       return z === null ? null : -zToSignal(z); // inverse: yields down = bullish
     }
-    case "silverMomo":
+    case "metalMomo":
       return momentumSignal(live.metalHistory, window);
     case "goldMomo":
       return momentumSignal(live.xauHistory, window);
@@ -172,21 +233,23 @@ function factorSignal(
     }
     case "gsr": {
       // Contrarian: GSR high vs its mean => silver cheap vs gold => mild bullish.
-      if (live.metalHistory.length < window || live.xauHistory.length < window) return null;
-      const ratios: number[] = [];
-      const n = Math.min(live.metalHistory.length, live.xauHistory.length);
-      for (let i = n - window; i < n; i++) {
-        const ag = live.metalHistory[i]?.v;
-        const au = live.xauHistory[i]?.v;
-        if (ag && au && ag > 0) ratios.push(au / ag);
-      }
-      if (ratios.length < 5) return null;
-      const current = ratios[ratios.length - 1];
-      const z = zScore(current, ratios);
+      const z = ratioZ(live.xauHistory, live.metalHistory, window);
       return z === null ? null : zToSignal(z);
     }
-    case "deficitBias":
-      return DEFICIT_BIAS_SIGNAL;
+    case "gsrGold": {
+      // The same ratio read from gold's side, so the sign flips: gold rich
+      // relative to silver is a mild headwind for gold.
+      const z = ratioZ(live.xauHistory, live.metalHistory, window);
+      return z === null ? null : -zToSignal(z);
+    }
+    case "copperGold": {
+      // Copper/gold is the market's cleanest free growth proxy: rising means
+      // reflation (bullish the industrial metal), falling means a growth scare.
+      const z = ratioZ(live.metalHistory, live.xauHistory, window);
+      return z === null ? null : zToSignal(z);
+    }
+    case "structuralBias":
+      return metal.engine.structuralBias;
     default:
       return null;
   }
@@ -241,13 +304,29 @@ function horizonConfidence(
   return clamp(coverage * historyFactor * breadth * staleFactor * macroFactor, 0, 1);
 }
 
-/** Fraction of the macro-pillar weight (DXY + real yields) actually backed by data. */
-const MACRO_PILLAR_KEYS = ["dxy", "real10y"];
-function macroCoverageOf(horizon: Horizon, contributions: FactorContribution[]): number {
+/**
+ * Fraction of the macro-pillar weight actually backed by data — the guard that
+ * stops a confident-looking score riding on momentum alone.
+ *
+ * WHICH factors count as the macro pillar is per metal. For bullion it is the
+ * dollar and real yields. For copper, real yields are near-irrelevant (there is
+ * no opportunity-cost story for a metal you buy to consume), so the pillar is
+ * the dollar and the growth proxy instead.
+ */
+function macroPillarKeys(metal: MetalConfig): string[] {
+  return metal.id === "copper" ? ["dxy", "copperGold"] : ["dxy", "real10y"];
+}
+
+function macroCoverageOf(
+  metal: MetalConfig,
+  horizon: Horizon,
+  contributions: FactorContribution[],
+): number {
+  const keys = macroPillarKeys(metal);
   let nominal = 0;
   let present = 0;
-  for (const cfg of FACTOR_CONFIG) {
-    if (!MACRO_PILLAR_KEYS.includes(cfg.key)) continue;
+  for (const cfg of factorConfigFor(metal.id)) {
+    if (!keys.includes(cfg.key)) continue;
     const w = cfg.weights[horizon];
     if (w <= 0) continue;
     nominal += w;
@@ -260,14 +339,16 @@ export function scoreHorizon(
   horizon: Horizon,
   live: LiveInputs,
   mcx: McxData,
+  metalId?: string,
 ): HorizonScore {
+  const metal = metalId ? metalFor(metalId) : metalForSymbol(mcx.mcx.symbol);
   const contributions: FactorContribution[] = [];
   let presentWeight = 0;
 
-  for (const cfg of FACTOR_CONFIG) {
+  for (const cfg of factorConfigFor(metal.id)) {
     const weight = cfg.weights[horizon];
     if (weight <= 0) continue;
-    const s = factorSignal(cfg.key, cfg.windows[horizon], live, mcx);
+    const s = factorSignal(cfg.key, cfg.windows[horizon], live, mcx, metal);
     const present = s !== null;
     if (present) presentWeight += weight;
     contributions.push({
@@ -306,7 +387,7 @@ export function scoreHorizon(
     live.real10yHistory.length,
   );
   const stale = live.partial || mcx.stale;
-  const macroCoverage = macroCoverageOf(horizon, contributions);
+  const macroCoverage = macroCoverageOf(metal, horizon, contributions);
   const confidence = present.length
     ? horizonConfidence(present.length, presentWeight, maxHistory, stale, macroCoverage)
     : 0;
@@ -326,11 +407,15 @@ export function scoreHorizon(
   };
 }
 
-export function scoreAllHorizons(live: LiveInputs, mcx: McxData): Record<Horizon, HorizonScore> {
+export function scoreAllHorizons(
+  live: LiveInputs,
+  mcx: McxData,
+  metalId?: string,
+): Record<Horizon, HorizonScore> {
   return {
-    "1D": scoreHorizon("1D", live, mcx),
-    "1W": scoreHorizon("1W", live, mcx),
-    "1M": scoreHorizon("1M", live, mcx),
+    "1D": scoreHorizon("1D", live, mcx, metalId),
+    "1W": scoreHorizon("1W", live, mcx, metalId),
+    "1M": scoreHorizon("1M", live, mcx, metalId),
   };
 }
 

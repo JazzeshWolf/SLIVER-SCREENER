@@ -33,7 +33,7 @@ import {
   type Measure,
 } from "./options";
 import { clamp } from "./stats";
-import { lotUnitsForSymbol } from "./instrument";
+import { lotUnitsForSymbol, metalForSymbol } from "./instrument";
 
 // --- Tunables ---------------------------------------------------------------
 
@@ -44,13 +44,14 @@ const RV_WEIGHT = 0.6;
  *  so the hand-set direction weights can never dominate the probabilities. */
 const MAX_DRIFT_SIGMA = 0.5;
 
+// Metal-independent filters. The OI floors and the ROM normalizer ARE
+// metal-dependent and come from the registry (`metal.screen`) — silver's deep
+// book and copper's thin one cannot share a liquidity threshold.
 const FILTERS = {
-  minOi: 25, // below this the leg is untradeable
   minPremiumPctF: 0.0015, // 0.15% of the futures price
   minCushionSigma: 0.6, // inside this it's a gamma trade, not a premium sale
   smileTolVolPts: 0.04, // absolute floor for the off-smile test (4 vol points)
   smileTolMad: 4, // ... or 4× the median absolute deviation of the fit
-  smileMinOi: 25, // legs quiet enough to be stale don't get to define the smile
 };
 
 /** CONV sub-score weights. Hand-set priors — see the file header. */
@@ -92,14 +93,14 @@ export interface SmileFit {
  * "IV" is really a days-old print (those sit far off an otherwise smooth smile).
  * Returns null when there is not enough of a chain to say anything.
  */
-export function fitSmile(chain: OptionQuote[], F: number): SmileFit | null {
+export function fitSmile(chain: OptionQuote[], F: number, minOi: number): SmileFit | null {
   if (!(F > 0)) return null;
   const pts: { x: number; y: number }[] = [];
   for (const o of chain) {
     const otm = o.type === "CE" ? o.strike > F : o.strike < F;
     if (!otm || o.strike <= 0) continue;
     if (o.iv == null || !(o.iv > 0)) continue;
-    if ((o.oi ?? 0) < FILTERS.smileMinOi) continue;
+    if ((o.oi ?? 0) < minOi) continue; // legs quiet enough to be stale don't define the smile
     pts.push({ x: Math.log(o.strike / F), y: o.iv });
   }
   if (pts.length < 5) return null;
@@ -192,16 +193,32 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
   const F = mcx.mcx.fut;
   const chain = mcx.options.chain ?? [];
   const forecast = buildForecast(mcx, opts.score);
+  const metal = metalForSymbol(mcx.mcx.symbol);
+  const cfg = metal.screen;
   const lotUnits = opts.lotUnits ?? lotUnitsForSymbol(mcx.mcx.symbol);
   const confidence = dataConfidence(mcx);
+  // Whole-chain liquidity gate. Ranking a chain nobody trades produces a
+  // confident-looking shortlist of unfillable strikes, which is worse than
+  // showing nothing — so we refuse to rank and say why.
+  const chainOi = chain.reduce((a, o) => a + (o.oi ?? 0), 0);
+  const tooThin = cfg.minChainOi > 0 && chainOi < cfg.minChainOi;
 
-  if (F == null || !forecast || !chain.length) {
-    return { candidates: [], forecastVol: forecast?.vol ?? null, drift: forecast?.drift ?? null,
-      lotUnits, confidence, smileFitted: false };
+  if (F == null || !forecast || !chain.length || tooThin) {
+    return {
+      candidates: [],
+      forecastVol: forecast?.vol ?? null,
+      drift: forecast?.drift ?? null,
+      lotUnits,
+      confidence,
+      smileFitted: false,
+      chainOi,
+      tooThin,
+      minChainOi: cfg.minChainOi,
+    };
   }
 
   const { measure, vol: sigF, t } = forecast;
-  const smile = fitSmile(chain, F);
+  const smile = fitSmile(chain, F, cfg.minOi);
   const minPremium = FILTERS.minPremiumPctF * F;
   const favoured = favouredSide(opts.regime ?? null);
 
@@ -219,7 +236,7 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
       const tol = Math.max(FILTERS.smileTolMad * smile.mad, FILTERS.smileTolVolPts);
       if (Math.abs(o.iv - smile.at(x)) > tol) reasons.push("offSmile");
     }
-    if ((o.oi ?? 0) < FILTERS.minOi) reasons.push("thinOI");
+    if ((o.oi ?? 0) < cfg.minOi) reasons.push("thinOI");
     if (o.ltp < minPremium) reasons.push("tinyPrem");
 
     // Strike IV where it is trustworthy, ATM IV as the fallback, so a rejected
@@ -232,7 +249,10 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
 
     // --- metrics ---
     const fair = fairValueUnder(o.strike, o.type, measure);
-    const margin = spanScanMargin(F, o.strike, t, strikeIv, o.type);
+    const margin = spanScanMargin(F, o.strike, t, strikeIv, o.type, {
+      priceScan: cfg.priceScan,
+      volScan: cfg.volScan,
+    });
     const edge = o.ltp - fair; // ₹/kg expected edge over the tenor
     const edgePct = margin > 0 ? (edge / margin) * 100 : 0;
     const romAnnual = margin > 0 && t > 0 ? (edge / margin / t) * 100 : 0;
@@ -244,7 +264,7 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
 
     // --- sub-scores, each 0..1 ---
     const sub = {
-      ret: clamp(romAnnual / 250, 0, 1),
+      ret: clamp(romAnnual / cfg.romDivisor, 0, 1),
       safety: clamp((pOtm - 0.8) / 0.15, 0, 1),
       tail: clamp(1 - (tailPct / 100 - 0.5) / 1.2, 0, 1),
       liquidity: clamp(Math.log10(Math.max(o.oi ?? 0, 1) / 100) / 1.5, 0, 1),
@@ -291,7 +311,7 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
       breakeven: o.type === "CE" ? o.strike + o.ltp : o.strike - o.ltp,
       oi: o.oi ?? 0,
       oiChg: o.oiChg ?? null,
-      thin: (o.oi ?? 0) < 500,
+      thin: (o.oi ?? 0) < cfg.thinOi,
       withRegime,
       ok: reasons.length === 0,
       reasons,
@@ -309,6 +329,9 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
     lotUnits,
     confidence,
     smileFitted: smile != null,
+    chainOi,
+    tooThin: false,
+    minChainOi: cfg.minChainOi,
   };
 }
 

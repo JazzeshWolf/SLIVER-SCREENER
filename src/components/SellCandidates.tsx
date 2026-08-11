@@ -100,7 +100,21 @@ export function SellCandidates({
         </div>
       )}
 
-      {!rows.length ? (
+      {screen.tooThin ? (
+        // Copper's book is genuinely this thin. Ranking it would produce a
+        // confident-looking shortlist of strikes nobody will fill, and a
+        // ranking reads as a recommendation — so refuse, and say why.
+        <div className="px-3 py-6 text-center">
+          <p className="text-sm text-amber-300/90 font-medium">Chain too thin to sell</p>
+          <p className="text-[11px] leading-snug text-white/45 mt-1.5 max-w-[19rem] mx-auto">
+            Total open interest across this chain is{" "}
+            <b className="text-white/70">{fmtOi(screen.chainOi ?? 0)}</b>, below the{" "}
+            {fmtOi(screen.minChainOi ?? 0)} this contract needs to rank honestly. Any "best" strike
+            here would be one you can't get filled on — or out of. Use the chain tab to read
+            positioning, and trade a deeper expiry or a different metal.
+          </p>
+        </div>
+      ) : !rows.length ? (
         <p className="text-sm text-white/40 px-2 py-6 text-center">
           {screen.candidates.length
             ? `No ${side === "PE" ? "put" : "call"} clears the filters on this expiry — every strike is either inside the gamma zone or too thin. Try a later expiry.`
