@@ -5,7 +5,9 @@ on:
   push:
     # Deploy only from the repo's default branch — the github-pages environment
     # rejects other branches, and a second run would cancel this one (concurrency).
-    branches: ["claude/wizardly-pasteur-58a976"]
+    # NOTE: `main` must also be set as the repo's DEFAULT branch in Settings, or
+    # the github-pages environment will reject the deployment.
+    branches: ["main"]
     paths-ignore:
       - "public/data/**" # data refreshes shouldn't trigger a full redeploy
   workflow_dispatch: {}

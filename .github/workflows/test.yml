@@ -1,0 +1,40 @@
+name: Tests
+
+# The scoring engine, options math and sell screener are the parts that can put
+# a wrong number in front of a real trade, and they are the parts that are unit
+# tested — so the tests gate every push and PR. Data-only commits from the
+# refresh cron are ignored (they touch no code).
+on:
+  push:
+    paths-ignore:
+      - "public/data/**"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - "public/data/**"
+      - "**/*.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      # Type errors are how the metal refactor's blast radius gets found, so a
+      # clean type-check is as load-bearing as the unit tests here.
+      - name: Type-check + build
+        run: npm run build
+      - name: Unit tests
+        run: npm test

@@ -15,7 +15,12 @@ on:
   push:
     # Rebuild data on code changes (e.g. fetcher tweaks) — ignore data-only
     # commits to avoid a self-trigger loop.
-    branches: ["claude/wizardly-pasteur-58a976"]
+    # NOTE: `schedule` only ever fires from the repo's DEFAULT branch, whatever
+    # this list says — so `main` must be the default branch for the cron to run.
+    # To refresh data on a feature branch during development, use the manual
+    # `workflow_dispatch` trigger with that branch selected; it runs that
+    # branch's builder with the same secrets and commits back to that branch.
+    branches: ["main"]
     paths-ignore:
       - "public/data/**"
 

@@ -11,9 +11,14 @@ import { cacheGet, cacheSet } from "./cache";
 
 const BASE = import.meta.env.BASE_URL ?? "/";
 
-// Repo coordinates for the always-fresh raw data file (default branch).
-const RAW_URL =
-  "https://raw.githubusercontent.com/JazzeshWolf/SLIVER-SCREENER/claude/wizardly-pasteur-58a976/public/data/latest.json";
+// Repo coordinates for the always-fresh raw data file. This MUST be the branch
+// the data cron commits to (the repo's default branch) — the bundled copy under
+// `${BASE}data/` is only as fresh as the last Pages deploy, whereas this updates
+// every ~10 min. Kept as named parts so re-pointing is a one-line change and
+// never again a magic string buried mid-URL (AUDIT finding B5).
+const DATA_REPO = "JazzeshWolf/SLIVER-SCREENER";
+const DATA_BRANCH = "main";
+const RAW_URL = `https://raw.githubusercontent.com/${DATA_REPO}/${DATA_BRANCH}/public/data/latest.json`;
 
 async function timed<T>(p: Promise<T>, ms = 9000): Promise<T> {
   return await Promise.race([
