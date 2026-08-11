@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { fetchSnapshot, fetchLiveSpot } from "../lib/fetchers";
+import { DEFAULT_METAL, metalFor } from "../lib/metals.mjs";
 import { deriveRegime, premiumSellScore, scoreAllHorizons } from "../lib/scoring";
 import { walkForwardHitRate, type TrackResult } from "../lib/track";
 import { buildOutlook, type Outlook } from "../lib/outlook";
@@ -140,7 +141,7 @@ export interface Dashboard {
   refresh: () => void;
 }
 
-export function useDashboard(): Dashboard {
+export function useDashboard(metalId: string = DEFAULT_METAL): Dashboard {
   const [live, setLive] = useState<LiveInputs | null>(null);
   const [mcx, setMcx] = useState<McxData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,21 +149,35 @@ export function useDashboard(): Dashboard {
   const [selectedExpiry, setSelectedExpiry] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
+  const id = metalFor(metalId).id;
+
   const load = useCallback(async () => {
     setLoading(true);
-    const snap = await fetchSnapshot();
+    const snap = await fetchSnapshot(id);
     if (snap) {
       // Overlay live browser-fetched spot so ⟳ genuinely updates prices even
       // when the server snapshot is stale; falls back to server values if the
-      // live fetch is blocked/fails.
-      const spot = await fetchLiveSpot().catch(() => null);
+      // live fetch is blocked/fails. Copper has no free CORS spot API, so this
+      // returns null there and the server cadence is all there is.
+      const spot = await fetchLiveSpot(id).catch(() => null);
       const merged = spot ? applyLiveSpot(snap, spot) : snap;
       setLive(merged.live);
       setMcx(merged.mcx);
       setLastUpdated(spot ? new Date().toISOString() : snap.mcx?.asOf ?? new Date().toISOString());
+    } else {
+      // Switching to a metal with no data yet must not leave the previous
+      // metal's numbers on screen under the new metal's name.
+      setLive(null);
+      setMcx(null);
     }
     setLoading(false);
-  }, []);
+  }, [id]);
+
+  // Reset per-metal view state when the metal changes, so a silver expiry can
+  // never stay selected while gold's chain is rendering.
+  useEffect(() => {
+    setSelectedExpiry(null);
+  }, [id]);
 
   useEffect(() => {
     load();
@@ -183,12 +198,14 @@ export function useDashboard(): Dashboard {
 
   const regime = useMemo(() => {
     if (!scores || !mcx) return null;
-    const prev = cacheGet<Regime>("regime")?.value;
+    // Hysteresis memory is per metal — silver's last regime must not carry
+    // over into gold's badge.
+    const prev = cacheGet<Regime>(`regime:${id}`)?.value;
     // Decision horizon keys off the contract being sold — the option DTE.
     const r = deriveRegime(scores, mcx.mcx.optionDte ?? mcx.mcx.dte, prev);
-    cacheSet("regime", r.regime);
+    cacheSet(`regime:${id}`, r.regime);
     return r;
-  }, [scores, mcx]);
+  }, [scores, mcx, id]);
 
   const premium = useMemo(() => {
     if (!viewMcx) return null;

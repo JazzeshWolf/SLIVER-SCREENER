@@ -1,5 +1,8 @@
 import { useState } from "preact/hooks";
 import { useDashboard } from "./state/store";
+import { useMetalSelection } from "./state/metal";
+import { MetalPicker } from "./components/MetalPicker";
+import { metalFor } from "./lib/metals.mjs";
 import { TabBar, type Tab } from "./components/TabBar";
 import { RegimeCard } from "./components/RegimeCard";
 import { FactorBreakdown } from "./components/FactorBreakdown";
@@ -28,14 +31,43 @@ import { ExpirySelector } from "./components/ExpirySelector";
 import { timeAgo } from "./components/ui";
 
 export function App() {
-  const dash = useDashboard();
+  const { metal, select, clear } = useMetalSelection();
   const [tab, setTab] = useState<Tab>("score");
+
+  // The picker is the entry screen. Rendering it before the dashboard hook is
+  // mounted also means no metal file is fetched until one is chosen.
+  if (!metal) return <MetalPicker onSelect={select} />;
+  return <MetalDashboard metalId={metal} tab={tab} setTab={setTab} onBack={clear} />;
+}
+
+function MetalDashboard({
+  metalId,
+  tab,
+  setTab,
+  onBack,
+}: {
+  metalId: string;
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  onBack: () => void;
+}) {
+  const dash = useDashboard(metalId);
+  const meta = metalFor(metalId);
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <header className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold tracking-tight">🥈 Sliver Screener</h1>
+          {/* Tapping the metal name returns to the picker — the only way back,
+              so it is a button rather than a label. */}
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-lg font-bold tracking-tight active:opacity-60"
+            title="Switch metal"
+          >
+            <span className="text-white/30 text-sm">‹</span>
+            {meta.emoji} {meta.label}
+          </button>
           {dash.mcx?.estimated && (
             <span className="text-[9px] uppercase tracking-wide text-amber-300/80 border border-amber-400/30 rounded px-1 py-0.5">
               MCX est.
@@ -68,7 +100,9 @@ export function App() {
           />
         )}
         {!dash.live && (
-          <div className="text-center text-white/40 py-16">Loading market data…</div>
+          <div className="text-center text-white/40 py-16">
+            {dash.loading ? "Loading market data…" : `No data for ${meta.label} yet — the next refresh will fill it in.`}
+          </div>
         )}
 
         {dash.live && (

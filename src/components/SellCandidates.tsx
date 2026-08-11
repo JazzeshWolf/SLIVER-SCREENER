@@ -86,8 +86,9 @@ export function SellCandidates({
           </div>
           <div className="text-[10px] leading-snug text-rose-200/70 mt-0.5">
             {gates.vrp.blocked ? gates.vrp.note : gates.events.note}{" "}
-            The ranking below is still shown as context, but the best-scoring strike on a
-            negative-premium chain is still a bad trade.
+            {gates.vrp.blocked
+              ? "The ranking below is still shown as context, but the best-scoring strike on a chain that pays less than the metal moves is still a bad trade."
+              : "The ranking below is still shown as context — for managing what you already hold, not for opening into the print."}
           </div>
         </div>
       )}

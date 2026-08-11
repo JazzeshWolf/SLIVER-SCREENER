@@ -6,8 +6,9 @@
 // GitHub URL (Access-Control-Allow-Origin: *), falling back to the bundled copy.
 // ---------------------------------------------------------------------------
 
-import type { LiveInputs, McxData, Snapshot } from "./types";
+import type { LiveInputs, McxData, MetalSummary, Snapshot } from "./types";
 import { cacheGet, cacheSet } from "./cache";
+import { DEFAULT_METAL, metalFor } from "./metals.mjs";
 
 const BASE = import.meta.env.BASE_URL ?? "/";
 
@@ -18,7 +19,7 @@ const BASE = import.meta.env.BASE_URL ?? "/";
 // never again a magic string buried mid-URL (AUDIT finding B5).
 const DATA_REPO = "JazzeshWolf/SLIVER-SCREENER";
 const DATA_BRANCH = "main";
-const RAW_URL = `https://raw.githubusercontent.com/${DATA_REPO}/${DATA_BRANCH}/public/data/latest.json`;
+const RAW_BASE = `https://raw.githubusercontent.com/${DATA_REPO}/${DATA_BRANCH}/public/data`;
 
 async function timed<T>(p: Promise<T>, ms = 9000): Promise<T> {
   return await Promise.race([
@@ -27,10 +28,44 @@ async function timed<T>(p: Promise<T>, ms = 9000): Promise<T> {
   ]);
 }
 
-async function getJson<T>(url: string): Promise<T> {
-  const res = await timed(fetch(url, { headers: { accept: "application/json" }, cache: "no-store" }));
+async function getJson<T>(url: string, ms?: number): Promise<T> {
+  const res = await timed(
+    fetch(url, { headers: { accept: "application/json" }, cache: "no-store" }),
+    ms,
+  );
   if (!res.ok) throw new Error(`${url} -> ${res.status}`);
   return (await res.json()) as T;
+}
+
+// The raw GitHub copy is the FRESH one (updated every ~10 min); the bundled
+// copy is only as fresh as the last Pages deploy. So we want raw when we can
+// get it — but we must not make the user wait out a full timeout to find out
+// it is blocked. Fetch both at once and prefer raw if it answers.
+const REMOTE_MS = 6000;
+// How long we'll wait for the fresh copy before falling back to the bundled
+// one. A healthy raw.githubusercontent fetch answers well inside this; a
+// blocked one hangs until its timeout, and making the user stare at "Loading"
+// for six seconds to discover that is worse than showing slightly older data
+// (which the 5-minute refresh and the live-spot overlay both correct anyway).
+const REMOTE_GRACE_MS = 2500;
+
+async function preferRemote<T>(remoteUrl: string, localUrl: string): Promise<T> {
+  const remote = getJson<T>(remoteUrl, REMOTE_MS);
+  remote.catch(() => {}); // never let a late rejection escape unhandled
+
+  const raced = await Promise.race([
+    remote.then((v) => ({ hit: true as const, v })).catch(() => ({ hit: false as const })),
+    new Promise<{ hit: false }>((r) => setTimeout(() => r({ hit: false }), REMOTE_GRACE_MS)),
+  ]);
+  if (raced.hit) return raced.v;
+
+  try {
+    return await getJson<T>(localUrl);
+  } catch {
+    // No bundled copy either (e.g. gold.json on a site deployed before the
+    // multi-metal split) — give the remote its full timeout after all.
+    return await remote;
+  }
 }
 
 /**
@@ -87,44 +122,94 @@ function toSnapshot(raw: McxData & { live?: LiveInputs }): Snapshot {
  * server-built snapshot is stale. Returns null on any failure so the caller
  * falls back to the server values — never throws, never blocks.
  */
-export async function fetchLiveSpot(): Promise<
-  { metalUsd: number | null; xauUsd: number | null; usdInr: number | null } | null
-> {
+export async function fetchLiveSpot(
+  metalId: string = DEFAULT_METAL,
+): Promise<{ metalUsd: number | null; xauUsd: number | null; usdInr: number | null } | null> {
+  const metal = metalFor(metalId);
   const j = async (url: string) => (await timed(fetch(url, { cache: "no-store" }), 6000)).json();
-  const [xag, xau, inr] = await Promise.allSettled([
-    j("https://api.gold-api.com/price/XAG"),
+  const price = (r: PromiseSettledResult<any>) =>
+    r.status === "fulfilled" && typeof r.value?.price === "number" && r.value.price > 0 ? r.value.price : null;
+
+  // Gold and the rupee are always fetched: gold doubles as the cross-metal
+  // reference (GSR for silver, copper/gold for copper) and USD-INR drives the
+  // parity for all three.
+  //
+  // COPPER HAS NO FREE CORS SPOT API. gold-api.com serves XAU/XAG only, so
+  // `intlFeeds.goldApi` is null and copper simply has no browser-side live
+  // overlay — it refreshes on the server's ~10-minute cadence. That is a real
+  // limitation, and the UI says so rather than implying a live tick.
+  const own = metal.intlFeeds.goldApi;
+  const [ownRes, xau, inr] = await Promise.allSettled([
+    own && own !== "XAU" ? j(`https://api.gold-api.com/price/${own}`) : Promise.reject(new Error("n/a")),
     j("https://api.gold-api.com/price/XAU"),
     j("https://api.frankfurter.app/latest?from=USD&to=INR"),
   ]);
-  const price = (r: PromiseSettledResult<any>) =>
-    r.status === "fulfilled" && typeof r.value?.price === "number" && r.value.price > 0 ? r.value.price : null;
-  const metalUsd = price(xag);
+
   const xauUsd = price(xau);
+  const metalUsd = own === "XAU" ? xauUsd : price(ownRes);
   const usdInr =
     inr.status === "fulfilled" && typeof inr.value?.rates?.INR === "number" ? inr.value.rates.INR : null;
   if (metalUsd == null && xauUsd == null && usdInr == null) return null; // everything blocked
   return { metalUsd, xauUsd, usdInr };
 }
 
+/** True when this metal has a browser-callable live spot feed at all. */
+export function hasLiveSpot(metalId: string): boolean {
+  return metalFor(metalId).intlFeeds.goldApi != null;
+}
+
 /**
- * Load the snapshot: raw GitHub URL first (always fresh), then the bundled copy
- * shipped with the site, then the last cached snapshot. Never throws.
+ * Candidate filenames for a metal, best first. Silver falls back to the
+ * pre-split `latest.json` so the app still works against a data branch that
+ * has not run the multi-metal builder yet.
  */
-export async function fetchSnapshot(): Promise<Snapshot | null> {
-  try {
-    const j = await getJson<McxData & { live?: LiveInputs }>(`${RAW_URL}?ts=${Date.now()}`);
-    const snap = toSnapshot(j);
-    cacheSet("snapshot", snap);
-    return snap;
-  } catch {
-    // Fall back to the copy bundled into the deployed site.
+function filesFor(metalId: string): string[] {
+  const id = metalFor(metalId).id;
+  return id === DEFAULT_METAL ? [`${id}.json`, "latest.json"] : [`${id}.json`];
+}
+
+/**
+ * Load one metal's snapshot: raw GitHub URL first (always fresh), then the copy
+ * bundled into the deployed site, then the last cached snapshot for that metal.
+ * Never throws.
+ */
+export async function fetchSnapshot(metalId: string = DEFAULT_METAL): Promise<Snapshot | null> {
+  const id = metalFor(metalId).id;
+  const cacheKey = `snapshot:${id}`;
+  for (const file of filesFor(id)) {
+    try {
+      const ts = Date.now();
+      const j = await preferRemote<McxData & { live?: LiveInputs }>(
+        `${RAW_BASE}/${file}?ts=${ts}`,
+        `${BASE}data/${file}?ts=${ts}`,
+      );
+      const snap = toSnapshot(j);
+      cacheSet(cacheKey, snap);
+      return snap;
+    } catch {
+      /* try the next filename */
+    }
   }
+  return cacheGet<Snapshot>(cacheKey)?.value ?? null;
+}
+
+/**
+ * The picker's summary cards. Falls back to a synthesized silver-only list so
+ * the app still opens against a data branch predating index.json.
+ */
+export async function fetchMetalIndex(): Promise<MetalSummary[] | null> {
   try {
-    const j = await getJson<McxData & { live?: LiveInputs }>(`${BASE}data/latest.json?ts=${Date.now()}`);
-    const snap = toSnapshot(j);
-    cacheSet("snapshot", snap);
-    return snap;
+    const ts = Date.now();
+    const j = await preferRemote<{ metals?: MetalSummary[] }>(
+      `${RAW_BASE}/index.json?ts=${ts}`,
+      `${BASE}data/index.json?ts=${ts}`,
+    );
+    if (Array.isArray(j?.metals) && j.metals.length) {
+      cacheSet("metalIndex", j.metals);
+      return j.metals;
+    }
   } catch {
-    return cacheGet<Snapshot>("snapshot")?.value ?? null;
+    /* fall through to cache */
   }
+  return cacheGet<MetalSummary[]>("metalIndex")?.value ?? null;
 }

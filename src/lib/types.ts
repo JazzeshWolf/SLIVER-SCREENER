@@ -192,10 +192,37 @@ export interface NewsItem {
   impact: "up" | "down" | "twoway"; // auto-tagged silver impact
 }
 
-/** The single server-built data file the client renders (built by the Action). */
+/** The server-built data file for one metal, which the client renders. */
 export interface Snapshot {
   live: LiveInputs;
   mcx: McxData;
+}
+
+/**
+ * One metal's card on the picker screen (public/data/index.json). Deliberately
+ * tiny — it loads before the user has chosen a metal, so it carries no option
+ * chain and no history.
+ */
+export interface MetalSummary {
+  id: string;
+  label: string;
+  emoji: string;
+  ok: boolean;
+  symbol?: string;
+  quoteUnit?: string;
+  fut?: number | null;
+  changePct?: number | null;
+  atmIv?: number | null;
+  ivRank?: number | null;
+  ivEstimated?: boolean;
+  /** IV − RV in vol points: the picker's "is there anything to sell here" read. */
+  vrp?: number | null;
+  optionDte?: number | null;
+  chainLegs?: number;
+  stale?: boolean;
+  estimated?: boolean;
+  feed?: string | null;
+  asOf?: string;
 }
 
 export interface MarketEvent {
