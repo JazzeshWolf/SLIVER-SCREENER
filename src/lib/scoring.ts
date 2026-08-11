@@ -8,14 +8,19 @@
 // ---------------------------------------------------------------------------
 
 import type {
+  EventGate,
   FactorContribution,
   Horizon,
   HorizonScore,
   LiveInputs,
+  MarketEvent,
   McxData,
+  Pillar,
   PremiumSellScore,
   Regime,
   RegimeResult,
+  VrpBand,
+  VrpGate,
 } from "./types";
 import {
   changeOverWindow,
@@ -33,6 +38,13 @@ import {
 interface FactorConfig {
   key: string;
   label: string;
+  /**
+   * Which of the four evidence pillars this factor belongs to. Display only —
+   * the maths is unchanged. It exists so the factor breakdown speaks the same
+   * language as the bullion verdict playbook (Global / Derivatives /
+   * Technicals / INR & domestic) instead of a flat list of nine.
+   */
+  pillar: Pillar;
   windows: Record<Horizon, number>;
   weights: Record<Horizon, number>;
 }
@@ -40,24 +52,28 @@ interface FactorConfig {
 export const FACTOR_CONFIG: FactorConfig[] = [
   {
     key: "dxy",
+    pillar: "global",
     label: "Dollar (USD index, inverse)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
     weights: { "1D": 0.24, "1W": 0.17, "1M": 0.13 },
   },
   {
     key: "real10y",
+    pillar: "global",
     label: "Real yield (inverse)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
     weights: { "1D": 0.18, "1W": 0.14, "1M": 0.12 },
   },
   {
     key: "silverMomo",
+    pillar: "tech",
     label: "Silver momentum",
     windows: { "1D": 5, "1W": 20, "1M": 50 },
     weights: { "1D": 0.22, "1W": 0.16, "1M": 0.12 },
   },
   {
     key: "goldMomo",
+    pillar: "global",
     label: "Gold momentum",
     windows: { "1D": 5, "1W": 20, "1M": 50 },
     weights: { "1D": 0.16, "1W": 0.13, "1M": 0.1 },
@@ -66,30 +82,35 @@ export const FACTOR_CONFIG: FactorConfig[] = [
     // Classic long-trend regime filter: price vs its ~200-day average. Slow by
     // design — only meaningful on 1W/1M, and only once enough history accrues.
     key: "longTrend",
+    pillar: "tech",
     label: "Long trend (200-DMA)",
     windows: { "1D": 0, "1W": 200, "1M": 200 },
     weights: { "1D": 0.0, "1W": 0.05, "1M": 0.1 },
   },
   {
     key: "mcxPositioning",
+    pillar: "deriv",
     label: "MCX OI / price",
     windows: { "1D": 1, "1W": 5, "1M": 20 },
     weights: { "1D": 0.12, "1W": 0.12, "1M": 0.12 },
   },
   {
     key: "usdInr",
+    pillar: "local",
     label: "USD-INR (MCX)",
     windows: { "1D": 3, "1W": 10, "1M": 30 },
     weights: { "1D": 0.08, "1W": 0.1, "1M": 0.1 },
   },
   {
     key: "gsr",
+    pillar: "global",
     label: "Gold-silver ratio (revert)",
     windows: { "1D": 20, "1W": 60, "1M": 252 },
     weights: { "1D": 0.0, "1W": 0.05, "1M": 0.06 },
   },
   {
     key: "deficitBias",
+    pillar: "global",
     label: "Structural deficit bias",
     windows: { "1D": 0, "1W": 0, "1M": 0 },
     weights: { "1D": 0.0, "1W": 0.08, "1M": 0.15 },
@@ -252,6 +273,7 @@ export function scoreHorizon(
     contributions.push({
       key: cfg.key,
       label: cfg.label,
+      pillar: cfg.pillar,
       raw: s,
       s: s ?? 0,
       weight, // nominal; effective weight computed after redistribution below
@@ -390,15 +412,127 @@ function ivRvComponent(iv: number | null, rv: number | null): number | null {
   return clamp((ratio - 0.8) / 0.6, 0, 1); // 0.8 -> 0, 1.4 -> 1
 }
 
-export function premiumSellScore(mcx: McxData, events: { date: string }[], today: Date): PremiumSellScore {
+// --- Gates ------------------------------------------------------------------
+// Two hard gates sit ON TOP of the 0–100 blend rather than inside it. A score
+// is an opinion about how attractive premium looks; a gate is a statement that
+// selling is a bad idea regardless of how attractive it looks. Folding either
+// into the weighted average would let a rich IV rank out-vote them.
+
+/** Days inside which a major print counts as "no time left to react". */
+export const IMMINENT_EVENT_DAYS = 3;
+
+/** VRP band edges, in vol points (IV − RV). Per the bullion verdict playbook. */
+const VRP_CLEAR = 3;
+const VRP_STANDARD = 2;
+
+/**
+ * Volatility risk premium: are you being paid more than the metal actually
+ * moves? VRP < 0 means no — the trade is negative-EV before any directional
+ * view, so it blocks selling outright.
+ *
+ * The `proxy` flag matters as much as the number. When ATM IV is a realized-vol
+ * proxy (no traded option price), IV is literally computed as rv20 × 1.05, so
+ * VRP is mechanically ≈ +5% of RV and carries no information. Reporting that as
+ * a healthy premium would be the most dangerous kind of false comfort.
+ */
+export function vrpGate(mcx: McxData): VrpGate {
+  const iv = mcx.options.atmIv;
+  const rv = mcx.options.rv20;
+  const proxy = mcx.options.ivEstimated === true;
+
+  if (iv == null || rv == null) {
+    return {
+      vrp: null, iv, rv, band: "marginal", blocked: false, proxy,
+      note: "No IV or realized vol — VRP unknown. Size down until it resolves.",
+    };
+  }
+
+  const vrp = round2((iv - rv) * 100); // vol points
+  const band: VrpBand =
+    vrp < 0 ? "blocked" : vrp >= VRP_CLEAR ? "clear" : vrp >= VRP_STANDARD ? "standard" : "marginal";
+
+  if (proxy) {
+    return {
+      vrp, iv, rv, band: "marginal", blocked: false, proxy,
+      note: "IV is a realized-vol proxy, not a traded price — this VRP is mechanical, not a real read.",
+    };
+  }
+
+  const note =
+    band === "blocked"
+      ? `IV ${(iv * 100).toFixed(1)}% is BELOW realized ${(rv * 100).toFixed(1)}% — you are being paid less than the metal actually moves. Selling is negative-EV here.`
+      : band === "clear"
+        ? `IV runs ${vrp.toFixed(1)} vol points over realized — comfortably sellable.`
+        : band === "standard"
+          ? `IV ${vrp.toFixed(1)} points over realized — sellable at standard size.`
+          : `Only ${vrp.toFixed(1)} vol points of premium over realized — thin. Half size, wider strikes, or wait.`;
+
+  return { vrp, iv, rv, band, blocked: band === "blocked", proxy, note };
+}
+
+/** A print big enough to gap the metal through a short strike. */
+function isMajor(e: MarketEvent): boolean {
+  return e.weight === 3 || e.kind === "fomc" || e.kind === "us_cpi" || e.kind === "us_jobs";
+}
+
+/**
+ * Event risk as a gate. Deliberately two-level rather than one absolute veto:
+ * applied literally over a ~30-day monthly, an absolute veto fires almost every
+ * cycle (CPI is monthly, FOMC ~6-weekly) and would pin this card permanently
+ * red — which trains you to ignore it, the opposite of what a gate is for.
+ *
+ *  - `vetoed`   — a major print within IMMINENT_EVENT_DAYS. No time to exit
+ *                 cleanly, so this hard-reds the card.
+ *  - `inWindow` — every major print between now and option expiry. Not a veto,
+ *                 but the reason to prefer defined risk over naked premium.
+ */
+export function eventGate(
+  events: MarketEvent[],
+  optionDte: number | null,
+  today: Date,
+): EventGate {
+  const now = today.getTime();
+  const dayMs = 24 * 3600 * 1000;
+  const windowDays = optionDte ?? IMMINENT_EVENT_DAYS;
+
+  const upcoming = events
+    .filter(isMajor)
+    .map((e) => ({ e, days: (new Date(e.date).getTime() - now) / dayMs }))
+    .filter((x) => x.days >= 0)
+    .sort((a, b) => a.days - b.days);
+
+  const inWindow = upcoming.filter((x) => x.days <= windowDays).map((x) => x.e);
+  const first = upcoming[0];
+  const vetoed = first != null && first.days <= IMMINENT_EVENT_DAYS;
+
+  const note = vetoed
+    ? `${first.e.name} lands in ${Math.max(0, Math.round(first.days))}d — too close to exit cleanly. Don't open new naked premium into it.`
+    : inWindow.length
+      ? `${inWindow.length} major print${inWindow.length > 1 ? "s" : ""} before expiry (${inWindow.map((e) => e.name).join(", ")}) — defined risk only.`
+      : "No major prints before expiry.";
+
+  return {
+    vetoed,
+    imminent: vetoed ? first.e : null,
+    daysAway: first ? Math.round(first.days) : null,
+    inWindow,
+    note,
+  };
+}
+
+export function premiumSellScore(mcx: McxData, events: MarketEvent[], today: Date): PremiumSellScore {
   const ivRank = mcx.options.ivRank; // 0..100
   const ivRv = ivRvComponent(mcx.options.atmIv, mcx.options.rv20);
   // Theta is about the OPTION the seller holds — use the option DTE, not the
-  // future's (MCX silver options expire before the future).
+  // future's (MCX metal options can expire before the future).
   const theta = thetaZone(mcx.mcx.optionDte ?? mcx.mcx.dte);
 
-  // Event clear: 1 if no flagged event within 3 sessions, else 0.
-  const horizonMs = 3 * 24 * 3600 * 1000;
+  const vrp = vrpGate(mcx);
+  const eventState = eventGate(events, mcx.mcx.optionDte ?? mcx.mcx.dte, today);
+
+  // Retained as a 0/1 COMPONENT for continuity of the score's shape; the real
+  // event decision is the gate above, which can override the band outright.
+  const horizonMs = IMMINENT_EVENT_DAYS * 24 * 3600 * 1000;
   const soonEvent = events.some((e) => {
     const dt = new Date(e.date).getTime() - today.getTime();
     return dt >= 0 && dt <= horizonMs;
@@ -416,18 +550,30 @@ export function premiumSellScore(mcx: McxData, events: { date: string }[], today
   const score = wsum > 0 ? (parts.reduce((a, p) => a + p.w * p.v, 0) / wsum) * 100 : 0;
   const confidence = clamp(wsum, 0, 1); // share of model backed by real data
 
-  const band = score >= 65 ? "green" : score >= 40 ? "amber" : "red";
-  const note =
-    band === "green"
-      ? "Premium rich, theta favorable, event window clear — seller's market."
-      : band === "amber"
-        ? "Mixed: sellable but check IV rank and event calendar."
-        : "Low IV or event risk — premium selling unattractive here.";
+  // Either gate overrides the blend. A rich IV rank must not be able to show
+  // green while you are being paid less than the metal moves, or while a print
+  // that routinely gaps it lands before you could get out.
+  const blocked = vrp.blocked || eventState.vetoed;
+  const scored = score >= 65 ? "green" : score >= 40 ? "amber" : "red";
+  const band: PremiumSellScore["band"] = blocked ? "red" : scored;
+
+  const note = vrp.blocked
+    ? vrp.note
+    : eventState.vetoed
+      ? eventState.note
+      : band === "green"
+        ? "Premium rich, theta favorable, event window clear — seller's market."
+        : band === "amber"
+          ? "Mixed: sellable but check IV rank and event calendar."
+          : "Low IV or event risk — premium selling unattractive here.";
 
   return {
     score: Math.round(score),
     band,
     components: { ivRank, ivRvRatio: ivRv, thetaZone: theta, eventClear },
+    vrp,
+    events: eventState,
+    blocked,
     confidence: round2(confidence),
     note,
   };

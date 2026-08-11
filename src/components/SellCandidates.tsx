@@ -1,6 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import type { McxData, RegimeResult, SellCandidate } from "../lib/types";
 import { screenSellCandidates, candidateTone } from "../lib/sellCandidates";
+import { premiumSellScore } from "../lib/scoring";
 import { contractsFor, lotUnitsFor, metalForSymbol } from "../lib/instrument";
 import type { MetalConfig } from "../lib/instrument";
 import { fmtOi } from "../lib/chain";
@@ -53,6 +54,10 @@ export function SellCandidates({
   const rows = screen.candidates.filter((c) => c.ok && c.type === side);
   const rejects = screen.candidates.filter((c) => !c.ok && c.type === side);
   const dte = mcx.mcx.optionDte ?? mcx.mcx.dte;
+  // Same gates the premium-sell card runs. A ranked shortlist is an implicit
+  // recommendation, so when selling is blocked outright the list has to say so
+  // at the top rather than let a high CONV read as a green light.
+  const gates = useMemo(() => premiumSellScore(mcx, mcx.events, new Date()), [mcx]);
 
   return (
     <Card className="px-2">
@@ -73,6 +78,26 @@ export function SellCandidates({
           </button>
         </div>
       </div>
+
+      {gates.blocked && (
+        <div className="mx-2 mb-2 rounded-lg border border-rose-400/30 bg-rose-400/10 px-2.5 py-2">
+          <div className="text-[11px] font-semibold text-rose-300">
+            {gates.vrp.blocked ? "🔴 VRP NEGATIVE — selling blocked" : "🔴 EVENT VETO — don't open new premium"}
+          </div>
+          <div className="text-[10px] leading-snug text-rose-200/70 mt-0.5">
+            {gates.vrp.blocked ? gates.vrp.note : gates.events.note}{" "}
+            The ranking below is still shown as context, but the best-scoring strike on a
+            negative-premium chain is still a bad trade.
+          </div>
+        </div>
+      )}
+      {!gates.blocked && gates.events.inWindow.length > 0 && (
+        <div className="mx-2 mb-2 rounded-lg border border-amber-400/25 bg-amber-400/5 px-2.5 py-1.5">
+          <div className="text-[10px] leading-snug text-amber-200/80">
+            ⚠ {gates.events.note} Prefer defined risk (spreads) over naked short legs.
+          </div>
+        </div>
+      )}
 
       {!rows.length ? (
         <p className="text-sm text-white/40 px-2 py-6 text-center">

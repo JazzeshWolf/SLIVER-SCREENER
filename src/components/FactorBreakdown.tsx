@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
-import type { Horizon, HorizonScore } from "../lib/types";
+import type { Horizon, HorizonScore, Pillar } from "../lib/types";
+import { PILLAR_LABELS } from "../lib/types";
 import { Card, SectionTitle } from "./ui";
 
 // Plain-English decode of each engine factor — what it measures and how it
@@ -31,6 +32,9 @@ function FactorBar({ s, present }: { s: number; present: boolean }) {
   );
 }
 
+/** Pillar display order — heaviest evidence first, matching the playbook. */
+const PILLAR_ORDER: Pillar[] = ["global", "deriv", "tech", "local"];
+
 export function FactorBreakdown({ decision, horizon }: { decision: HorizonScore; horizon: Horizon }) {
   const [open, setOpen] = useState<string | null>(null);
   // Show the factors that carry weight at this horizon (present or not), the
@@ -39,6 +43,17 @@ export function FactorBreakdown({ decision, horizon }: { decision: HorizonScore;
     .filter((f) => f.weight > 0 || f.present)
     .sort((a, b) => b.weight - a.weight);
 
+  // Grouped into the four evidence pillars. This is presentation only — no
+  // weight changes — but it makes the score legible the same way the bullion
+  // verdict playbook reads: is the GLOBAL pillar carrying this, or is it just
+  // a rupee move? A flat list of nine factors hides that.
+  const groups = PILLAR_ORDER.map((pillar) => {
+    const items = rows.filter((f) => f.pillar === pillar);
+    const weight = items.reduce((a, f) => a + f.weight, 0);
+    const lean = items.reduce((a, f) => a + f.weight * f.s, 0);
+    return { pillar, items, weight, lean };
+  }).filter((g) => g.items.length);
+
   return (
     <Card>
       <div className="flex items-start justify-between gap-2">
@@ -46,8 +61,27 @@ export function FactorBreakdown({ decision, horizon }: { decision: HorizonScore;
         <span className="text-[10px] uppercase tracking-wider text-white/30">{horizon} · tap a row</span>
       </div>
 
-      <div className="space-y-2.5 mt-1">
-        {rows.map((f) => (
+      <div className="space-y-3 mt-1">
+        {groups.map((g) => (
+          <div key={g.pillar}>
+            <div className="flex items-baseline justify-between gap-2 mb-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-white/40">
+                {PILLAR_LABELS[g.pillar]}
+              </span>
+              <span className="flex items-baseline gap-2 text-[10px] tnum">
+                <span className="text-white/25">{(g.weight * 100).toFixed(0)}%</span>
+                <span
+                  className={
+                    g.lean > 0.02 ? "text-emerald-300/80" : g.lean < -0.02 ? "text-rose-300/80" : "text-white/40"
+                  }
+                >
+                  {g.lean >= 0 ? "+" : ""}
+                  {g.lean.toFixed(2)}
+                </span>
+              </span>
+            </div>
+            <div className="space-y-2.5 pl-2 border-l border-white/[0.07]">
+              {g.items.map((f) => (
           <div key={f.key}>
             <button
               onClick={() => setOpen((o) => (o === f.key ? null : f.key))}
@@ -79,6 +113,9 @@ export function FactorBreakdown({ decision, horizon }: { decision: HorizonScore;
                   : "No data for this factor right now — its weight is redistributed across the others."}
               </p>
             )}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>

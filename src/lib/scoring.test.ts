@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { Horizon, HorizonScore, LiveInputs, McxData, Point } from "./types";
+import type { Horizon, HorizonScore, LiveInputs, MarketEvent, McxData, Point } from "./types";
 import {
   FACTOR_CONFIG,
   deriveRegime,
+  eventGate,
   premiumSellScore,
   scoreAllHorizons,
   scoreHorizon,
   thetaZone,
+  vrpGate,
 } from "./scoring";
 
 // --- fixture builders ------------------------------------------------------
@@ -224,8 +226,118 @@ describe("premiumSellScore", () => {
 
   it("event within 3 sessions zeroes the event-clear component", () => {
     const m = mcxFixture();
-    const p = premiumSellScore(m, [{ date: "2026-06-20" }], new Date("2026-06-19"));
+    const p = premiumSellScore(m, [minorEvent("2026-06-20")], new Date("2026-06-19"));
     expect(p.components.eventClear).toBe(0);
+  });
+});
+
+// --- Gates ------------------------------------------------------------------
+// These two override the 0-100 blend outright, so they are tested for exactly
+// that: a rich, otherwise-green card must go red when either fires.
+
+const fomc = (date: string): MarketEvent => ({ name: "FOMC", date, kind: "fomc", weight: 3 });
+const minorEvent = (date: string): MarketEvent => ({ name: "RBI policy", date, kind: "rbi", weight: 1 });
+
+describe("vrpGate", () => {
+  it("blocks selling when IV is below realized vol", () => {
+    const m = mcxFixture();
+    m.options.atmIv = 0.24;
+    m.options.rv20 = 0.3;
+    m.options.ivEstimated = false;
+    const g = vrpGate(m);
+    expect(g.vrp).toBeCloseTo(-6, 6);
+    expect(g.band).toBe("blocked");
+    expect(g.blocked).toBe(true);
+    expect(g.note).toMatch(/less than the metal actually moves/i);
+  });
+
+  it("bands a healthy premium by vol points", () => {
+    const m = mcxFixture();
+    m.options.ivEstimated = false;
+    m.options.rv20 = 0.3;
+    m.options.atmIv = 0.34; // +4.0 pts
+    expect(vrpGate(m).band).toBe("clear");
+    m.options.atmIv = 0.325; // +2.5 pts
+    expect(vrpGate(m).band).toBe("standard");
+    m.options.atmIv = 0.31; // +1.0 pt
+    expect(vrpGate(m).band).toBe("marginal");
+    expect(vrpGate(m).blocked).toBe(false);
+  });
+
+  it("refuses to read a proxy IV as real premium", () => {
+    // When IV is estimated it is literally rv20 x 1.05, so VRP is mechanically
+    // positive and means nothing. It must not present as sellable comfort.
+    const m = mcxFixture();
+    m.options.rv20 = 0.3;
+    m.options.atmIv = 0.315;
+    m.options.ivEstimated = true;
+    const g = vrpGate(m);
+    expect(g.proxy).toBe(true);
+    expect(g.band).toBe("marginal");
+    expect(g.note).toMatch(/proxy/i);
+  });
+
+  it("reports unknown rather than guessing when IV or RV is missing", () => {
+    const m = mcxFixture();
+    m.options.atmIv = null;
+    const g = vrpGate(m);
+    expect(g.vrp).toBeNull();
+    expect(g.blocked).toBe(false);
+  });
+});
+
+describe("eventGate", () => {
+  const today = new Date("2026-06-19");
+
+  it("vetoes an imminent major print", () => {
+    const g = eventGate([fomc("2026-06-20")], 30, today);
+    expect(g.vetoed).toBe(true);
+    expect(g.imminent?.name).toBe("FOMC");
+    expect(g.daysAway).toBe(1);
+  });
+
+  it("does NOT veto a major print later in the window, but does flag it", () => {
+    // The distinction that keeps this gate usable: CPI is monthly and FOMC is
+    // ~6-weekly, so a whole-window veto would fire nearly every cycle.
+    const g = eventGate([fomc("2026-07-10")], 30, today);
+    expect(g.vetoed).toBe(false);
+    expect(g.inWindow.length).toBe(1);
+    expect(g.note).toMatch(/defined risk only/i);
+  });
+
+  it("ignores minor events and anything past expiry", () => {
+    const g = eventGate([minorEvent("2026-06-20"), fomc("2026-09-01")], 30, today);
+    expect(g.vetoed).toBe(false);
+    expect(g.inWindow).toEqual([]);
+  });
+});
+
+describe("premium-sell gates override the blend", () => {
+  it("forces red when VRP is negative even with a rich IV rank", () => {
+    const m = mcxFixture();
+    m.options.ivRank = 95; // would otherwise score green
+    m.options.ivEstimated = false;
+    m.options.atmIv = 0.2;
+    m.options.rv20 = 0.3;
+    const p = premiumSellScore(m, [], new Date("2026-06-19"));
+    expect(p.blocked).toBe(true);
+    expect(p.band).toBe("red");
+    expect(p.note).toMatch(/less than the metal actually moves/i);
+  });
+
+  it("forces red when a major print is imminent, and says which", () => {
+    const m = mcxFixture();
+    m.options.ivRank = 95;
+    const p = premiumSellScore(m, [fomc("2026-06-20")], new Date("2026-06-19"));
+    expect(p.blocked).toBe(true);
+    expect(p.band).toBe("red");
+    expect(p.note).toMatch(/FOMC/);
+  });
+
+  it("leaves a clean card green and unblocked", () => {
+    const p = premiumSellScore(mcxFixture(), [fomc("2026-07-10")], new Date("2026-06-19"));
+    expect(p.blocked).toBe(false);
+    expect(p.band).toBe("green");
   });
 
   it("theta zone peaks in the 20-40 DTE sweet spot and is low near expiry", () => {

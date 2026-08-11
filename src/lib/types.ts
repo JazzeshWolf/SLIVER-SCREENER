@@ -210,10 +210,25 @@ export interface MarketEvent {
   effect?: string;
 }
 
+/**
+ * The four evidence pillars. Presentation grouping only — it does not change
+ * any weight or score, it just lets the factor breakdown speak the same
+ * language as the bullion verdict playbook.
+ */
+export type Pillar = "global" | "deriv" | "tech" | "local";
+
+export const PILLAR_LABELS: Record<Pillar, string> = {
+  global: "Global / COMEX",
+  deriv: "Derivatives positioning",
+  tech: "MCX technicals",
+  local: "INR & domestic",
+};
+
 /** One factor's contribution within a horizon's directional score. */
 export interface FactorContribution {
   key: string;
   label: string;
+  pillar: Pillar;
   raw: number | null; // the underlying measured value (e.g. z-score), null if missing
   s: number; // normalized signal in [-1, +1]
   weight: number; // effective weight (after redistribution), sums to ~1 across present factors
@@ -287,6 +302,46 @@ export interface SellScreen {
   smileFitted: boolean; // false when the chain was too thin to fit a smile
 }
 
+/**
+ * Volatility risk premium — the seller's "am I being paid enough" gate.
+ * `vrp` is IV − RV in VOL POINTS (0.36 IV − 0.26 RV = +9.97 points), which is
+ * how the bands are conventionally quoted.
+ */
+export type VrpBand = "clear" | "standard" | "marginal" | "blocked";
+
+export interface VrpGate {
+  vrp: number | null; // vol points
+  iv: number | null; // fraction
+  rv: number | null; // fraction
+  band: VrpBand;
+  /** True when VRP < 0 — you are paid less than the metal actually moves. */
+  blocked: boolean;
+  /**
+   * True when ATM IV is a realized-vol proxy rather than a traded option price.
+   * VRP is then mechanically positive and means nothing — the UI must say so
+   * instead of showing false comfort.
+   */
+  proxy: boolean;
+  note: string;
+}
+
+/**
+ * Event risk as a GATE, not a weighted input. Two levels, because a single
+ * hard veto over the whole holding window would fire almost every month (CPI
+ * is monthly, FOMC ~6-weekly) and permanently red the score:
+ *  - `vetoed`  — a major print lands within `IMMINENT_DAYS`, i.e. before you
+ *                could reasonably exit. Forces the band red.
+ *  - `inWindow`— major prints between now and option expiry. Not a veto, but
+ *                the reason to prefer defined risk over naked short premium.
+ */
+export interface EventGate {
+  vetoed: boolean;
+  imminent: MarketEvent | null;
+  daysAway: number | null;
+  inWindow: MarketEvent[];
+  note: string;
+}
+
 export interface PremiumSellScore {
   score: number; // 0..100
   band: "green" | "amber" | "red";
@@ -296,6 +351,10 @@ export interface PremiumSellScore {
     thetaZone: number | null;
     eventClear: number | null;
   };
+  /** Either gate firing forces `band` to red regardless of the components. */
+  vrp: VrpGate;
+  events: EventGate;
+  blocked: boolean; // vrp.blocked || events.vetoed
   confidence: number; // 0..1
   note: string;
 }
