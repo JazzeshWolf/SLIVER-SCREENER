@@ -276,7 +276,8 @@ async function fetchEconPrints() {
     const cooling = a < p - 0.01;
     const hot = a > p + 0.01;
     prints.push({
-      kind: "us_cpi", name: "US CPI (YoY)", period: monthOf(cpi[cpi.length - 1].t),
+      kind: "us_cpi", name: "US CPI (YoY)",
+      period: monthOf(cpi[cpi.length - 1].t), date: cpi[cpi.length - 1].t,
       actual: round(a, 1), prior: round(p, 1), unit: "%",
       impact: cooling ? "up" : hot ? "down" : "twoway",
       note: cooling
@@ -292,7 +293,8 @@ async function fetchEconPrints() {
     const weak = a < p - 10;
     const strong = a > p + 10;
     prints.push({
-      kind: "us_jobs", name: "US payrolls (chg)", period: monthOf(payems[payems.length - 1].t),
+      kind: "us_jobs", name: "US payrolls (chg)",
+      period: monthOf(payems[payems.length - 1].t), date: payems[payems.length - 1].t,
       actual: Math.round(a), prior: Math.round(p), unit: "k",
       impact: weak ? "up" : strong ? "down" : "twoway",
       note: weak
@@ -311,7 +313,7 @@ async function fetchEconPrints() {
     const cutLast = prevRate > cur;
     const hikeLast = prevRate < cur;
     prints.push({
-      kind: "fomc", name: "Fed target rate", period: monthOf(changedAt),
+      kind: "fomc", name: "Fed target rate", period: monthOf(changedAt), date: changedAt,
       actual: round(cur, 2), prior: round(prevRate, 2), unit: "%",
       impact: cutLast ? "up" : hikeLast ? "down" : "twoway",
       note: cutLast

@@ -1,4 +1,5 @@
 import type { EconPrint, MarketEvent } from "../lib/types";
+import { recentPrints } from "../lib/prints";
 import { Card, SectionTitle, Pill } from "./ui";
 
 const KIND_LABEL: Record<MarketEvent["kind"], string> = {
@@ -31,6 +32,8 @@ function WeightBars({ weight = 1 }: { weight?: number }) {
 
 export function EventRadar({ events, prints = [] }: { events: MarketEvent[]; prints?: EconPrint[] }) {
   const today = new Date();
+  // Only the last 2 months of prints — an older reading is history, not news.
+  const recent = recentPrints(prints, today);
   const upcoming = events
     .map((e) => ({ ...e, days: Math.ceil((new Date(e.date).getTime() - today.getTime()) / 86400000) }))
     .filter((e) => e.days >= 0)
@@ -39,11 +42,11 @@ export function EventRadar({ events, prints = [] }: { events: MarketEvent[]; pri
 
   return (
     <Card>
-      {prints.length > 0 && (
+      {recent.length > 0 && (
         <>
           <SectionTitle>Recent prints — what actually happened</SectionTitle>
           <div className="space-y-2 mb-4">
-            {prints.map((p) => {
+            {recent.map((p) => {
               const dir = p.actual > p.prior ? "▲" : p.actual < p.prior ? "▼" : "→";
               return (
                 <div key={p.name} className="rounded-xl bg-white/5 p-2.5">

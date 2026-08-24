@@ -166,6 +166,8 @@ export interface EconPrint {
   kind: MarketEvent["kind"];
   name: string;
   period: string; // e.g. "May 26"
+  /** ISO reference date behind `period` — used to age prints out of the radar. */
+  date?: string;
   actual: number;
   prior: number;
   unit: string; // "%", "k"
