@@ -8,6 +8,25 @@ import { timeAgo } from "./ui";
  * crying wolf every night and weekend.
  */
 export function FeedBanner({ mcx }: { mcx: McxData }) {
+  // Nothing tradeable left in the snapshot: every listed option expiry has
+  // passed, so the chain, IV and DTE on screen belong to a dead contract. This
+  // outranks the token warning — it is why the data stopped moving.
+  if (mcx.contractsExpired) {
+    return (
+      <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3.5 py-2.5">
+        <div className="flex items-center gap-2 text-sm font-semibold text-rose-200">
+          <span aria-hidden>⚠</span>
+          <span>Contract expired — data has not refreshed</span>
+        </div>
+        <p className="mt-1 text-[12px] leading-snug text-rose-100/80">
+          Every option expiry in this snapshot has already passed. Last server run{" "}
+          {timeAgo(mcx.asOf)} — the chain, IV, GEX and expected move below describe a contract that
+          no longer trades. Nothing here is sellable until the feed rolls to the next expiry.
+        </p>
+      </div>
+    );
+  }
+
   const feed = mcx.feed;
   if (!feed || (feed.upstox !== "auth_failed" && feed.upstox !== "no_token")) return null;
 

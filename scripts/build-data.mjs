@@ -808,6 +808,11 @@ function istToday() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
+/** True while a contract can still be traded — its expiry day counts as alive. */
+function expiryLive(iso) {
+  return !iso || String(iso).slice(0, 10) >= istToday();
+}
+
 /** Path of one metal's snapshot file. */
 const metalFile = (id) => resolve(DATA_DIR, `${id}.json`);
 
@@ -1134,7 +1139,15 @@ async function buildMetal(metal, shared, prev, instruments) {
   // Drop far months with no option chain — nothing to show, and selecting them
   // would render empty cards. The nearest is always kept.
   const usableFar = farBundles.filter((b) => b.chain.length > 0);
-  const expiries = fut != null ? (ups ? [nearBundle, ...usableFar] : [nearBundle]) : prev?.expiries ?? null;
+  // On a failed run we serve the previous snapshot's bundles — but never the
+  // expired ones. Carrying a dead contract forward is how a passed expiry ends
+  // up back in the picker, wearing the DTE it had on the last good run.
+  const expiries =
+    fut != null
+      ? ups
+        ? [nearBundle, ...usableFar]
+        : [nearBundle]
+      : (prev?.expiries ?? null)?.filter((b) => expiryLive(b.optionExpiry)) ?? null;
 
   // Per-strike OI change vs YESTERDAY's close. The snapshot is our state store:
   // hold a per-expiry baseline (yesterday's closing OI) for the whole IST day and
@@ -1189,7 +1202,9 @@ async function buildMetal(metal, shared, prev, instruments) {
       dte,
       optionExpiry: optionExpiryIso, // option expiry (what a seller trades)
       optionDte,
-      optionExpiries: ups?.optionExpiries?.length ? ups.optionExpiries : [optionExpiryIso], // all upcoming option expiries
+      // All UPCOMING option expiries — a past date here would tag positions
+      // against a contract that has already settled.
+      optionExpiries: (ups?.optionExpiries?.length ? ups.optionExpiries : [optionExpiryIso]).filter(expiryLive),
       oi,
       oiChg,
     },

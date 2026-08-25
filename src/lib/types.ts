@@ -51,6 +51,9 @@ export interface McxData {
   // Set client-side: the server snapshot was stale, so fut/fairValue were
   // recomputed from live browser spot × parity + last basis. OI/IV stay server.
   liveParity?: boolean;
+  // Set client-side: every option expiry in the snapshot has already passed, so
+  // the chain/DTE describe a dead contract and the UI must say so.
+  contractsExpired?: boolean;
   mcx: {
     symbol: string;
     fut: number | null; // ₹/kg

@@ -11,6 +11,7 @@ import { walkForwardHitRate, type TrackResult } from "../lib/track";
 import { buildOutlook, type Outlook } from "../lib/outlook";
 import { basis, fairValue, premiumPct } from "../lib/basis";
 import { metalForSymbol } from "../lib/instrument";
+import { mergeExpiry, retimeSnapshot } from "../lib/expiry";
 import type { MetalConfig } from "../lib/instrument";
 import type { Snapshot } from "../lib/types";
 import { cacheGet, cacheSet } from "../lib/cache";
@@ -75,46 +76,6 @@ function applyLiveSpot(
     basis: { fairValue: liveFv != null ? Math.round(liveFv) : snap.mcx.basis.fairValue, basis: serverBasis },
   };
   return { live, mcx };
-}
-
-/**
- * Return an mcx view with the chosen expiry's contract data swapped in, so all
- * option cards (chain, IV, GEX, expected move, theta, market structure, basis)
- * re-point to it. The macro direction (scores/regime) is computed from the base
- * mcx, so it stays global. Selecting the nearest keeps the base (live-overlaid).
- */
-function mergeExpiry(mcx: McxData | null, sel: string | null): McxData | null {
-  const exs = mcx?.expiries;
-  if (!mcx || !exs?.length || !sel || sel === mcx.mcx.optionExpiry) return mcx;
-  const b = exs.find((e) => e.optionExpiry === sel);
-  if (!b) return mcx;
-  return {
-    ...mcx,
-    mcx: {
-      ...mcx.mcx,
-      fut: b.fut,
-      prevClose: b.prevClose,
-      oi: b.oi,
-      oiChg: b.oiChg,
-      expiry: b.expiry,
-      dte: b.dte,
-      optionExpiry: b.optionExpiry,
-      optionDte: b.optionDte,
-    },
-    options: {
-      ...mcx.options,
-      atmStrike: b.atmStrike,
-      atmIv: b.atmIv,
-      ivEstimated: b.ivEstimated,
-      ivRank: b.ivRank,
-      ivPercentile: b.ivPercentile,
-      ivRankEstimated: b.ivRankEstimated,
-      expectedMove1sd: b.expectedMove1sd,
-      chain: b.chain,
-    },
-    gex: b.gex,
-    basis: b.basis,
-  };
 }
 
 export interface Dashboard {
@@ -187,25 +148,40 @@ export function useDashboard(metalId: string = DEFAULT_METAL): Dashboard {
     };
   }, [load]);
 
+  // Re-time the snapshot against the browser clock before anything reads it:
+  // the server's day counts freeze between data runs (nights, weekends, a dead
+  // token), so without this an expired contract stays in the picker with the
+  // DTE it had when the Action last managed to run.
+  const timed = useMemo(() => retimeSnapshot(mcx, new Date()), [mcx]);
+  const expiries = timed?.expiries ?? null;
+
+  // Selection follows the live list — a contract that expires under a session
+  // left open overnight must not stay selected.
+  const activeExpiry = useMemo(() => {
+    const list = expiries ?? [];
+    if (selectedExpiry && list.some((e) => e.optionExpiry === selectedExpiry)) return selectedExpiry;
+    return null; // fall back to whatever retimeSnapshot pointed the view at
+  }, [expiries, selectedExpiry]);
+
   // The chosen expiry's contract data swapped into the mcx view. Option cards
   // follow it; the direction engine below stays on the base mcx (global).
-  const viewMcx = useMemo(() => mergeExpiry(mcx, selectedExpiry), [mcx, selectedExpiry]);
+  const viewMcx = useMemo(() => mergeExpiry(timed, activeExpiry), [timed, activeExpiry]);
 
   const scores = useMemo(() => {
-    if (!live || !mcx) return null;
-    return scoreAllHorizons(live, mcx); // base mcx → direction is expiry-independent
-  }, [live, mcx]);
+    if (!live || !timed) return null;
+    return scoreAllHorizons(live, timed); // base mcx → direction is expiry-independent
+  }, [live, timed]);
 
   const regime = useMemo(() => {
-    if (!scores || !mcx) return null;
+    if (!scores || !timed) return null;
     // Hysteresis memory is per metal — silver's last regime must not carry
     // over into gold's badge.
     const prev = cacheGet<Regime>(`regime:${id}`)?.value;
     // Decision horizon keys off the contract being sold — the option DTE.
-    const r = deriveRegime(scores, mcx.mcx.optionDte ?? mcx.mcx.dte, prev);
+    const r = deriveRegime(scores, timed.mcx.optionDte ?? timed.mcx.dte, prev);
     cacheSet(`regime:${id}`, r.regime);
     return r;
-  }, [scores, mcx, id]);
+  }, [scores, timed, id]);
 
   const premium = useMemo(() => {
     if (!viewMcx) return null;
@@ -240,8 +216,8 @@ export function useDashboard(metalId: string = DEFAULT_METAL): Dashboard {
   return {
     live,
     mcx: viewMcx,
-    expiries: mcx?.expiries ?? null,
-    selectedExpiry,
+    expiries,
+    selectedExpiry: viewMcx?.mcx.optionExpiry ?? selectedExpiry,
     setSelectedExpiry,
     scores,
     regime,
