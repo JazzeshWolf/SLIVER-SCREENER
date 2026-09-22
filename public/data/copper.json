@@ -1,16 +1,16 @@
 {
-  "asOf": "2026-09-22T17:45:47.385Z",
+  "asOf": "2026-09-22T20:30:20.617Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
     "metalUsd": 5.45,
-    "xauUsd": 4339.5,
+    "xauUsd": 4360.3,
     "usdInr": 95.59,
     "dxy": 119.51,
     "usdBroad": true,
-    "real10y": 2.68,
-    "breakeven10y": 2.33,
+    "real10y": 2.62,
+    "breakeven10y": 2.34,
     "metalHistory": [
       {
         "t": "2026-04-02",
@@ -1140,7 +1140,7 @@
       },
       {
         "t": "2026-09-22",
-        "v": 4339.5
+        "v": 4360.299805
       }
     ],
     "dxyHistory": [
@@ -1915,10 +1915,6 @@
     ],
     "real10yHistory": [
       {
-        "t": "2025-12-15",
-        "v": 1.93
-      },
-      {
         "t": "2025-12-16",
         "v": 1.92
       },
@@ -2681,6 +2677,10 @@
       {
         "t": "2026-09-18",
         "v": 2.68
+      },
+      {
+        "t": "2026-09-21",
+        "v": 2.62
       }
     ],
     "usdInrHistory": [
@@ -3325,12 +3325,12 @@
         "v": 95.59
       }
     ],
-    "asOf": "2026-09-22T17:45:47.385Z",
+    "asOf": "2026-09-22T20:30:20.617Z",
     "partial": false
   },
   "mcx": {
     "symbol": "COPPER",
-    "fut": 1415,
+    "fut": 1416,
     "prevClose": 1403.05,
     "expiry": "2026-09-30",
     "dte": 8,
@@ -3342,14 +3342,14 @@
       "2026-11-23",
       "2026-12-23"
     ],
-    "oi": 7338,
-    "oiChg": -1293
+    "oi": 7277,
+    "oiChg": -1354
   },
   "options": {
     "atmStrike": 1420,
-    "atmIv": 0.301,
+    "atmIv": 0.2845,
     "ivEstimated": false,
-    "ivRank": 99.7,
+    "ivRank": 94.1,
     "ivPercentile": 96.9,
     "ivRankEstimated": false,
     "ivHistory": [
@@ -3479,35 +3479,35 @@
       },
       {
         "t": "2026-09-22",
-        "v": 0.301
+        "v": 0.2845
       }
     ],
     "rv20": 0.187,
-    "expectedMove1sd": 22,
+    "expectedMove1sd": 21,
     "chain": [
       {
         "strike": 1400,
         "type": "CE",
-        "ltp": 16.22,
-        "iv": 0.3047894039154052,
-        "oi": 651,
-        "oiChg": -303
+        "ltp": 17.41,
+        "iv": 0.3226290817260742,
+        "oi": 644,
+        "oiChg": -7
       },
       {
         "strike": 1400,
         "type": "PE",
-        "ltp": 1.74,
-        "iv": 0.32070304489135737,
-        "oi": 1178,
-        "oiChg": 76
+        "ltp": 1.7,
+        "iv": 0.33298391342163086,
+        "oi": 1231,
+        "oiChg": 53
       },
       {
         "strike": 1390,
         "type": "CE",
-        "ltp": 25.79,
-        "iv": 0.39007851028442375,
-        "oi": 74,
-        "oiChg": -29
+        "ltp": 25.48,
+        "iv": null,
+        "oi": 72,
+        "oiChg": -2
       },
       {
         "strike": 1330,
@@ -3520,120 +3520,120 @@
       {
         "strike": 1300,
         "type": "CE",
-        "ltp": 117.8,
-        "iv": 1.6446912765502928,
+        "ltp": 115.25,
+        "iv": null,
         "oi": 1,
-        "oiChg": -1
+        "oiChg": 0
       },
       {
         "strike": 1360,
         "type": "CE",
-        "ltp": 53.25,
+        "ltp": 55.21,
         "iv": null,
         "oi": 44,
-        "oiChg": -19
+        "oiChg": 0
       },
       {
         "strike": 1370,
         "type": "CE",
         "ltp": 45.42,
-        "iv": 0.5542111740112304,
+        "iv": null,
         "oi": 96,
-        "oiChg": -11
+        "oiChg": 0
       },
       {
         "strike": 1340,
         "type": "CE",
         "ltp": 77.1,
-        "iv": 1.1023116760253906,
+        "iv": 0.9551510200500488,
         "oi": 43,
-        "oiChg": -1
+        "oiChg": 0
       },
       {
         "strike": 1350,
         "type": "CE",
         "ltp": 65.33,
-        "iv": 0.7299191284179687,
+        "iv": null,
         "oi": 88,
-        "oiChg": -9
+        "oiChg": 0
       },
       {
         "strike": 1380,
         "type": "CE",
-        "ltp": 35.22,
-        "iv": 0.42213462829589843,
-        "oi": 210,
-        "oiChg": -31
+        "ltp": 35.51,
+        "iv": null,
+        "oi": 208,
+        "oiChg": -2
       },
       {
         "strike": 1440,
         "type": "CE",
-        "ltp": 0.54,
-        "iv": 0.3258137168884277,
-        "oi": 574,
-        "oiChg": 221
+        "ltp": 0.65,
+        "iv": 0.3285978889465332,
+        "oi": 559,
+        "oiChg": -15
       },
       {
         "strike": 1430,
         "type": "CE",
-        "ltp": 1.37,
-        "iv": 0.2980292053222656,
-        "oi": 765,
-        "oiChg": 144
+        "ltp": 1.41,
+        "iv": 0.2862632179260253,
+        "oi": 754,
+        "oiChg": -11
       },
       {
         "strike": 1460,
         "type": "CE",
-        "ltp": 0.16,
-        "iv": 0.4138965301513671,
-        "oi": 350,
-        "oiChg": -11
+        "ltp": 0.15,
+        "iv": 0.4008528747558593,
+        "oi": 358,
+        "oiChg": 8
       },
       {
         "strike": 1450,
         "type": "CE",
-        "ltp": 0.28,
-        "iv": 0.36996000671386714,
-        "oi": 956,
-        "oiChg": -134
+        "ltp": 0.29,
+        "iv": 0.362255859375,
+        "oi": 947,
+        "oiChg": -9
       },
       {
         "strike": 1420,
         "type": "CE",
-        "ltp": 3.94,
-        "iv": 0.2979243221282959,
-        "oi": 988,
-        "oiChg": -173
+        "ltp": 4,
+        "iv": 0.2790358123779297,
+        "oi": 901,
+        "oiChg": -87
       },
       {
         "strike": 1410,
         "type": "CE",
-        "ltp": 8.94,
-        "iv": 0.3027584838867188,
-        "oi": 615,
-        "oiChg": 143
+        "ltp": 9.6,
+        "iv": 0.29928780364990226,
+        "oi": 560,
+        "oiChg": -55
       },
       {
         "strike": 1550,
         "type": "CE",
-        "ltp": 0.06,
-        "iv": 0.9254976806640625,
-        "oi": 784,
-        "oiChg": 44
+        "ltp": 0.05,
+        "iv": 0.9010885009765623,
+        "oi": 799,
+        "oiChg": 15
       },
       {
         "strike": 1390,
         "type": "PE",
-        "ltp": 0.61,
-        "iv": 0.3351006469726563,
-        "oi": 674,
-        "oiChg": 169
+        "ltp": 0.57,
+        "iv": 0.3412792205810547,
+        "oi": 680,
+        "oiChg": 6
       },
       {
         "strike": 1510,
         "type": "CE",
         "ltp": 0.02,
-        "iv": 0.6136704101562499,
+        "iv": 0.6069578857421876,
         "oi": 4,
         "oiChg": 0
       },
@@ -3641,192 +3641,192 @@
         "strike": 1500,
         "type": "CE",
         "ltp": 0.06,
-        "iv": 0.62343408203125,
-        "oi": 1266,
-        "oiChg": -113
+        "iv": 0.6158062133789062,
+        "oi": 1265,
+        "oiChg": -1
       },
       {
         "strike": 1520,
         "type": "CE",
-        "ltp": 0.02,
-        "iv": 0.6698115234375,
+        "ltp": 0.03,
+        "iv": 0.6887286376953126,
         "oi": 1,
-        "oiChg": null
+        "oiChg": 0
       },
       {
         "strike": 1470,
         "type": "CE",
-        "ltp": 0.11,
-        "iv": 0.46385906982421876,
-        "oi": 301,
-        "oiChg": 68
+        "ltp": 0.1,
+        "iv": 0.44951867675781254,
+        "oi": 302,
+        "oiChg": 1
       },
       {
         "strike": 1490,
         "type": "CE",
         "ltp": 0.9,
-        "iv": 0.8415148468017579,
+        "iv": 0.8308739700317384,
         "oi": 1,
-        "oiChg": null
+        "oiChg": 0
       },
       {
         "strike": 1480,
         "type": "CE",
-        "ltp": 0.09,
-        "iv": 0.5204578552246094,
-        "oi": 32,
-        "oiChg": 10
+        "ltp": 0.1,
+        "iv": 0.5190848388671876,
+        "oi": 34,
+        "oiChg": 2
       },
       {
         "strike": 1290,
         "type": "PE",
         "ltp": 1.77,
-        "iv": 1.5509066314697268,
+        "iv": 1.561585647583008,
         "oi": 1,
         "oiChg": 0
       },
       {
         "strike": 1300,
         "type": "PE",
-        "ltp": 0.04,
-        "iv": 0.8360990600585938,
-        "oi": 759,
-        "oiChg": -35
+        "ltp": 0.05,
+        "iv": 0.86264404296875,
+        "oi": 749,
+        "oiChg": -10
       },
       {
         "strike": 1330,
         "type": "PE",
-        "ltp": 0.06,
-        "iv": 0.6579120483398437,
+        "ltp": 0.05,
+        "iv": 0.652419982910156,
         "oi": 217,
-        "oiChg": -33
+        "oiChg": 0
       },
       {
         "strike": 1340,
         "type": "PE",
-        "ltp": 0.06,
-        "iv": 0.5865151977539063,
-        "oi": 202,
-        "oiChg": -88
+        "ltp": 0.05,
+        "iv": 0.5822435913085937,
+        "oi": 201,
+        "oiChg": -1
       },
       {
         "strike": 1310,
         "type": "PE",
         "ltp": 0.05,
-        "iv": 0.7851448974609376,
+        "iv": 0.7924676513671876,
         "oi": 20,
-        "oiChg": -1
+        "oiChg": 0
       },
       {
         "strike": 1320,
         "type": "PE",
         "ltp": 0.04,
-        "iv": 0.6984923095703126,
+        "iv": 0.7058150634765625,
         "oi": 131,
-        "oiChg": -27
+        "oiChg": 0
       },
       {
         "strike": 1370,
         "type": "PE",
-        "ltp": 0.12,
-        "iv": 0.4049719238281249,
-        "oi": 343,
-        "oiChg": -43
+        "ltp": 0.07,
+        "iv": 0.38468179321289053,
+        "oi": 360,
+        "oiChg": 17
       },
       {
         "strike": 1380,
         "type": "PE",
-        "ltp": 0.29,
-        "iv": 0.3763292770385742,
-        "oi": 601,
-        "oiChg": -82
+        "ltp": 0.16,
+        "iv": 0.3492122039794922,
+        "oi": 614,
+        "oiChg": 13
       },
       {
         "strike": 1350,
         "type": "PE",
-        "ltp": 0.06,
-        "iv": 0.5145081176757813,
-        "oi": 1480,
-        "oiChg": 266
+        "ltp": 0.05,
+        "iv": 0.5114569702148439,
+        "oi": 1517,
+        "oiChg": 37
       },
       {
         "strike": 1360,
         "type": "PE",
-        "ltp": 0.06,
-        "iv": 0.4421959228515625,
-        "oi": 565,
-        "oiChg": 9
+        "ltp": 0.04,
+        "iv": 0.429381103515625,
+        "oi": 563,
+        "oiChg": -2
       },
       {
         "strike": 1430,
         "type": "PE",
-        "ltp": 16.52,
-        "iv": 0.2863108921051024,
-        "oi": 147,
-        "oiChg": 60
+        "ltp": 15.43,
+        "iv": 0.2764995460510254,
+        "oi": 141,
+        "oiChg": -6
       },
       {
         "strike": 1420,
         "type": "PE",
-        "ltp": 9,
-        "iv": 0.28574833679199213,
-        "oi": 520,
-        "oiChg": 82
+        "ltp": 8.37,
+        "iv": 0.2899531993865966,
+        "oi": 505,
+        "oiChg": -15
       },
       {
         "strike": 1450,
         "type": "PE",
-        "ltp": 35.08,
-        "iv": null,
-        "oi": 32,
-        "oiChg": -1
+        "ltp": 35,
+        "iv": 0.4543051643371583,
+        "oi": 29,
+        "oiChg": -3
       },
       {
         "strike": 1440,
         "type": "PE",
         "ltp": 29.32,
-        "iv": 0.612831344604492,
+        "iv": 0.6673324661254882,
         "oi": 1,
-        "oiChg": -1
+        "oiChg": 0
       },
       {
         "strike": 1410,
         "type": "PE",
-        "ltp": 4.17,
-        "iv": 0.2992401294708251,
-        "oi": 596,
-        "oiChg": 150
+        "ltp": 3.9,
+        "iv": 0.3069824161529541,
+        "oi": 528,
+        "oiChg": -68
       },
       {
         "strike": 1250,
         "type": "PE",
-        "ltp": 0.03,
-        "iv": 1.15067236328125,
+        "ltp": 0.02,
+        "iv": 1.1164995117187497,
         "oi": 184,
-        "oiChg": -53
+        "oiChg": 0
       },
       {
         "strike": 1200,
         "type": "PE",
         "ltp": 0.02,
-        "iv": 1.4435825195312502,
+        "iv": 1.4509052734375,
         "oi": 86,
-        "oiChg": -24
+        "oiChg": 0
       }
     ]
   },
   "basis": {
     "fairValue": 1412,
-    "basis": 3
+    "basis": 4
   },
   "gex": {
-    "netPct": 10,
+    "netPct": 9,
     "regime": "balanced",
     "pinStrike": 1420,
     "maxPain": 1410,
     "callWall": 1500,
     "putWall": 1350,
-    "coverage": 38
+    "coverage": 34
   },
   "curve": {
     "front": 6.62,
@@ -3847,7 +3847,7 @@
   "feed": {
     "upstox": "ok",
     "chainOk": true,
-    "lastLiveAt": "2026-09-22T17:45:47.384Z"
+    "lastLiveAt": "2026-09-22T20:30:20.616Z"
   },
   "expiries": [
     {
@@ -3855,54 +3855,54 @@
       "optionExpiry": "2026-09-23",
       "dte": 8,
       "optionDte": 1,
-      "fut": 1415,
+      "fut": 1416,
       "prevClose": 1403.05,
-      "oi": 7338,
-      "oiChg": -1293,
+      "oi": 7277,
+      "oiChg": -1354,
       "atmStrike": 1420,
-      "atmIv": 0.301,
+      "atmIv": 0.2845,
       "ivEstimated": false,
-      "ivRank": 99.7,
+      "ivRank": 94.1,
       "ivPercentile": 96.9,
       "ivRankEstimated": false,
-      "expectedMove1sd": 22,
+      "expectedMove1sd": 21,
       "gex": {
-        "netPct": 10,
+        "netPct": 9,
         "regime": "balanced",
         "pinStrike": 1420,
         "maxPain": 1410,
         "callWall": 1500,
         "putWall": 1350,
-        "coverage": 38
+        "coverage": 34
       },
       "basis": {
         "fairValue": 1412,
-        "basis": 3
+        "basis": 4
       },
       "chain": [
         {
           "strike": 1400,
           "type": "CE",
-          "ltp": 16.22,
-          "iv": 0.3047894039154052,
-          "oi": 651,
-          "oiChg": -303
+          "ltp": 17.41,
+          "iv": 0.3226290817260742,
+          "oi": 644,
+          "oiChg": -7
         },
         {
           "strike": 1400,
           "type": "PE",
-          "ltp": 1.74,
-          "iv": 0.32070304489135737,
-          "oi": 1178,
-          "oiChg": 76
+          "ltp": 1.7,
+          "iv": 0.33298391342163086,
+          "oi": 1231,
+          "oiChg": 53
         },
         {
           "strike": 1390,
           "type": "CE",
-          "ltp": 25.79,
-          "iv": 0.39007851028442375,
-          "oi": 74,
-          "oiChg": -29
+          "ltp": 25.48,
+          "iv": null,
+          "oi": 72,
+          "oiChg": -2
         },
         {
           "strike": 1330,
@@ -3915,120 +3915,120 @@
         {
           "strike": 1300,
           "type": "CE",
-          "ltp": 117.8,
-          "iv": 1.6446912765502928,
+          "ltp": 115.25,
+          "iv": null,
           "oi": 1,
-          "oiChg": -1
+          "oiChg": 0
         },
         {
           "strike": 1360,
           "type": "CE",
-          "ltp": 53.25,
+          "ltp": 55.21,
           "iv": null,
           "oi": 44,
-          "oiChg": -19
+          "oiChg": 0
         },
         {
           "strike": 1370,
           "type": "CE",
           "ltp": 45.42,
-          "iv": 0.5542111740112304,
+          "iv": null,
           "oi": 96,
-          "oiChg": -11
+          "oiChg": 0
         },
         {
           "strike": 1340,
           "type": "CE",
           "ltp": 77.1,
-          "iv": 1.1023116760253906,
+          "iv": 0.9551510200500488,
           "oi": 43,
-          "oiChg": -1
+          "oiChg": 0
         },
         {
           "strike": 1350,
           "type": "CE",
           "ltp": 65.33,
-          "iv": 0.7299191284179687,
+          "iv": null,
           "oi": 88,
-          "oiChg": -9
+          "oiChg": 0
         },
         {
           "strike": 1380,
           "type": "CE",
-          "ltp": 35.22,
-          "iv": 0.42213462829589843,
-          "oi": 210,
-          "oiChg": -31
+          "ltp": 35.51,
+          "iv": null,
+          "oi": 208,
+          "oiChg": -2
         },
         {
           "strike": 1440,
           "type": "CE",
-          "ltp": 0.54,
-          "iv": 0.3258137168884277,
-          "oi": 574,
-          "oiChg": 221
+          "ltp": 0.65,
+          "iv": 0.3285978889465332,
+          "oi": 559,
+          "oiChg": -15
         },
         {
           "strike": 1430,
           "type": "CE",
-          "ltp": 1.37,
-          "iv": 0.2980292053222656,
-          "oi": 765,
-          "oiChg": 144
+          "ltp": 1.41,
+          "iv": 0.2862632179260253,
+          "oi": 754,
+          "oiChg": -11
         },
         {
           "strike": 1460,
           "type": "CE",
-          "ltp": 0.16,
-          "iv": 0.4138965301513671,
-          "oi": 350,
-          "oiChg": -11
+          "ltp": 0.15,
+          "iv": 0.4008528747558593,
+          "oi": 358,
+          "oiChg": 8
         },
         {
           "strike": 1450,
           "type": "CE",
-          "ltp": 0.28,
-          "iv": 0.36996000671386714,
-          "oi": 956,
-          "oiChg": -134
+          "ltp": 0.29,
+          "iv": 0.362255859375,
+          "oi": 947,
+          "oiChg": -9
         },
         {
           "strike": 1420,
           "type": "CE",
-          "ltp": 3.94,
-          "iv": 0.2979243221282959,
-          "oi": 988,
-          "oiChg": -173
+          "ltp": 4,
+          "iv": 0.2790358123779297,
+          "oi": 901,
+          "oiChg": -87
         },
         {
           "strike": 1410,
           "type": "CE",
-          "ltp": 8.94,
-          "iv": 0.3027584838867188,
-          "oi": 615,
-          "oiChg": 143
+          "ltp": 9.6,
+          "iv": 0.29928780364990226,
+          "oi": 560,
+          "oiChg": -55
         },
         {
           "strike": 1550,
           "type": "CE",
-          "ltp": 0.06,
-          "iv": 0.9254976806640625,
-          "oi": 784,
-          "oiChg": 44
+          "ltp": 0.05,
+          "iv": 0.9010885009765623,
+          "oi": 799,
+          "oiChg": 15
         },
         {
           "strike": 1390,
           "type": "PE",
-          "ltp": 0.61,
-          "iv": 0.3351006469726563,
-          "oi": 674,
-          "oiChg": 169
+          "ltp": 0.57,
+          "iv": 0.3412792205810547,
+          "oi": 680,
+          "oiChg": 6
         },
         {
           "strike": 1510,
           "type": "CE",
           "ltp": 0.02,
-          "iv": 0.6136704101562499,
+          "iv": 0.6069578857421876,
           "oi": 4,
           "oiChg": 0
         },
@@ -4036,177 +4036,177 @@
           "strike": 1500,
           "type": "CE",
           "ltp": 0.06,
-          "iv": 0.62343408203125,
-          "oi": 1266,
-          "oiChg": -113
+          "iv": 0.6158062133789062,
+          "oi": 1265,
+          "oiChg": -1
         },
         {
           "strike": 1520,
           "type": "CE",
-          "ltp": 0.02,
-          "iv": 0.6698115234375,
+          "ltp": 0.03,
+          "iv": 0.6887286376953126,
           "oi": 1,
-          "oiChg": null
+          "oiChg": 0
         },
         {
           "strike": 1470,
           "type": "CE",
-          "ltp": 0.11,
-          "iv": 0.46385906982421876,
-          "oi": 301,
-          "oiChg": 68
+          "ltp": 0.1,
+          "iv": 0.44951867675781254,
+          "oi": 302,
+          "oiChg": 1
         },
         {
           "strike": 1490,
           "type": "CE",
           "ltp": 0.9,
-          "iv": 0.8415148468017579,
+          "iv": 0.8308739700317384,
           "oi": 1,
-          "oiChg": null
+          "oiChg": 0
         },
         {
           "strike": 1480,
           "type": "CE",
-          "ltp": 0.09,
-          "iv": 0.5204578552246094,
-          "oi": 32,
-          "oiChg": 10
+          "ltp": 0.1,
+          "iv": 0.5190848388671876,
+          "oi": 34,
+          "oiChg": 2
         },
         {
           "strike": 1290,
           "type": "PE",
           "ltp": 1.77,
-          "iv": 1.5509066314697268,
+          "iv": 1.561585647583008,
           "oi": 1,
           "oiChg": 0
         },
         {
           "strike": 1300,
           "type": "PE",
-          "ltp": 0.04,
-          "iv": 0.8360990600585938,
-          "oi": 759,
-          "oiChg": -35
+          "ltp": 0.05,
+          "iv": 0.86264404296875,
+          "oi": 749,
+          "oiChg": -10
         },
         {
           "strike": 1330,
           "type": "PE",
-          "ltp": 0.06,
-          "iv": 0.6579120483398437,
+          "ltp": 0.05,
+          "iv": 0.652419982910156,
           "oi": 217,
-          "oiChg": -33
+          "oiChg": 0
         },
         {
           "strike": 1340,
           "type": "PE",
-          "ltp": 0.06,
-          "iv": 0.5865151977539063,
-          "oi": 202,
-          "oiChg": -88
+          "ltp": 0.05,
+          "iv": 0.5822435913085937,
+          "oi": 201,
+          "oiChg": -1
         },
         {
           "strike": 1310,
           "type": "PE",
           "ltp": 0.05,
-          "iv": 0.7851448974609376,
+          "iv": 0.7924676513671876,
           "oi": 20,
-          "oiChg": -1
+          "oiChg": 0
         },
         {
           "strike": 1320,
           "type": "PE",
           "ltp": 0.04,
-          "iv": 0.6984923095703126,
+          "iv": 0.7058150634765625,
           "oi": 131,
-          "oiChg": -27
+          "oiChg": 0
         },
         {
           "strike": 1370,
           "type": "PE",
-          "ltp": 0.12,
-          "iv": 0.4049719238281249,
-          "oi": 343,
-          "oiChg": -43
+          "ltp": 0.07,
+          "iv": 0.38468179321289053,
+          "oi": 360,
+          "oiChg": 17
         },
         {
           "strike": 1380,
           "type": "PE",
-          "ltp": 0.29,
-          "iv": 0.3763292770385742,
-          "oi": 601,
-          "oiChg": -82
+          "ltp": 0.16,
+          "iv": 0.3492122039794922,
+          "oi": 614,
+          "oiChg": 13
         },
         {
           "strike": 1350,
           "type": "PE",
-          "ltp": 0.06,
-          "iv": 0.5145081176757813,
-          "oi": 1480,
-          "oiChg": 266
+          "ltp": 0.05,
+          "iv": 0.5114569702148439,
+          "oi": 1517,
+          "oiChg": 37
         },
         {
           "strike": 1360,
           "type": "PE",
-          "ltp": 0.06,
-          "iv": 0.4421959228515625,
-          "oi": 565,
-          "oiChg": 9
+          "ltp": 0.04,
+          "iv": 0.429381103515625,
+          "oi": 563,
+          "oiChg": -2
         },
         {
           "strike": 1430,
           "type": "PE",
-          "ltp": 16.52,
-          "iv": 0.2863108921051024,
-          "oi": 147,
-          "oiChg": 60
+          "ltp": 15.43,
+          "iv": 0.2764995460510254,
+          "oi": 141,
+          "oiChg": -6
         },
         {
           "strike": 1420,
           "type": "PE",
-          "ltp": 9,
-          "iv": 0.28574833679199213,
-          "oi": 520,
-          "oiChg": 82
+          "ltp": 8.37,
+          "iv": 0.2899531993865966,
+          "oi": 505,
+          "oiChg": -15
         },
         {
           "strike": 1450,
           "type": "PE",
-          "ltp": 35.08,
-          "iv": null,
-          "oi": 32,
-          "oiChg": -1
+          "ltp": 35,
+          "iv": 0.4543051643371583,
+          "oi": 29,
+          "oiChg": -3
         },
         {
           "strike": 1440,
           "type": "PE",
           "ltp": 29.32,
-          "iv": 0.612831344604492,
+          "iv": 0.6673324661254882,
           "oi": 1,
-          "oiChg": -1
+          "oiChg": 0
         },
         {
           "strike": 1410,
           "type": "PE",
-          "ltp": 4.17,
-          "iv": 0.2992401294708251,
-          "oi": 596,
-          "oiChg": 150
+          "ltp": 3.9,
+          "iv": 0.3069824161529541,
+          "oi": 528,
+          "oiChg": -68
         },
         {
           "strike": 1250,
           "type": "PE",
-          "ltp": 0.03,
-          "iv": 1.15067236328125,
+          "ltp": 0.02,
+          "iv": 1.1164995117187497,
           "oi": 184,
-          "oiChg": -53
+          "oiChg": 0
         },
         {
           "strike": 1200,
           "type": "PE",
           "ltp": 0.02,
-          "iv": 1.4435825195312502,
+          "iv": 1.4509052734375,
           "oi": 86,
-          "oiChg": -24
+          "oiChg": 0
         }
       ]
     },
@@ -4215,19 +4215,19 @@
       "optionExpiry": "2026-10-23",
       "dte": 38,
       "optionDte": 31,
-      "fut": 1423,
+      "fut": 1425,
       "prevClose": 1411.3,
-      "oi": 5809,
-      "oiChg": 1973,
-      "atmStrike": 1420,
-      "atmIv": 0.1963,
-      "ivEstimated": true,
-      "ivRank": 64.4,
+      "oi": 5853,
+      "oiChg": 2017,
+      "atmStrike": 1430,
+      "atmIv": 0.1879,
+      "ivEstimated": false,
+      "ivRank": 64.9,
       "ivPercentile": 57.8,
       "ivRankEstimated": true,
-      "expectedMove1sd": 81,
+      "expectedMove1sd": 78,
       "gex": {
-        "netPct": 13,
+        "netPct": 15,
         "regime": "balanced",
         "pinStrike": 1400,
         "maxPain": 1400,
@@ -4237,126 +4237,126 @@
       },
       "basis": {
         "fairValue": 1412,
-        "basis": 11
+        "basis": 13
       },
       "chain": [
         {
           "strike": 1500,
           "type": "CE",
-          "ltp": 9.43,
-          "iv": 0.2099809558391571,
-          "oi": 292,
-          "oiChg": 92
+          "ltp": 9.8,
+          "iv": 0.21012993764877316,
+          "oi": 295,
+          "oiChg": 3
         },
         {
           "strike": 1490,
           "type": "CE",
           "ltp": 2.61,
-          "iv": 0.12586820983886715,
+          "iv": 0.12333432722091675,
           "oi": 4,
           "oiChg": 0
         },
         {
           "strike": 1450,
           "type": "CE",
-          "ltp": 21.3,
-          "iv": 0.19928882932662964,
-          "oi": 248,
-          "oiChg": 100
+          "ltp": 21.5,
+          "iv": 0.1961161127090454,
+          "oi": 250,
+          "oiChg": 2
         },
         {
           "strike": 1440,
           "type": "CE",
           "ltp": 25.79,
-          "iv": 0.20321241426467893,
+          "iv": 0.19831627607345584,
           "oi": 47,
-          "oiChg": 1
+          "oiChg": 0
         },
         {
           "strike": 1430,
           "type": "CE",
-          "ltp": 31,
-          "iv": 0.20856384086608884,
-          "oi": 7,
-          "oiChg": 5
+          "ltp": 28.5,
+          "iv": 0.18785298562049862,
+          "oi": 8,
+          "oiChg": 1
         },
         {
           "strike": 1410,
           "type": "CE",
           "ltp": 38.5,
-          "iv": 0.19246427059173582,
+          "iv": 0.1856814267635345,
           "oi": 7,
-          "oiChg": 2
+          "oiChg": 0
         },
         {
           "strike": 1400,
           "type": "CE",
-          "ltp": 44.79,
-          "iv": 0.19547966241836542,
-          "oi": 109,
-          "oiChg": 71
+          "ltp": 45.32,
+          "iv": 0.19128671836853023,
+          "oi": 110,
+          "oiChg": 1
         },
         {
           "strike": 1380,
           "type": "CE",
           "ltp": 59.36,
-          "iv": 0.20631242775917047,
+          "iv": 0.19658689522743222,
           "oi": 1,
-          "oiChg": null
+          "oiChg": 0
         },
         {
           "strike": 1370,
           "type": "CE",
           "ltp": 61,
-          "iv": 0.16200285387039184,
+          "iv": 0.1477470824718475,
           "oi": 1,
-          "oiChg": null
+          "oiChg": 0
         },
         {
           "strike": 1300,
           "type": "PE",
-          "ltp": 2.74,
-          "iv": 0.21633949947357178,
-          "oi": 55,
-          "oiChg": 36
+          "ltp": 2.73,
+          "iv": 0.2190307068824768,
+          "oi": 54,
+          "oiChg": -1
         },
         {
           "strike": 1460,
           "type": "CE",
           "ltp": 20.99,
-          "iv": 0.21973270916938778,
+          "iv": 0.21557909631729122,
           "oi": 5,
-          "oiChg": 1
+          "oiChg": 0
         },
         {
           "strike": 1350,
           "type": "PE",
-          "ltp": 7.55,
-          "iv": 0.19830912494659425,
+          "ltp": 7.22,
+          "iv": 0.198630925655365,
           "oi": 285,
-          "oiChg": 94
+          "oiChg": 0
         },
         {
           "strike": 1450,
           "type": "PE",
           "ltp": 46.1,
-          "iv": 0.188080629825592,
+          "iv": 0.1961161127090454,
           "oi": 34,
-          "oiChg": null
+          "oiChg": 0
         },
         {
           "strike": 1400,
           "type": "PE",
-          "ltp": 21.7,
-          "iv": 0.19779781937599178,
-          "oi": 241,
-          "oiChg": 151
+          "ltp": 20.8,
+          "iv": 0.19701119542121887,
+          "oi": 242,
+          "oiChg": 1
         },
         {
           "strike": 1390,
           "type": "PE",
           "ltp": 36,
-          "iv": 0.3156734189987182,
+          "iv": 0.3209998166561126,
           "oi": 1,
           "oiChg": 0
         },
@@ -4364,33 +4364,33 @@
           "strike": 1380,
           "type": "PE",
           "ltp": 13.89,
-          "iv": 0.19178014612197875,
+          "iv": 0.19607320594787597,
           "oi": 23,
-          "oiChg": 15
+          "oiChg": 0
         },
         {
           "strike": 1370,
           "type": "PE",
           "ltp": 10.9,
-          "iv": 0.18983623147010803,
+          "iv": 0.19381464171409607,
           "oi": 2,
-          "oiChg": null
+          "oiChg": 0
         },
         {
           "strike": 1360,
           "type": "PE",
           "ltp": 9.49,
-          "iv": 0.19760712265968322,
+          "iv": 0.2013972198963165,
           "oi": 63,
-          "oiChg": 18
+          "oiChg": 0
         },
         {
           "strike": 1550,
           "type": "CE",
-          "ltp": 3.91,
-          "iv": 0.2202583169937134,
-          "oi": 224,
-          "oiChg": 78
+          "ltp": 4.04,
+          "iv": 0.21984831905364988,
+          "oi": 227,
+          "oiChg": 3
         }
       ]
     },
@@ -4399,10 +4399,10 @@
       "optionExpiry": "2026-11-23",
       "dte": 69,
       "optionDte": 62,
-      "fut": 1429,
+      "fut": 1432,
       "prevClose": 1416.65,
-      "oi": 1079,
-      "oiChg": 150,
+      "oi": 1080,
+      "oiChg": 151,
       "atmStrike": 1430,
       "atmIv": 0.1963,
       "ivEstimated": true,
@@ -4413,14 +4413,14 @@
       "gex": null,
       "basis": {
         "fairValue": 1412,
-        "basis": 17
+        "basis": 20
       },
       "chain": [
         {
           "strike": 1500,
           "type": "CE",
           "ltp": 15,
-          "iv": 0.17230166840553285,
+          "iv": 0.16829942107200624,
           "oi": 1,
           "oiChg": 0
         },
@@ -4428,7 +4428,7 @@
           "strike": 1370,
           "type": "PE",
           "ltp": 25,
-          "iv": 0.2135791645050049,
+          "iv": 0.21825719332695004,
           "oi": 1,
           "oiChg": 0
         }
@@ -4437,149 +4437,161 @@
   ],
   "oiBaseline": {
     "2026-09-23": {
-      "date": "2026-09-22",
+      "date": "2026-09-23",
       "byStrike": {
         "1200": {
-          "PE": 110
+          "PE": 86
         },
         "1250": {
-          "PE": 237
+          "PE": 184
         },
         "1290": {
           "PE": 1
         },
         "1300": {
-          "CE": 2,
-          "PE": 794
+          "CE": 1,
+          "PE": 759
         },
         "1310": {
-          "PE": 21
+          "PE": 20
         },
         "1320": {
-          "PE": 158
+          "PE": 131
         },
         "1330": {
           "CE": 7,
-          "PE": 250
+          "PE": 217
         },
         "1340": {
-          "CE": 44,
-          "PE": 290
+          "CE": 43,
+          "PE": 202
         },
         "1350": {
-          "CE": 97,
-          "PE": 1214
+          "CE": 88,
+          "PE": 1480
         },
         "1360": {
-          "CE": 63,
-          "PE": 556
+          "CE": 44,
+          "PE": 565
         },
         "1370": {
-          "CE": 107,
-          "PE": 386
+          "CE": 96,
+          "PE": 343
         },
         "1380": {
-          "CE": 241,
-          "PE": 683
+          "CE": 210,
+          "PE": 601
         },
         "1390": {
-          "CE": 103,
-          "PE": 505
+          "CE": 74,
+          "PE": 674
         },
         "1400": {
-          "CE": 954,
-          "PE": 1102
+          "CE": 651,
+          "PE": 1178
         },
         "1410": {
-          "CE": 472,
-          "PE": 446
+          "CE": 615,
+          "PE": 596
         },
         "1420": {
-          "CE": 1161,
-          "PE": 438
+          "CE": 988,
+          "PE": 520
         },
         "1430": {
-          "CE": 621,
-          "PE": 87
+          "CE": 765,
+          "PE": 147
         },
         "1440": {
-          "CE": 353,
-          "PE": 2
+          "CE": 574,
+          "PE": 1
         },
         "1450": {
-          "CE": 1090,
-          "PE": 33
+          "CE": 956,
+          "PE": 32
         },
         "1460": {
-          "CE": 361
+          "CE": 350
         },
         "1470": {
-          "CE": 233
+          "CE": 301
         },
         "1480": {
-          "CE": 22
+          "CE": 32
+        },
+        "1490": {
+          "CE": 1
         },
         "1500": {
-          "CE": 1379
+          "CE": 1266
         },
         "1510": {
           "CE": 4
         },
+        "1520": {
+          "CE": 1
+        },
         "1550": {
-          "CE": 740
+          "CE": 784
         }
       }
     },
     "2026-10-23": {
-      "date": "2026-09-22",
+      "date": "2026-09-23",
       "byStrike": {
         "1300": {
-          "PE": 19
+          "PE": 55
         },
         "1350": {
-          "PE": 191
+          "PE": 285
         },
         "1360": {
-          "PE": 45
+          "PE": 63
+        },
+        "1370": {
+          "CE": 1,
+          "PE": 2
         },
         "1380": {
-          "PE": 8
+          "CE": 1,
+          "PE": 23
         },
         "1390": {
           "PE": 1
         },
         "1400": {
-          "CE": 38,
-          "PE": 90
+          "CE": 109,
+          "PE": 241
         },
         "1410": {
-          "CE": 5
+          "CE": 7
         },
         "1430": {
-          "CE": 2
+          "CE": 7
         },
         "1440": {
-          "CE": 46
+          "CE": 47
         },
         "1450": {
-          "CE": 148
+          "CE": 248,
+          "PE": 34
         },
         "1460": {
-          "CE": 4
+          "CE": 5
         },
         "1490": {
           "CE": 4
         },
         "1500": {
-          "CE": 200
+          "CE": 292
         },
         "1550": {
-          "CE": 146
+          "CE": 224
         }
       }
     },
     "2026-11-23": {
-      "date": "2026-09-22",
+      "date": "2026-09-23",
       "byStrike": {
         "1370": {
           "PE": 1
@@ -4924,7 +4936,7 @@
     {
       "title": "How AI Could Spark the Next Copper Boom",
       "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxOeVJZaTV0bWFPVHVoMzV5RUlyMVd2b2U2N2dWQ3JOV2FILW4zZWlLcGU2SUxQM0hRd1hxQnBQNGVZVGhKVHd2b1BtZkNldWFjWnZtMDlhRTRCQk9HY0lYQlplMmZCU1N0MnRHREh5UFZOdUk4MWJEQ25Cck15UzU0ZEtrWkI2OGo0T2tNbC1GQVBmdkFpMnhIdXBETVc?oc=5",
-      "source": "bloomberg.com",
+      "source": "Bloomberg.com",
       "trusted": true,
       "indirect": false,
       "publishedAt": "2026-09-21T16:08:05.000Z",
@@ -4942,6 +4954,16 @@
       "impact": "twoway"
     },
     {
+      "title": "Copper rallies as Chinese buyers return to market, demand outlook brightens",
+      "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxQZmhsS3VHRHlfbjc5TnoySTVuWmdIT19tdk9ub3FRVGRjX0xZdWNxNXZlN2NnLUdsN3pDcFpjbWVLNk5uSUc4SjhwRFJPU1VxbXBqNGplVGpPRXF2N0gwVk93dTI0R1pmLU5FZGdWSmxBbXlmRDh2ZmJfZ3RGd1NKSTlhNlh0eFF4ZWxGX2ZyTWU5NmxGcUJYM0ZjVUhId1QyVkpxNk9nd0gxTEtudmFzS0hBS1F3NGdocGpLck8tcXJMbUxJOUNFVWREd1VYc0NkbEZoa2tR0gHbAUFVX3lxTE1IY0xmdVU5SGw1Wm1zMVFKWld4eFRRYmNpUl9Ya0xjVG1kNjNKWjhOV3RYZVFMNklOYVd2ZHVUc1BQcWVXQVJxeTVva1puWVVEa3B1Uk93SW1iYVN6N3FpcjltSm5YRUJXZ1FDclFXaXFtSDFsaXJKMjBKNzZnMHREcGwxZVVfcGtXNWZnVlpob2x2X0ZhSXl0Y1F0cEJhc0JSYnFnY01xaEtOeWNDUGdxeklWQjA4emZoY3E4STUweTdqS3J1RW9HRlhEcTVXREI2NWRKN3JBczlUYw?oc=5",
+      "source": "Business Standard",
+      "trusted": true,
+      "indirect": false,
+      "publishedAt": "2026-09-17T16:56:13.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMi1gFBVV95cUxQZmhsS3VHRHlfbjc5TnoySTVuWmdIT19tdk9ub3FRVGRjX0xZdWNxNXZlN2NnLUdsN3pDcFpjbWVLNk5uSUc4SjhwRFJPU1VxbXBqNGplVGpPRXF2N0gwVk93dTI0R1pmLU5FZGdWSm",
+      "impact": "up"
+    },
+    {
       "title": "Copper's record rally highlights global mining-smelting mismatch, IPCPA says",
       "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNN0FmdHR3RkEySF9NSEdleEJVXzJfNktGbDRxSlZFck5oNTVJeEl3QUlQeHBtdzZ0blJzdk4wMURkbDBXRkRvNTlGdFB3dTJVZS1EZHVEaWdFdEZoeHV4dUFJRE1XVHJmQk9UN0phNmI4WmxHYWVtSVk4N1gxdFFsTTBjT1owNnpkVDNyQjhCajJFS0ZSWHRmelJmYTVOMVFkSDh4M1dsSVdXSm56WnhIcHBtWjlZc3dFSk1aX1RB0gHDAUFVX3lxTE5iX0h3WkVqTm5oTXZ3aGMtd1VNOFhIalBPeVJtMjdoNDdibjFBNjc1ZmtNS1FVNDRwQkhnR1YtVk1tbjBUbzdSRC1nVUhCOG9xX3RWX1ViYjVqcWFnc3ptYVZpY0lPZjBZTjhPTVFXem0xNE03LU03NjJQX1YzM0p6UjI4d0pkX2N2UjZQRXpDZ1phYW8wUlZlTy01VHpsQkxERUtzeWhFLTlQdTcwS2ZheXp2bTNmWm9BbDEyWGs0TFNrbw?oc=5",
       "source": "CNBC TV18",
@@ -4949,6 +4971,16 @@
       "indirect": false,
       "publishedAt": "2026-09-10T12:36:13.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMivgFBVV95cUxNN0FmdHR3RkEySF9NSEdleEJVXzJfNktGbDRxSlZFck5oNTVJeEl3QUlQeHBtdzZ0blJzdk4wMURkbDBXRkRvNTlGdFB3dTJVZS1EZHVEaWdFdEZoeHV4dUFJRE1XVHJmQk9UN0phNm",
+      "impact": "up"
+    },
+    {
+      "title": "White House Holds Off On Refined Copper Tariffs Ahead Of Midterm Elections",
+      "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxQZHFtc19HSFVRRE5hX1l6VmI3SXBQRVpBMURET2FBd3VFemxHQWZVZHE4b3ZiU2FyRm5hdHh0djJvdHV1ZEc1azlzUHNpU00wMEVlMDlNeWRkWTRhSDlCbGxqbUJYRzBMX0RwTFNoTWRNdjVTUFpPRjgyTlVFaGtQYjN0Z1YwdWZKREQ5YVA3c0xIX0JXWlpLZXJPX1htY19NbnotU2V2eS1GMHhrQkhUcUN6bkVrWkXSAb8BQVVfeXFMTzJxOF9NSG1qZmYxWmx6UHVwMm5KRVJmYzF1MWk4Q19VZkxteTdJYkdRcGlpcUhoLWd5M2R0WHFrSE5XR2pEdUxUekxwTndxOHQtOFgwMkhCUzd3TEpkenpwd3o0YWw0V19Zb3ZKaVdaZ05XSFFPeDdaeGNfaVFJa21BVzFQbFpyMTJmMHZXRVdlemRsWGdERC12OWNlUGpNRUNOalpJR2dFakZoN1RMR3NNN014Ym9uZ2pyYUtUY1E?oc=5",
+      "source": "NDTV Profit",
+      "trusted": true,
+      "indirect": false,
+      "publishedAt": "2026-09-10T07:00:00.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMitwFBVV95cUxQZHFtc19HSFVRRE5hX1l6VmI3SXBQRVpBMURET2FBd3VFemxHQWZVZHE4b3ZiU2FyRm5hdHh0djJvdHV1ZEc1azlzUHNpU00wMEVlMDlNeWRkWTRhSDlCbGxqbUJYRzBMX0RwTFNoTW",
       "impact": "up"
     },
     {
@@ -4994,7 +5026,7 @@
     {
       "title": "Copper Ascends to New Heights on Tight Supply and Tariff Fears",
       "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxNSnBjWDN6Z0JwYUluTU5jUjNLSnJ0b3F2SWxKUUQwVEYxaUpUZHo1M1czWHBzb0pHZTY0aFg4ZVlWc2xTRWlzcTQzUDZGb0lkWXNCODZnT2JfS2hxTGEtQVEyZmNNQ05YbDFnU1VkektCekVPU211REo5VTByM2FEWWpsV1pRS3hNNm95TW8ycEg0cl9HOGdIRDRZT2Q4X1hBRDVtNkdKVDM4SHpra3JBdUJwWQ?oc=5",
-      "source": "bloomberg.com",
+      "source": "Bloomberg.com",
       "trusted": true,
       "indirect": false,
       "publishedAt": "2026-09-08T07:00:00.000Z",
@@ -5039,26 +5071,6 @@
       "indirect": false,
       "publishedAt": "2026-09-08T07:00:00.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiyAFBVV95cUxPWFFqUzZwdDNwRjNSS0RSTEo5VWNZT1ZTb1kya2pWRFNDNnlGaVJYRFdITUxQOXpleW9aNF9zR0lpbWJEeDBvSnI3YjVkclIzU3Z2WU9uT0pBbTMzVGE3cUREV3dqaUdmREw0Yi1GUW",
-      "impact": "up"
-    },
-    {
-      "title": "Why copper prices hit a record high: 7 key reasons behind the rally",
-      "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNdU1zTVowa2Fyb2NManZtZjhyRjVWNUxpLVVGX09NdmY1TU10bW5KUU1oRTFRV3NJOGc0cVR1cEdaRDFNSk15OXFIdEt0YzhPd3hBbEpva1h2eDI2dnpkeGJTUzdKNmQyUndTaUhLMU0tNHFHbVhJSnlieGRDNmpIckYyc2RmeFlOUkdhblpxWm96d1R6YTM2b3RxQl96LVF1SHNRRlNHUk9fNktqdFA3RUw2YzZuZ2M5b1ZYWVBVeF_SAcYBQVVfeXFMTnIzM2o0c2JxZ3R2OW5aaEtOS1VsdUV2LUVjZ2xhbWoyMWNsQlBlX1M4Y2p6anM1VS1VaVBWTzRQcUR1dEhzaV9HLUpNb1pXWjVaYzFaTXY5VE12TUgwZmQ2ZWRsWUVBVXlhNVBhNjlHeHRaaVhIeHBlcEhhbUpfSlVVXzNNZ2ZmOHg3UlZyMldoQmU5NjcycnFxdjFiMjl6ODRVaGZPTWhoNEM3bGZqNjNmcXVQUm1jTnJBYW0xWkFqemJJejB3?oc=5",
-      "source": "CNBC TV18",
-      "trusted": true,
-      "indirect": false,
-      "publishedAt": "2026-09-07T07:00:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiwAFBVV95cUxNdU1zTVowa2Fyb2NManZtZjhyRjVWNUxpLVVGX09NdmY1TU10bW5KUU1oRTFRV3NJOGc0cVR1cEdaRDFNSk15OXFIdEt0YzhPd3hBbEpva1h2eDI2dnpkeGJTUzdKNmQyUndTaUhLMU",
-      "impact": "up"
-    },
-    {
-      "title": "LME Copper Prices Hit Record on Supply Issues, U.S. Tariff Concerns",
-      "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxOM0laWnVlTGVBTnJhSmRlT3Z2T3VPWlU0MXJoMVNGYmlKcDZhMktSMmJUTV9NSjBkU1FHRUhJT21mT2RLdFdsRzRJSE1rd0ZkUFRWUkZtbWVLUjRVLXBRdzVNMWVRQnlHRnhCYUp6MGFqdl82NTdua3hnN24xd1ctUHktVDRidHVfN2NQNGFJdVZIRER2c0lON29hY21GeTVOcVpucExXam1zbkNYTUo3T20yRHNpNFN1QzByYS15NA?oc=5",
-      "source": "WSJ",
-      "trusted": true,
-      "indirect": false,
-      "publishedAt": "2026-09-07T07:00:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMivwFBVV95cUxOM0laWnVlTGVBTnJhSmRlT3Z2T3VPWlU0MXJoMVNGYmlKcDZhMktSMmJUTV9NSjBkU1FHRUhJT21mT2RLdFdsRzRJSE1rd0ZkUFRWUkZtbWVLUjRVLXBRdzVNMWVRQnlHRnhCYUp6MG",
       "impact": "up"
     }
   ],
