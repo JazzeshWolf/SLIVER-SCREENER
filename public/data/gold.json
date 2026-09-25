@@ -1,16 +1,16 @@
 {
-  "asOf": "2026-09-25T19:45:09.342Z",
+  "asOf": "2026-09-25T21:50:28.177Z",
   "stale": false,
   "partial": false,
   "estimated": false,
   "live": {
-    "metalUsd": 4294.2,
-    "xauUsd": 4294.2,
+    "metalUsd": 4286.2,
+    "xauUsd": 4286.2,
     "usdInr": 95.82,
     "dxy": 119.51,
     "usdBroad": true,
-    "real10y": 2.76,
-    "breakeven10y": 2.35,
+    "real10y": 2.85,
+    "breakeven10y": 2.33,
     "metalHistory": [
       {
         "t": "2026-03-06",
@@ -594,14 +594,10 @@
       },
       {
         "t": "2026-09-25",
-        "v": 4294.200195
+        "v": 4286.200195
       }
     ],
     "xauHistory": [
-      {
-        "t": "2026-04-19",
-        "v": 4834.1014
-      },
       {
         "t": "2026-04-20",
         "v": 4820.47575
@@ -1235,8 +1231,12 @@
         "v": 4275.2841
       },
       {
+        "t": "2026-09-26",
+        "v": 4286.20945
+      },
+      {
         "t": "2026-09-25",
-        "v": 4294.200195
+        "v": 4286.200195
       }
     ],
     "dxyHistory": [
@@ -2011,10 +2011,6 @@
     ],
     "real10yHistory": [
       {
-        "t": "2025-12-18",
-        "v": 1.88
-      },
-      {
         "t": "2025-12-19",
         "v": 1.92
       },
@@ -2777,13 +2773,13 @@
       {
         "t": "2026-09-23",
         "v": 2.76
+      },
+      {
+        "t": "2026-09-24",
+        "v": 2.85
       }
     ],
     "usdInrHistory": [
-      {
-        "t": "2026-04-19",
-        "v": 92.72402
-      },
       {
         "t": "2026-04-20",
         "v": 93.11444
@@ -3417,17 +3413,21 @@
         "v": 95.97929
       },
       {
+        "t": "2026-09-26",
+        "v": 95.78111
+      },
+      {
         "t": "2026-09-25",
         "v": 95.82
       }
     ],
-    "asOf": "2026-09-25T19:45:09.342Z",
+    "asOf": "2026-09-25T21:50:28.177Z",
     "partial": false
   },
   "mcx": {
     "symbol": "GOLDM",
     "fut": 150736,
-    "prevClose": 150617,
+    "prevClose": 151292,
     "expiry": "2026-10-05",
     "dte": 10,
     "optionExpiry": "2026-09-25",
@@ -3438,13 +3438,13 @@
       "2026-11-27"
     ],
     "oi": 29109,
-    "oiChg": -3134
+    "oiChg": -8331
   },
   "options": {
     "atmStrike": 150500,
-    "atmIv": 0.2767,
+    "atmIv": 0.2731,
     "ivEstimated": true,
-    "ivRank": 53.6,
+    "ivRank": 52.8,
     "ivPercentile": 77.1,
     "ivRankEstimated": false,
     "ivHistory": [
@@ -3589,13 +3589,13 @@
         "v": 0.0323
       }
     ],
-    "rv20": 0.2635,
+    "rv20": 0.2601,
     "expectedMove1sd": 0,
     "chain": []
   },
   "basis": {
-    "fairValue": 156103,
-    "basis": -5367
+    "fairValue": 155812,
+    "basis": -5076
   },
   "gex": null,
   "curve": {
@@ -3626,20 +3626,20 @@
       "dte": 10,
       "optionDte": 0,
       "fut": 150736,
-      "prevClose": 150617,
+      "prevClose": 151292,
       "oi": 29109,
-      "oiChg": -3134,
+      "oiChg": -8331,
       "atmStrike": 150500,
-      "atmIv": 0.2767,
+      "atmIv": 0.2731,
       "ivEstimated": true,
-      "ivRank": 53.6,
+      "ivRank": 52.8,
       "ivPercentile": 77.1,
       "ivRankEstimated": false,
       "expectedMove1sd": 0,
       "gex": null,
       "basis": {
-        "fairValue": 156103,
-        "basis": -5367
+        "fairValue": 155812,
+        "basis": -5076
       },
       "chain": []
     },
@@ -3649,16 +3649,16 @@
       "dte": 41,
       "optionDte": 34,
       "fut": 152100,
-      "prevClose": 151885,
+      "prevClose": 152502,
       "oi": 22450,
-      "oiChg": 3794,
+      "oiChg": 6076,
       "atmStrike": 152000,
-      "atmIv": 0.1659,
+      "atmIv": 0.1661,
       "ivEstimated": false,
-      "ivRank": 13.9,
+      "ivRank": 14,
       "ivPercentile": 8.7,
       "ivRankEstimated": true,
-      "expectedMove1sd": 7701,
+      "expectedMove1sd": 7711,
       "gex": {
         "netPct": 9,
         "regime": "balanced",
@@ -3669,15 +3669,15 @@
         "coverage": 57
       },
       "basis": {
-        "fairValue": 156103,
-        "basis": -4003
+        "fairValue": 155812,
+        "basis": -3712
       },
       "chain": [
         {
           "strike": 149500,
           "type": "PE",
           "ltp": 1670,
-          "iv": 0.1532124615348876,
+          "iv": 0.15341380113922057,
           "oi": 7,
           "oiChg": null
         },
@@ -3685,7 +3685,7 @@
           "strike": 149500,
           "type": "CE",
           "ltp": 4926.5,
-          "iv": 0.19149594469740988,
+          "iv": 0.19174760290794074,
           "oi": 1,
           "oiChg": 0
         },
@@ -3693,7 +3693,7 @@
           "strike": 145000,
           "type": "CE",
           "ltp": 7949.5,
-          "iv": 0.18095225993543862,
+          "iv": 0.18119007214903832,
           "oi": 180,
           "oiChg": 28
         },
@@ -3701,7 +3701,7 @@
           "strike": 147000,
           "type": "CE",
           "ltp": 7295,
-          "iv": 0.23741392620280388,
+          "iv": 0.2377259313575924,
           "oi": 10,
           "oiChg": 0
         },
@@ -3709,7 +3709,7 @@
           "strike": 148000,
           "type": "CE",
           "ltp": 5565.5,
-          "iv": 0.17139816822111606,
+          "iv": 0.17162341009452936,
           "oi": 34,
           "oiChg": 3
         },
@@ -3717,7 +3717,7 @@
           "strike": 140000,
           "type": "CE",
           "ltp": 12519.5,
-          "iv": 0.2109726160094142,
+          "iv": 0.2112498711571097,
           "oi": 337,
           "oiChg": 85
         },
@@ -3725,7 +3725,7 @@
           "strike": 151500,
           "type": "CE",
           "ltp": 3352.5,
-          "iv": 0.16668923498503865,
+          "iv": 0.1669082941133529,
           "oi": 49,
           "oiChg": 3
         },
@@ -3733,7 +3733,7 @@
           "strike": 152000,
           "type": "CE",
           "ltp": 3129.5,
-          "iv": 0.16839141733944415,
+          "iv": 0.16861271119490268,
           "oi": 1125,
           "oiChg": 95
         },
@@ -3741,7 +3741,7 @@
           "strike": 151000,
           "type": "CE",
           "ltp": 3599.5,
-          "iv": 0.16556875210627914,
+          "iv": 0.16578634003922343,
           "oi": 378,
           "oiChg": 18
         },
@@ -3749,7 +3749,7 @@
           "strike": 150000,
           "type": "CE",
           "ltp": 4199.5,
-          "iv": 0.16705112111195924,
+          "iv": 0.16727065511979164,
           "oi": 1289,
           "oiChg": 125
         },
@@ -3757,7 +3757,7 @@
           "strike": 150500,
           "type": "CE",
           "ltp": 3910.5,
-          "iv": 0.1672815773487091,
+          "iv": 0.16750141863152385,
           "oi": 1,
           "oiChg": 0
         },
@@ -3765,7 +3765,7 @@
           "strike": 149000,
           "type": "CE",
           "ltp": 4873.5,
-          "iv": 0.17002763799764217,
+          "iv": 0.17025108277797704,
           "oi": 25,
           "oiChg": 0
         },
@@ -3773,7 +3773,7 @@
           "strike": 157000,
           "type": "CE",
           "ltp": 1157.5,
-          "iv": 0.16089936422929163,
+          "iv": 0.16111081597395238,
           "oi": 236,
           "oiChg": 62
         },
@@ -3781,7 +3781,7 @@
           "strike": 157500,
           "type": "CE",
           "ltp": 1050,
-          "iv": 0.16172232112288476,
+          "iv": 0.1619348622970283,
           "oi": 1,
           "oiChg": 0
         },
@@ -3789,7 +3789,7 @@
           "strike": 156000,
           "type": "CE",
           "ltp": 1447.5,
-          "iv": 0.16211175026185806,
+          "iv": 0.16232478493824598,
           "oi": 289,
           "oiChg": 22
         },
@@ -3797,7 +3797,7 @@
           "strike": 153500,
           "type": "CE",
           "ltp": 2574.5,
-          "iv": 0.175570161703974,
+          "iv": 0.17580088797025378,
           "oi": 61,
           "oiChg": 22
         },
@@ -3805,7 +3805,7 @@
           "strike": 154000,
           "type": "CE",
           "ltp": 2255,
-          "iv": 0.16913808623515073,
+          "iv": 0.16936035778373482,
           "oi": 625,
           "oiChg": 156
         },
@@ -3813,7 +3813,7 @@
           "strike": 152500,
           "type": "CE",
           "ltp": 2900,
-          "iv": 0.1690246552098543,
+          "iv": 0.16924677777662878,
           "oi": 185,
           "oiChg": 31
         },
@@ -3821,7 +3821,7 @@
           "strike": 153000,
           "type": "CE",
           "ltp": 2602,
-          "iv": 0.16519760117307308,
+          "iv": 0.165414695603773,
           "oi": 828,
           "oiChg": 30
         },
@@ -3829,7 +3829,7 @@
           "strike": 155500,
           "type": "CE",
           "ltp": 1752,
-          "iv": 0.1711623300164938,
+          "iv": 0.1713872646149248,
           "oi": 20,
           "oiChg": 4
         },
@@ -3837,7 +3837,7 @@
           "strike": 154500,
           "type": "CE",
           "ltp": 2059.5,
-          "iv": 0.1688768931888044,
+          "iv": 0.16909882952831692,
           "oi": 13,
           "oiChg": -2
         },
@@ -3845,7 +3845,7 @@
           "strike": 155000,
           "type": "CE",
           "ltp": 1869,
-          "iv": 0.16820032954588532,
+          "iv": 0.168421362683177,
           "oi": 3638,
           "oiChg": 222
         },
@@ -3853,7 +3853,7 @@
           "strike": 161000,
           "type": "CE",
           "ltp": 790,
-          "iv": 0.1928460178561508,
+          "iv": 0.193099454537034,
           "oi": 12,
           "oiChg": 0
         },
@@ -3861,7 +3861,7 @@
           "strike": 162500,
           "type": "CE",
           "ltp": 604,
-          "iv": 0.1950679884329438,
+          "iv": 0.19532433025911444,
           "oi": 3,
           "oiChg": 1
         },
@@ -3869,7 +3869,7 @@
           "strike": 163000,
           "type": "CE",
           "ltp": 907,
-          "iv": 0.22951396089792253,
+          "iv": 0.22981559319421652,
           "oi": 1,
           "oiChg": 0
         },
@@ -3877,7 +3877,7 @@
           "strike": 162000,
           "type": "CE",
           "ltp": 590,
-          "iv": 0.1874689291380346,
+          "iv": 0.187715289182961,
           "oi": 81,
           "oiChg": 12
         },
@@ -3885,7 +3885,7 @@
           "strike": 159000,
           "type": "CE",
           "ltp": 891,
-          "iv": 0.17301324277371166,
+          "iv": 0.173240607637912,
           "oi": 167,
           "oiChg": 58
         },
@@ -3893,7 +3893,7 @@
           "strike": 158000,
           "type": "CE",
           "ltp": 1050,
-          "iv": 0.1696113921329379,
+          "iv": 0.1698342875428498,
           "oi": 451,
           "oiChg": 51
         },
@@ -3901,7 +3901,7 @@
           "strike": 160000,
           "type": "CE",
           "ltp": 790,
-          "iv": 0.1791955595500767,
+          "iv": 0.17943106254562735,
           "oi": 5196,
           "oiChg": 471
         },
@@ -3909,7 +3909,7 @@
           "strike": 164000,
           "type": "CE",
           "ltp": 600,
-          "iv": 0.2128940530307591,
+          "iv": 0.2131738408692181,
           "oi": 15,
           "oiChg": 0
         },
@@ -3917,7 +3917,7 @@
           "strike": 146000,
           "type": "PE",
           "ltp": 970,
-          "iv": 0.17379910319671033,
+          "iv": 0.1740275016222149,
           "oi": 19,
           "oiChg": 4
         },
@@ -3925,7 +3925,7 @@
           "strike": 147000,
           "type": "PE",
           "ltp": 1053,
-          "iv": 0.16247440923191606,
+          "iv": 0.1626879280991852,
           "oi": 10,
           "oiChg": 3
         },
@@ -3933,7 +3933,7 @@
           "strike": 146500,
           "type": "PE",
           "ltp": 776.5,
-          "iv": 0.15050898174941538,
+          "iv": 0.15070677372440694,
           "oi": 1,
           "oiChg": 0
         },
@@ -3941,7 +3941,7 @@
           "strike": 145000,
           "type": "PE",
           "ltp": 750,
-          "iv": 0.17261927900090812,
+          "iv": 0.17284614105150103,
           "oi": 2032,
           "oiChg": 72
         },
@@ -3949,7 +3949,7 @@
           "strike": 147500,
           "type": "PE",
           "ltp": 1080,
-          "iv": 0.15537996063753967,
+          "iv": 0.1555841588303447,
           "oi": 15,
           "oiChg": 3
         },
@@ -3957,7 +3957,7 @@
           "strike": 148000,
           "type": "PE",
           "ltp": 1339.5,
-          "iv": 0.1633098992202431,
+          "iv": 0.16352451682835817,
           "oi": 365,
           "oiChg": 42
         },
@@ -3965,7 +3965,7 @@
           "strike": 140000,
           "type": "PE",
           "ltp": 301.5,
-          "iv": 0.19405539631843563,
+          "iv": 0.19431041593104598,
           "oi": 2426,
           "oiChg": 257
         },
@@ -3973,7 +3973,7 @@
           "strike": 142000,
           "type": "PE",
           "ltp": 261.5,
-          "iv": 0.16234722532331938,
+          "iv": 0.16256058589741584,
           "oi": 8,
           "oiChg": 4
         },
@@ -3981,7 +3981,7 @@
           "strike": 149000,
           "type": "PE",
           "ltp": 1600,
-          "iv": 0.1595822160504758,
+          "iv": 0.15979193588159976,
           "oi": 58,
           "oiChg": 12
         },
@@ -3989,7 +3989,7 @@
           "strike": 150500,
           "type": "PE",
           "ltp": 2050,
-          "iv": 0.15261307046934963,
+          "iv": 0.15281363723054525,
           "oi": 21,
           "oiChg": 15
         },
@@ -3997,7 +3997,7 @@
           "strike": 150000,
           "type": "PE",
           "ltp": 2000,
-          "iv": 0.161352129260078,
+          "iv": 0.16156417693197728,
           "oi": 2564,
           "oiChg": 150
         },
@@ -4005,7 +4005,7 @@
           "strike": 155000,
           "type": "PE",
           "ltp": 4528.5,
-          "iv": 0.1541496874764562,
+          "iv": 0.15435226549208167,
           "oi": 2376,
           "oiChg": 360
         },
@@ -4013,7 +4013,7 @@
           "strike": 154000,
           "type": "PE",
           "ltp": 4059.5,
-          "iv": 0.16378719969280062,
+          "iv": 0.16400244116224352,
           "oi": 175,
           "oiChg": 34
         },
@@ -4021,7 +4021,7 @@
           "strike": 153500,
           "type": "PE",
           "ltp": 3448.5,
-          "iv": 0.14642172167077655,
+          "iv": 0.14661415030062194,
           "oi": 3,
           "oiChg": -2
         },
@@ -4029,7 +4029,7 @@
           "strike": 151000,
           "type": "PE",
           "ltp": 2361,
-          "iv": 0.15788347890041768,
+          "iv": 0.1580909640043974,
           "oi": 432,
           "oiChg": 158
         },
@@ -4037,7 +4037,7 @@
           "strike": 153000,
           "type": "PE",
           "ltp": 3380,
-          "iv": 0.1584976377878338,
+          "iv": 0.15870592366904013,
           "oi": 512,
           "oiChg": 93
         },
@@ -4045,7 +4045,7 @@
           "strike": 152500,
           "type": "PE",
           "ltp": 3200,
-          "iv": 0.16355639893561602,
+          "iv": 0.16377134244143962,
           "oi": 20,
           "oiChg": 2
         },
@@ -4053,7 +4053,7 @@
           "strike": 152000,
           "type": "PE",
           "ltp": 2939,
-          "iv": 0.16344088216498492,
+          "iv": 0.16365567668899894,
           "oi": 831,
           "oiChg": 194
         },
@@ -4061,7 +4061,7 @@
           "strike": 151500,
           "type": "PE",
           "ltp": 2560,
-          "iv": 0.15610792300477627,
+          "iv": 0.15631308026798071,
           "oi": 11,
           "oiChg": 3
         },
@@ -4069,7 +4069,7 @@
           "strike": 160000,
           "type": "PE",
           "ltp": 8434,
-          "iv": 0.15665626917779443,
+          "iv": 0.15686214341595767,
           "oi": 1099,
           "oiChg": 190
         },
@@ -4077,7 +4077,7 @@
           "strike": 159000,
           "type": "PE",
           "ltp": 7990,
-          "iv": 0.18786187797226014,
+          "iv": 0.18810875945352015,
           "oi": 10,
           "oiChg": 0
         },
@@ -4085,7 +4085,7 @@
           "strike": 156500,
           "type": "PE",
           "ltp": 5250,
-          "iv": 0.13180487423390153,
+          "iv": 0.13197808421030638,
           "oi": 1,
           "oiChg": 0
         },
@@ -4093,7 +4093,7 @@
           "strike": 156000,
           "type": "PE",
           "ltp": 5167.5,
-          "iv": 0.1508869579117745,
+          "iv": 0.1510852433890104,
           "oi": 33,
           "oiChg": 11
         },
@@ -4101,7 +4101,7 @@
           "strike": 158000,
           "type": "PE",
           "ltp": 6720.5,
-          "iv": 0.15287351860664786,
+          "iv": 0.15307442057691514,
           "oi": 42,
           "oiChg": 8
         },
@@ -4109,7 +4109,7 @@
           "strike": 157000,
           "type": "PE",
           "ltp": 5995,
-          "iv": 0.1567108803223818,
+          "iv": 0.15691682905144988,
           "oi": 50,
           "oiChg": 15
         },
@@ -4117,7 +4117,7 @@
           "strike": 162000,
           "type": "PE",
           "ltp": 10104,
-          "iv": 0.14114905057847502,
+          "iv": 0.1413345701768995,
           "oi": 20,
           "oiChg": 12
         },
@@ -4125,7 +4125,7 @@
           "strike": 163000,
           "type": "PE",
           "ltp": 12000,
-          "iv": 0.24578036286495628,
+          "iv": 0.24610336473956707,
           "oi": 3,
           "oiChg": 0
         }
@@ -4137,16 +4137,16 @@
       "dte": 70,
       "optionDte": 63,
       "fut": 153346,
-      "prevClose": 152994,
+      "prevClose": 153580,
       "oi": 9575,
-      "oiChg": -26,
+      "oiChg": 129,
       "atmStrike": 155000,
-      "atmIv": 0.2767,
+      "atmIv": 0.2731,
       "ivEstimated": true,
-      "ivRank": 49.1,
-      "ivPercentile": 77,
+      "ivRank": 47.8,
+      "ivPercentile": 74.6,
       "ivRankEstimated": true,
-      "expectedMove1sd": 17628,
+      "expectedMove1sd": 17399,
       "gex": {
         "netPct": 77,
         "regime": "pinning",
@@ -4157,15 +4157,15 @@
         "coverage": 5
       },
       "basis": {
-        "fairValue": 156103,
-        "basis": -2757
+        "fairValue": 155812,
+        "basis": -2466
       },
       "chain": [
         {
           "strike": 150000,
           "type": "PE",
           "ltp": 2806,
-          "iv": 0.17110641528107226,
+          "iv": 0.17122628976963464,
           "oi": 2,
           "oiChg": 0
         },
@@ -4173,7 +4173,7 @@
           "strike": 145000,
           "type": "PE",
           "ltp": 1315,
-          "iv": 0.17292243836075066,
+          "iv": 0.17304358850605786,
           "oi": 5,
           "oiChg": 0
         },
@@ -4181,7 +4181,7 @@
           "strike": 150000,
           "type": "CE",
           "ltp": 6480,
-          "iv": 0.18485705454275014,
+          "iv": 0.18498656163644045,
           "oi": 4,
           "oiChg": 0
         },
@@ -4189,7 +4189,7 @@
           "strike": 160000,
           "type": "CE",
           "ltp": 1780,
-          "iv": 0.1673372779227793,
+          "iv": 0.16745451729558405,
           "oi": 43,
           "oiChg": 7
         },
@@ -4197,7 +4197,7 @@
           "strike": 165000,
           "type": "CE",
           "ltp": 1487,
-          "iv": 0.2077146445512771,
+          "iv": 0.20786016253381967,
           "oi": 1,
           "oiChg": 0
         }
@@ -4866,9 +4866,29 @@
   },
   "news": [
     {
+      "title": "Wall Street split on gold price path after drop below $4,300, Main Street maintains bullish majority as jobs take center stage",
+      "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQbWtUQVJKczJHZ1lWRDRZUEpOc1JuMVJHNmxQR18wSFlJbWJaemlYMXozWXdJTXRxRDVzWWRnWVFobWJCWEZqdUVqa2VMemE3NlI0MDJKdVFBWkJ0a3NrZE01WEJ2NS1mVUhaLTJYNnM4MUdHNHlDTnhYa0JZdS1lN2Vqdk5YOUhhWlhkMXc3S3pFaURQeFVKUU9pbVN5cWYzY0FwdThESE1IQ2JMVEo3T2JZbw?oc=5",
+      "source": "Kitco",
+      "trusted": true,
+      "indirect": false,
+      "publishedAt": "2026-09-25T21:35:13.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiswFBVV95cUxQbWtUQVJKczJHZ1lWRDRZUEpOc1JuMVJHNmxQR18wSFlJbWJaemlYMXozWXdJTXRxRDVzWWRnWVFobWJCWEZqdUVqa2VMemE3NlI0MDJKdVFBWkJ0a3NrZE01WEJ2NS1mVUhaLTJYNn",
+      "impact": "up"
+    },
+    {
+      "title": "Gold’s $4,300 support faces another test next week as bond yields surge and jobs data looms",
+      "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNNFpWRTg5ZVdBQjZOdEIxX0VnR0R1OGVSZVYyVENJVDVKSHZqWlJ5Ry1FdFg3OGw3elZ2UmFCYTJ2dmxLb3pyNWVOTWYtYWd5ODdhUi1NYS12eXp2VFlaZ2pnR1Ezbnl5M3lHUmtRei04U3p0MkE2OFRMX0xOc1JIaVlxQ1R5eDE3Ym1kb2lXZTRINHBqcXF3WTB5MldXV3dHaHlBOGNjbHMzN1Vzd3hLdXhFaE9fNmxoYUhRZw?oc=5",
+      "source": "Kitco",
+      "trusted": true,
+      "indirect": false,
+      "publishedAt": "2026-09-25T17:08:00.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMivAFBVV95cUxNNFpWRTg5ZVdBQjZOdEIxX0VnR0R1OGVSZVYyVENJVDVKSHZqWlJ5Ry1FdFg3OGw3elZ2UmFCYTJ2dmxLb3pyNWVOTWYtYWd5ODdhUi1NYS12eXp2VFlaZ2pnR1Ezbnl5M3lHUmtRei",
+      "impact": "up"
+    },
+    {
       "title": "Hedge Fund With 235% Return Says Gold Decline Is Temporary",
       "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNX2xHUld1VU13NlVzZEVRUmhidVhXMzZNZVJsTEwxQkViSVU5blU2OVdMcUhGOW9XX0FWTXNKN0NfcW9tTHZNeFhzN01SMzB5M2JoTmtfWTNBc01WcHBpWW1Pc2cxOHpYTUxjazVGUzBzR0IwX1dUbk4tcjlaZ1l5SGpVVmxLMmx2aVZDSEhNa3g5dkdOMURIal9ZYk5oYmo1MVBqOF82V1R6ZzBnOU1ycmRROGE?oc=5",
-      "source": "bloomberg.com",
+      "source": "Bloomberg.com",
       "trusted": true,
       "indirect": false,
       "publishedAt": "2026-09-25T03:29:00.000Z",
@@ -4906,6 +4926,16 @@
       "impact": "twoway"
     },
     {
+      "title": "Gold rises despite Fed rate hike as real-yield link weakens, central-bank buying accelerates: Monarch PMS",
+      "url": "https://news.google.com/rss/articles/CBMi_AFBVV95cUxQVC0ydU15WUg0Z2s3YkhnVmphakY4N1VUU2lnM2h6U2M1a1hFcFlhWTZTRkNHNE5WbHNiTDQyd0prSk1yV2xxN00wUHpPeUQzR0ZxbWVQellzVXdrVGREc09UaHVSLUstYk8tdUFMNXZWRTQ5NGxmYi15UGpwZHN6SkhySGZXZW1uTklFeUtSbXdkMzF5MGRyQTl1NU1KM0xGZVdDTGlOcnZ3QXlyMmUySjBkeThkTzlfcWZEWnFhMEhscEFaM3NwNjNsNktrT2JFTVpmU2NQT3drb2ZGSWRoNTlKUkNOT3ZMY3VIRHdrb1NuRE5jZ2o5RUZadTHSAYICQVVfeXFMTmRnZDRudkxnLTlpaGVuSldRTUJ3Qi1VZHpwYXdWS0FmZXBlWWx6WXlKbHc4bmtPZE1EQWdjNVRzZW12YXR2UE9tSjdrbFZrc1J4cE1CZ09sSUdjVWN3dzl3aVpaOXZySmVoXzkyOHRfSm4zd1VvNFROMExZaUZIMWNrd0NwTTBmVjJaVGNhTlhoenhxVDY1a2Nrd0xzN3pVOHJtaFBuSHI3WTFMcWNLSkRqZmZfVVNlb1BIMVFhcU5GcEVITUFpaGNxQmhUQVdWVFlzMzZRb25TUDJ2Mm1pOXNjbm9DQjd3ckNyQ1h0aFZsZ0MzQkdVazRzZVZuV004Zzhn?oc=5",
+      "source": "The Economic Times",
+      "trusted": true,
+      "indirect": false,
+      "publishedAt": "2026-09-24T06:54:35.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMi_AFBVV95cUxQVC0ydU15WUg0Z2s3YkhnVmphakY4N1VUU2lnM2h6U2M1a1hFcFlhWTZTRkNHNE5WbHNiTDQyd0prSk1yV2xxN00wUHpPeUQzR0ZxbWVQellzVXdrVGREc09UaHVSLUstYk8tdUFMNX",
+      "impact": "twoway"
+    },
+    {
       "title": "Gold’s bull run isn’t over: TD Securities sees next leg above $5,000",
       "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQN1JkYzlhaEJ4dnJOYzBpRF9oc1JGcEpMQ2JQQVMzQXBkOE1RZjdYQTBVRGRQUWxqRDljRUo5c1NieFU2SnRwRGRRM2Z4YkpNdFRCS0VnVmRGQ0RDOFJPU05HcjVMXzBjTVRoNnFCbnU0cXEtdUE1TVR2eUp5ZE56emVDWmtlTzZDTEM3M21tODBSeWdoUDJzMmt6UTJFNXhDSzhDUGdwdEcwVWZ3S1E?oc=5",
       "source": "Kitco",
@@ -4936,9 +4966,19 @@
       "impact": "twoway"
     },
     {
+      "title": "Ghana to focus on rebuilding reserves as gold exports pause",
+      "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQc2VDN2hoVXRiOHIxLUEyRmljamRuX2dYZWJ5MzZSdkRFLWRQMUhvRldlRUk2cWo3RUxITmtqVjIzenIxNEYxSEx3M1AyMGVOQ2FNbER1MWZvbDdiS2pIMnFmbGxGUjBoU0wzaktCWkI3YUU4elFxMHRuX3VqTHdaVkRjTHRkd3FIVnBYb0JLX2l3TUZMYnYySzhacEFHUG5z?oc=5",
+      "source": "Reuters",
+      "trusted": true,
+      "indirect": false,
+      "publishedAt": "2026-09-23T13:52:09.000Z",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMioAFBVV95cUxQc2VDN2hoVXRiOHIxLUEyRmljamRuX2dYZWJ5MzZSdkRFLWRQMUhvRldlRUk2cWo3RUxITmtqVjIzenIxNEYxSEx3M1AyMGVOQ2FNbER1MWZvbDdiS2pIMnFmbGxGUjBoU0wzaktCWk",
+      "impact": "twoway"
+    },
+    {
       "title": "Gold prices could hit $5,000 by year-end as central banks keep buying: Metals Focus",
       "url": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxPei1YakZtLVY4b3o3RndBZjFFeENoUFpnSjVhMHRYdGd0c1c2a0lpWkFjR3diRjVnbURYcXh0dklqTC1EQjNPWGt1UU5EY1o4cjdZRy1Ra1llOHRRekt1TWJ1UVpvRHJITnFjM3hkakstVzNWcEc4bmdsYmNJMmhHeUQ2c2lXSU51dmk4QXlFNHJkZjIxLUMtMjhDcTVXdEo3aVZIcFRIN1RvTWx4MVA2cEdoNG9mdkxCMnFqbWNfbHhLVE1XWTRZQWtaNHZVNmFvNFBR0gHYAUFVX3lxTE5oc1N2aWlCYkZPcGRBWHctS2ZRLWFpUjJpRHdOQmhTMkNfeTAwR1duLWd5a3h4U2pkRTNXano2UUZJcWhsbWRNZnBxem04VXdGc3pOOE1tNzQyeFN4RlFxQ0ZSRmUyMG11WEpoMGhnTmQwTUNUOFJGZmNJcUl3SGY2aC00VXNzdV9SNXBIM3AyWHZfOHpHMWNsTkstWmFwSVhqTjF5TWpoTmVuR2FyUk1heDZ5cW1FbVMybzNwXzhmTDJDcW8wUXk2VjdIaTYzcGZkMUh0eVFraw?oc=5",
-      "source": "cnbctv18.com",
+      "source": "CNBC TV18",
       "trusted": true,
       "indirect": false,
       "publishedAt": "2026-09-23T10:49:31.000Z",
@@ -4973,46 +5013,6 @@
       "indirect": false,
       "publishedAt": "2026-09-22T21:29:30.000Z",
       "snippet": "<a href=\"https://news.google.com/rss/articles/CBMia0FVX3lxTE9FaXcxeTVmbzZGVkFyNk1wNFUtYXk0cGlyZ2t3MGJYUmE4b1pyOFlhUXBpTXdZWThGZGd0aTE3aFhtRDVzbnN5MXlrY0NucTgtMUxWcEpQMHNMZWt5U3BCYlNmUU9GUFFaek44?oc=5\"",
-      "impact": "twoway"
-    },
-    {
-      "title": "Gold and silver ALERT: More downside before another rally?",
-      "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQeXFQemhLNjlUVjllck5BajNwdVhFQm5QQzNYeDZ6ekNVbmRlb2FKbGJZMlZWTkg2QmJuU0VvWVdZTmVsTDJYZWt5dl94Qzl4Tm1STHY3U1NBSFNpLU1RRFlKc0JyVjdjWVhHRkpBanJfbWw2Y08yVzhSdFRGb293NnJWSWlCTWVtd2xLMFNLZ1M3bGFB?oc=5",
-      "source": "Kitco",
-      "trusted": true,
-      "indirect": false,
-      "publishedAt": "2026-09-22T19:36:50.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMilAFBVV95cUxQeXFQemhLNjlUVjllck5BajNwdVhFQm5QQzNYeDZ6ekNVbmRlb2FKbGJZMlZWTkg2QmJuU0VvWVdZTmVsTDJYZWt5dl94Qzl4Tm1STHY3U1NBSFNpLU1RRFlKc0JyVjdjWVhHRkpBan",
-      "impact": "up"
-    },
-    {
-      "title": "ETF flows show gold price decoupled from real yields as fiscal concerns now drive investor demand – Saxo Bank’s Hansen",
-      "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQZ2xlZzM5V1dvc25iNWMwS2l4N3RqNU1HT21GaUVhM19VeFVBbEMtQVl0Y21meUk4QmRRSmhrMDQ1T181TXVzY3dFd3pVVlN2YTRISFRJYWw0bDVtTUpMQUpDRUEyMlh5QXlUZlJpYnh6SnVWUy1tcExRSEZjSVowYmFYTnFBR2FNR1QxNVVFQmRuVmVkT2JCT3ZLSEpHbGR4dXRhQmR2enBYR21ZY3JvTXltUUVmeVpnSURn?oc=5",
-      "source": "Kitco",
-      "trusted": true,
-      "indirect": false,
-      "publishedAt": "2026-09-22T14:12:00.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMiuwFBVV95cUxQZ2xlZzM5V1dvc25iNWMwS2l4N3RqNU1HT21GaUVhM19VeFVBbEMtQVl0Y21meUk4QmRRSmhrMDQ1T181TXVzY3dFd3pVVlN2YTRISFRJYWw0bDVtTUpMQUpDRUEyMlh5QXlUZlJpYn",
-      "impact": "twoway"
-    },
-    {
-      "title": "Mandhana stars as women's T20 brings India's first gold of Nagoya Games",
-      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPenRGSUcxMmpHTnJCem8xX0Rnczl1UFlkX1R6VWYxR1ZGWGk5bDNPMlI2LVZFX3NZdjZpdF9LN25nLV8wSFppV1Q4S3poUlJpdi1RVTUwZDhDT0dJZ3hkM2RoVTZoTFR0cjhWWnNFaXBTMlk5b09LVy1STFNQQ0FpY0lfVlhXdC1rbC1VR3hkQXNmbkdiME5Fem95Q3dueDJYZzZieF9CVUliejFHRTVqNUlxa3Q?oc=5",
-      "source": "Reuters",
-      "trusted": true,
-      "indirect": false,
-      "publishedAt": "2026-09-22T09:52:23.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMitAFBVV95cUxPenRGSUcxMmpHTnJCem8xX0Rnczl1UFlkX1R6VWYxR1ZGWGk5bDNPMlI2LVZFX3NZdjZpdF9LN25nLV8wSFppV1Q4S3poUlJpdi1RVTUwZDhDT0dJZ3hkM2RoVTZoTFR0cjhWWnNFaX",
-      "impact": "twoway"
-    },
-    {
-      "title": "China spends record amount importing over 1,000 tonnes of gold this year",
-      "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxQQmU5Y0tyY0xOSEc0UDcta21lb2toUldvdXQ5MlFHZzlqTF9DUUg0a2RWSmdKUEdrblhHb1k1aVIyTmk3NjFkNW5uMWpJYjRPT2VUMEJkZzhZeG1JZ0VDZTJUMEdUS1UtVXF3ZGVUWnlaSDVBMlRob3dwVEx3UFVPNmZ2S0M?oc=5",
-      "source": "Financial Times",
-      "trusted": true,
-      "indirect": false,
-      "publishedAt": "2026-09-22T07:45:05.000Z",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMihAFBVV95cUxQQmU5Y0tyY0xOSEc0UDcta21lb2toUldvdXQ5MlFHZzlqTF9DUUg0a2RWSmdKUEdrblhHb1k1aVIyTmk3NjFkNW5uMWpJYjRPT2VUMEJkZzhZeG1JZ0VDZTJUMEdUS1UtVXF3ZGVUWn",
       "impact": "twoway"
     }
   ],
