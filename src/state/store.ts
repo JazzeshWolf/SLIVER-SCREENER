@@ -14,6 +14,7 @@ import { metalForSymbol } from "../lib/instrument";
 import type { MetalConfig } from "../lib/instrument";
 import type { Snapshot } from "../lib/types";
 import { cacheGet, cacheSet } from "../lib/cache";
+import { mergeExpiry } from "../lib/sellView";
 import type {
   ExpiryBundle,
   Horizon,
@@ -75,46 +76,6 @@ function applyLiveSpot(
     basis: { fairValue: liveFv != null ? Math.round(liveFv) : snap.mcx.basis.fairValue, basis: serverBasis },
   };
   return { live, mcx };
-}
-
-/**
- * Return an mcx view with the chosen expiry's contract data swapped in, so all
- * option cards (chain, IV, GEX, expected move, theta, market structure, basis)
- * re-point to it. The macro direction (scores/regime) is computed from the base
- * mcx, so it stays global. Selecting the nearest keeps the base (live-overlaid).
- */
-function mergeExpiry(mcx: McxData | null, sel: string | null): McxData | null {
-  const exs = mcx?.expiries;
-  if (!mcx || !exs?.length || !sel || sel === mcx.mcx.optionExpiry) return mcx;
-  const b = exs.find((e) => e.optionExpiry === sel);
-  if (!b) return mcx;
-  return {
-    ...mcx,
-    mcx: {
-      ...mcx.mcx,
-      fut: b.fut,
-      prevClose: b.prevClose,
-      oi: b.oi,
-      oiChg: b.oiChg,
-      expiry: b.expiry,
-      dte: b.dte,
-      optionExpiry: b.optionExpiry,
-      optionDte: b.optionDte,
-    },
-    options: {
-      ...mcx.options,
-      atmStrike: b.atmStrike,
-      atmIv: b.atmIv,
-      ivEstimated: b.ivEstimated,
-      ivRank: b.ivRank,
-      ivPercentile: b.ivPercentile,
-      ivRankEstimated: b.ivRankEstimated,
-      expectedMove1sd: b.expectedMove1sd,
-      chain: b.chain,
-    },
-    gex: b.gex,
-    basis: b.basis,
-  };
 }
 
 export interface Dashboard {

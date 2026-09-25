@@ -1,0 +1,39 @@
+name: Send test alert
+
+# Manual check that the Telegram secrets are wired up: Actions → "Send test
+# alert" → Run workflow. The bot should reply "⚖️ MCX metals alerts connected".
+# Tick "mock" to also receive an invented alert rendered by the real formatter
+# (every line type, labelled MOCK) so you can see and hear what a live one is
+# like. A red run means the token or chat ID is wrong, or the bot was never
+# started. Sends only — never touches the alerts-state branch.
+on:
+  workflow_dispatch:
+    inputs:
+      mock:
+        description: "Also send a mock metals alert (labelled MOCK)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Send test message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MOCK: ${{ inputs.mock }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "::error::TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID secret is missing or misnamed."
+            exit 1
+          fi
+          node scripts/alerts-run.mjs --test
+          if [ "$MOCK" = "true" ]; then node scripts/alerts-run.mjs --mock; fi
