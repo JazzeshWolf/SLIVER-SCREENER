@@ -165,6 +165,20 @@ describe("diff", () => {
     expect(d.events.map((e) => e.kind)).toEqual(["NEW", "LEFT", "MOVED"]);
   });
 
+  it("needs 10+ days to expiry to start tracking, then follows the strike to its exit", () => {
+    const at = (dte, conviction = 72) => cur(row({ dte, conviction }));
+    expect(diffAt({}, at(9), { minDte: 10 }).events).toEqual([]);
+    const a = diffAt({}, at(10), { minDte: 10 });
+    expect(a.events.map((e) => e.kind)).toEqual(["NEW"]);
+    // Days pass: under 10 left, still tracked — moves and the exit are reported.
+    const b = diffAt(a.tracked, at(6, 75), { minDte: 10 });
+    expect(b.events).toMatchObject([{ kind: "MOVED", from: 72, row: { conviction: 75 } }]);
+    const c = diffAt(b.tracked, at(5, 60), { minDte: 10 });
+    expect(c.events).toMatchObject([{ kind: "DROPPED" }]);
+    // …and a re-cross with too few days left stays quiet.
+    expect(diffAt(c.tracked, at(4, 80), { minDte: 10 }).events).toEqual([]);
+  });
+
   it("keeps metals apart: the same strike on two metals is two contracts", () => {
     const d = diffAt({}, cur(row(), row({ metal: "gold", symbol: "GOLDM" })));
     expect(Object.keys(d.tracked)).toHaveLength(2);
@@ -240,6 +254,14 @@ describe("formatting", () => {
     expect(m).toContain("lot 5 kg");
     expect(m).toContain("credit ₹7,428/lot");
     expect(m).toContain("₹1,485.50/kg");
+  });
+
+  it("states the days rule in the header and shows days left on NEW lines", () => {
+    const [m] = formatMessages([{ kind: "NEW", row: row({ dte: 32 }) }], { threshold: 70, minDte: 10, when: "14:05" });
+    expect(m).toContain("Metals CONV ≥ 70, entry 10+ days left");
+    expect(m).toContain("27 Oct · 32d left");
+    const s = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [], "2026-09-24", "2026-09-24T17:50:00Z");
+    expect(formatHeartbeat(s, "2026-09-24", 70, 10)).toContain("(CONV ≥ 70, entry 10+ days left)");
   });
 
   it("escapes HTML and splits under Telegram's length cap", () => {

@@ -8,7 +8,7 @@
 // set to the commit time and a throwaway state dir.
 //
 //   npm run alerts:replay -- [--since 2026-09-01] [--ref origin/main]
-//                            [--threshold 70] [--quiet]
+//                            [--threshold 70] [--min-dte 10] [--quiet]
 //
 // Needs real history: a shallow clone replays nothing
 // (`git fetch --depth=5000 origin main` first). --quiet prints only the tally.
@@ -19,7 +19,7 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { METAL_IDS } from "../src/lib/metals.mjs";
-import { DEFAULT_THRESHOLD, istDate, istTime, run } from "./alerts.mjs";
+import { DEFAULT_MIN_DTE, DEFAULT_THRESHOLD, istDate, istTime, run } from "./alerts.mjs";
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -28,6 +28,7 @@ const arg = (name, fallback = null) => {
 const ref = arg("ref", "origin/main");
 const since = arg("since", "2026-08-11"); // per-metal files start here
 const threshold = Number(arg("threshold", DEFAULT_THRESHOLD));
+const minDte = Number(arg("min-dte", DEFAULT_MIN_DTE));
 const quiet = process.argv.includes("--quiet");
 
 const git = (...a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
@@ -55,7 +56,7 @@ try {
     // The alert step runs right after the data commit.
     const now = new Date(Date.parse(at) + 30_000);
     await run({
-      dataDir, stateDir, now, threshold,
+      dataDir, stateDir, now, threshold, minDte,
       log: () => {},
       send: (text) => {
         messages++;
@@ -77,6 +78,6 @@ try {
 
 const days = [...perDay.values()];
 console.log(
-  `Replayed ${commits.length} data commits since ${since} at CONV ≥ ${threshold}: ${messages} messages ` +
+  `Replayed ${commits.length} data commits since ${since} at CONV ≥ ${threshold}, ${minDte}+ days left: ${messages} messages ` +
     `(${JSON.stringify(kinds)}), on ${days.length} days, max ${Math.max(0, ...days)} in a day.`,
 );

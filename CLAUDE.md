@@ -37,9 +37,10 @@ credentials table.
 | `KITE_API_KEY`, `KITE_ACCESS_TOKEN` | repo secrets (optional fallback) | daily | nothing, unless Upstox is also dead |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | repo secrets — **the same bot and chat as xerxes** | never (revoke via @BotFather `/revoke` — which kills both screeners' alerts) | "Conviction alerts" step goes red; no end-of-day heartbeat |
 | `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (70) |
+| `ALERT_MIN_DTE_METALS` | repo **variable** | n/a | unset → the code default (10 days); `0` turns the minimum off |
 
 Settings → Secrets and variables → Actions: secrets on the **Secrets** tab,
-`ALERT_MIN_CONV_METALS` on the **Variables** tab. Never paste the bot token into
+`ALERT_MIN_CONV_METALS` and `ALERT_MIN_DTE_METALS` on the **Variables** tab. Never paste the bot token into
 a chat, an issue or a log line.
 
 ## Telegram conviction alerts (`scripts/alerts.mjs`, `alerts-state` branch)
@@ -52,7 +53,7 @@ so it can't be mistaken for an NSE alert.
 
 | event | when |
 |---|---|
-| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, reaches CONV ≥ 70 |
+| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, reaches CONV ≥ 70 |
 | ⬆️⬇️ MOVED | tracked, still above the bar, CONV changed by any amount |
 | 🔻 DROPPED | tracked, fell below the bar → untracked (re-crossing is NEW again) |
 | 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "premium decayed"), in the money, off the fetched chain, or expiry day → untracked |
@@ -62,7 +63,7 @@ silent messages, moves included. Don't add `disable_notification` without
 asking (a test pins it). NEW lines carry contract, expiry, CONV, premium, lot
 and credit per lot; a 🔴 line when that expiry's VRP or event gate blocks
 selling (the Sell tab's red banner). Tiers: ⭐ 75+, 🔥 80+. Threshold
-`ALERT_MIN_CONV_METALS`, default 70. Manual check: Actions → **Send test alert**
+`ALERT_MIN_CONV_METALS`, default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
 (tick *mock* for an invented alert through the real formatter, labelled MOCK).
 
 Things that will bite:
@@ -112,8 +113,15 @@ Things that will bite:
 - **Current and next expiry only** (`ALERT_EXPIRIES = 2`, owner's choice
   2026-09-25, 70 on all three metals). Far months stay on the screen but never
   alert. An expiry on its last day (DTE 0) has no ranked strikes and gives up
-  its slot, so on gold's 25 Sep expiry day the watch is Oct + Nov. No
-  minimum-DTE filter: the current expiry alerts right up to its last day.
+  its slot, so on gold's 25 Sep expiry day the watch is Oct + Nov.
+- **10+ days to expiry to enter** (`DEFAULT_MIN_DTE`, owner's choice
+  2026-09-25). In the 11 Aug–25 Sep replay every losing alert was presented
+  with 5 days or fewer left; the 68 first alerts with 10+ days all won (avg
+  ₹7,101/lot vs ₹2,839 under 10). It gates **entry only**: a tracked strike
+  keeps reporting moves and its exit as it runs under 10 days, and a re-cross
+  under 10 days stays quiet. It does not remove scares: COPPER 1370 PE entered
+  at 13 days and was ₹57,500/lot under water before expiring worthless.
+  Replay volume: 159 messages instead of 281 over the same period.
 - **The alerts do not score anything.** They call the Sell tab's own screen;
   moving its glue into `sellView.ts` was checked against `main` over 894
   archived snapshots (40,243 scored strikes) with zero differences. A change
@@ -122,5 +130,5 @@ Things that will bite:
   weekly/monthly label (the NSE engine's `isMonthly` has nothing to do here).
 
 Replay the archive through the real engine (prints, never sends):
-`git fetch --depth=5000 origin main && npm run alerts:replay -- --since 2026-09-01 [--threshold 75] [--quiet]`.
+`git fetch --depth=5000 origin main && npm run alerts:replay -- --since 2026-09-01 [--threshold 75] [--min-dte 0] [--quiet]`.
 Dry-run one live run: `ALERTS_DRY_RUN=1 ALERTS_STATE_DIR=/tmp/s npm run alerts`.

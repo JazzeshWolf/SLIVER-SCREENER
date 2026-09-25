@@ -55,6 +55,11 @@ export const TIERS = { star: 75, fire: 80 };
 /** Expiries watched per metal: the current one and the next (owner's choice,
  *  2026-09-25). Far months stay on the screen but never alert. */
 export const ALERT_EXPIRIES = 2;
+/** A strike needs this many days to expiry to START tracking (owner's choice,
+ *  2026-09-25: every losing alert in the replay was presented with 5 days or
+ *  fewer left). Once tracked it is followed to its exit regardless. Override
+ *  with the repo variable ALERT_MIN_DTE_METALS. */
+export const DEFAULT_MIN_DTE = 10;
 const BRAND = "⚖️ MCX";
 const SCREENER_URL = "https://jazzeshwolf.github.io/SLIVER-SCREENER/";
 const TG_LIMIT = 3900; // Telegram caps a message at 4096 chars; leave headroom.
@@ -217,7 +222,7 @@ const keyOf = (r) => key(r.metal, r.expiry, r.strike, r.type);
  * Compare tracked state with the current rows. Pure: returns the events and
  * the next tracked map, never mutates its inputs.
  */
-export function diff(tracked, current, { threshold, today, isFresh, explain = () => "no longer on the list" }) {
+export function diff(tracked, current, { threshold, today, isFresh, minDte = 0, explain = () => "no longer on the list" }) {
   const next = {};
   const events = [];
   for (const [k, t] of Object.entries(tracked)) {
@@ -241,6 +246,8 @@ export function diff(tracked, current, { threshold, today, isFresh, explain = ()
   const exited = new Set(events.map((e) => keyOf(e.row)));
   for (const [k, r] of current) {
     if (k in tracked || !r.displayed || !r.ok || r.conviction < threshold || r.expiry < today) continue;
+    // Entry only: a tracked strike that runs under minDte keeps reporting.
+    if ((r.dte ?? 0) < minDte) continue;
     if (!isFresh(r)) continue;
     // A contract that just dropped out this run is not re-entered in the same run.
     if (exited.has(k)) continue;
@@ -276,7 +283,8 @@ function line(e, threshold) {
     case "NEW": {
       const lot = r.lot ? ` · lot ${esc(r.lot)}` : "";
       const block = r.block ? `\n      🔴 ${esc(r.block)}` : "";
-      return `🔔 NEW ${mark}${r.conviction}  ${contract(r)}\n      prem ${prem(r)}${lot} · credit ${rupee(r.credit)}/lot${block}`;
+      const left = r.dte != null ? ` · ${r.dte}d left` : "";
+      return `🔔 NEW ${mark}${r.conviction}  ${contract(r)}${left}\n      prem ${prem(r)}${lot} · credit ${rupee(r.credit)}/lot${block}`;
     }
     case "MOVED":
       return `${r.conviction > e.from ? "⬆️" : "⬇️"} ${e.from} → ${mark}${r.conviction}  ${contract(r)} · ${prem(r)}${r.block ? " · 🔴 blocked" : ""}`;
@@ -288,9 +296,11 @@ function line(e, threshold) {
 }
 
 /** One message per run (split only if Telegram's length cap forces it). */
-export function formatMessages(events, { threshold, when, armed = false }) {
+const rule = (threshold, minDte) => `CONV ≥ ${threshold}${minDte > 0 ? `, entry ${minDte}+ days left` : ""}`;
+
+export function formatMessages(events, { threshold, minDte = 0, when, armed = false }) {
   if (!events.length && !armed) return [];
-  const header = [`<b>${BRAND} · Metals CONV ≥ ${threshold}</b> · ${when} IST`];
+  const header = [`<b>${BRAND} · Metals ${rule(threshold, minDte)}</b> · ${when} IST`];
   if (armed)
     header.push(events.length
       ? `✅ Alerts armed. Already above the bar and now tracked (${events.length}):`
@@ -312,7 +322,7 @@ export function formatMessages(events, { threshold, when, armed = false }) {
 
 const emptyDay = (date) => ({ date, runs: Object.fromEntries(METAL_IDS.map((id) => [id, 0])), NEW: 0, MOVED: 0, DROPPED: 0, LEFT: 0 });
 
-export function formatHeartbeat(state, session, threshold) {
+export function formatHeartbeat(state, session, threshold, minDte = 0) {
   const d = state?.day?.date === session ? state.day : emptyDay(session);
   const dead = METAL_IDS.filter((id) => !(d.runs?.[id] > 0));
   const last = state?.lastRunAt && d.date === session && !dead.length ? ` · last ${istTime(new Date(state.lastRunAt))}` : "";
@@ -321,7 +331,7 @@ export function formatHeartbeat(state, session, threshold) {
   return [
     `${dead.length ? "⚠️" : "✓"} <b>${BRAND} alerts · end of day ${dm(session)}</b>`,
     `Runs checked: ${runs}${last}`,
-    `${d.NEW} new, ${d.MOVED} moves, ${d.DROPPED + d.LEFT} exits · ${n} tracked now (CONV ≥ ${threshold})`,
+    `${d.NEW} new, ${d.MOVED} moves, ${d.DROPPED + d.LEFT} exits · ${n} tracked now (${rule(threshold, minDte)})`,
     dead.length
       ? `\n${dead.map((id) => METALS[id].label).join(", ")} got no fresh data today — check the Actions tab (Refresh MCX data) and the Upstox token.`
       : "",
@@ -339,17 +349,17 @@ export function bumpDay(state, freshIds, events, session, nowIso) {
 
 /** Invented sample for `--mock`: every line type, one per metal. */
 export function mockEvents() {
-  const row = (id, expiry, strike, type, conviction, ltp, block = null) => {
+  const row = (id, expiry, strike, type, conviction, ltp, block = null, dte = null) => {
     const m = METALS[id];
     const symbol = m.feedSymbol;
     const lot = lotLabel(m, symbol);
     const units = m.contracts.find((c) => c.symbol === symbol).quoteUnitsPerLot;
-    return { metal: id, emoji: m.emoji, symbol, expiry, strike, type, conviction, ltp, unit: m.quoteUnit, lot, credit: Math.round(ltp * units), block };
+    return { metal: id, emoji: m.emoji, symbol, expiry, dte, strike, type, conviction, ltp, unit: m.quoteUnit, lot, credit: Math.round(ltp * units), block };
   };
   return [
-    { kind: "NEW", row: row("silver", "2026-10-27", 262000, "CE", 81, 1485.5) },
-    { kind: "NEW", row: row("gold", "2026-10-29", 144000, "PE", 76, 612, "VRP negative — selling blocked") },
-    { kind: "NEW", row: row("copper", "2026-10-23", 1360, "PE", 71, 4.35) },
+    { kind: "NEW", row: row("silver", "2026-10-27", 262000, "CE", 81, 1485.5, null, 32) },
+    { kind: "NEW", row: row("gold", "2026-10-29", 144000, "PE", 76, 612, "VRP negative — selling blocked", 34) },
+    { kind: "NEW", row: row("copper", "2026-10-23", 1360, "PE", 71, 4.35, null, 28) },
     { kind: "DROPPED", from: 72, row: row("silver", "2026-10-27", 212000, "PE", 66, 1120) },
     { kind: "LEFT", from: 74, row: row("gold", "2026-10-29", 158000, "CE", 74, 410), why: "filtered out: inside the gamma zone (< 0.6σ)" },
     { kind: "MOVED", from: 73, row: row("silver", "2026-10-27", 216000, "PE", 75, 1310) },
@@ -366,7 +376,7 @@ const readJson = (p) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : n
  * in `stateDir`. `send` must throw when a message is not accepted — the state
  * is written only after every send has returned.
  */
-export async function run({ dataDir, stateDir, now, threshold, send, log = console.log }) {
+export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send, log = console.log }) {
   const { sellView } = await import("../src/lib/sellView.ts");
   const statePath = resolve(stateDir, "metals.json");
   const prev = readJson(statePath);
@@ -400,7 +410,7 @@ export async function run({ dataDir, stateDir, now, threshold, send, log = conso
   let state = prev ? { ...prev } : null;
   if (fresh.size) {
     const { events, tracked } = diff(prev?.tracked ?? {}, rows, {
-      threshold, today,
+      threshold, today, minDte,
       isFresh: (t) => fresh.has(t.metal),
       explain: (t) => explainMissing(t, contexts[t.metal]),
     });
@@ -409,11 +419,11 @@ export async function run({ dataDir, stateDir, now, threshold, send, log = conso
     // loud NEW per contract — switching alerts on never floods, and nothing
     // already above the bar is swallowed either.
     const armed = !prev;
-    const msgs = formatMessages(events, { threshold, when, armed });
+    const msgs = formatMessages(events, { threshold, minDte, when, armed });
     for (const m of msgs) await send(m);
     const tally = events.reduce((a, e) => ((a[e.kind] = (a[e.kind] ?? 0) + 1), a), {});
     log(armed
-      ? `First run: armed, tracking ${Object.keys(tracked).length} contracts at CONV ≥ ${threshold}.`
+      ? `First run: armed, tracking ${Object.keys(tracked).length} contracts at ${rule(threshold, minDte)}.`
       : `${events.length} events ${JSON.stringify(tally)}, ${Object.keys(tracked).length} tracked, ${msgs.length} message(s) sent.`);
     state = bumpDay(state, fresh, armed ? [] : events, session, now.toISOString());
   } else if (!prev) {
@@ -424,7 +434,7 @@ export async function run({ dataDir, stateDir, now, threshold, send, log = conso
   // End-of-day heartbeat: the first run after MCX's close (23:30 / 23:55 IST).
   // Its absence the next morning is how the owner learns the pipeline stopped.
   if (afterClose(now, session) && state.heartbeatDate !== session) {
-    await send(formatHeartbeat(state, session, threshold));
+    await send(formatHeartbeat(state, session, threshold, minDte));
     state = { ...state, heartbeatDate: session };
     log("Heartbeat sent.");
   } else if (!fresh.size) {
@@ -471,17 +481,22 @@ export async function main(argv = process.argv) {
   if (argv.includes("--mock")) {
     // Rendered by the real formatter so the owner sees exactly what a live
     // alert looks and sounds like. Contracts and prices are invented.
-    const [m] = formatMessages(mockEvents(), { threshold: DEFAULT_THRESHOLD, when: istTime(new Date()) });
+    const [m] = formatMessages(mockEvents(), { threshold: DEFAULT_THRESHOLD, minDte: DEFAULT_MIN_DTE, when: istTime(new Date()) });
     await sendTelegram("🧪 <b>MOCK ALERT (test only, not real)</b>\n\n" + m);
     console.log("Mock alert sent.");
     return;
   }
   const envMin = Number(process.env.ALERT_MIN_CONV_METALS);
+  // An unset repo variable arrives as "", which means "use the default"; 0 is
+  // a real value (no minimum).
+  const rawDte = process.env.ALERT_MIN_DTE_METALS ?? "";
+  const envDte = rawDte.trim() === "" ? NaN : Number(rawDte);
   await run({
     dataDir: process.env.ALERTS_DATA_DIR ?? "public/data",
     stateDir: process.env.ALERTS_STATE_DIR ?? "_alerts",
     now: process.env.ALERTS_NOW ? new Date(process.env.ALERTS_NOW) : new Date(),
     threshold: Number.isFinite(envMin) && envMin > 0 ? envMin : DEFAULT_THRESHOLD,
+    minDte: Number.isFinite(envDte) && envDte >= 0 ? envDte : DEFAULT_MIN_DTE,
     send: sendTelegram,
   });
 }
