@@ -51,7 +51,6 @@ import { createHash } from "node:crypto";
 import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 
 export const DEFAULT_THRESHOLD = 70;
-export const TIERS = { star: 75, fire: 80 };
 /** Expiries watched per metal: the current one and the next (owner's choice,
  *  2026-09-25). Far months stay on the screen but never alert. */
 export const ALERT_EXPIRIES = 2;
@@ -144,12 +143,18 @@ export function freshness(snap, prev = {}) {
 
 export const key = (metal, expiry, strike, type) => `${metal}|${expiry}|${strike}|${type}`;
 
+// Short on purpose: they print in the OUT table's REASON column, which has
+// about 14 characters before a phone wraps the row.
 const REASONS = {
-  noIV: "no solvable IV",
-  offSmile: "price off the smile",
-  thinOI: "open interest too thin",
-  tinyPrem: "premium decayed below the screen's floor",
-  tooClose: "inside the gamma zone (< 0.6σ)",
+  noIV: "no IV",
+  offSmile: "off smile",
+  thinOI: "thin OI",
+  tinyPrem: "prem decayed",
+  tooClose: "gamma zone",
+};
+const reasonOf = (codes) => {
+  const [first, ...rest] = codes.map((r) => REASONS[r] ?? r);
+  return rest.length ? `${first} +${rest.length}` : first;
 };
 
 const lotLabel = (metal, symbol) =>
@@ -191,7 +196,7 @@ export function collectMetal(id, snap, view) {
         strike: c.strike, type: c.type, conviction: c.conv, ltp: c.premium,
         unit: metal.quoteUnit, lot: lotLabel(metal, symbol), credit: Math.round(c.credit),
         displayed: shown.has(`${c.strike}${c.type}`), ok: c.ok,
-        why: c.ok ? null : `filtered out: ${c.reasons.map((r) => REASONS[r] ?? r).join(", ")}`,
+        why: c.ok ? null : reasonOf(c.reasons),
         block,
       });
     }
@@ -202,12 +207,11 @@ export function collectMetal(id, snap, view) {
 /** Why a tracked strike has no row at all this run. */
 export function explainMissing(t, context) {
   const ctx = context.get(t.expiry);
-  if (!ctx) return "expiry no longer listed";
-  if (ctx.tooThin) return "chain too thin to rank";
-  if (ctx.fut != null && (t.type === "CE" ? ctx.fut >= t.strike : ctx.fut <= t.strike))
-    return `now in the money (future ${Math.round(ctx.fut)})`;
+  if (!ctx) return "expiry gone";
+  if (ctx.tooThin) return "chain too thin";
+  if (ctx.fut != null && (t.type === "CE" ? ctx.fut >= t.strike : ctx.fut <= t.strike)) return "in the money";
   // Untraded (no LTP) or outside the builder's ±25-strike window.
-  return "dropped off the fetched chain";
+  return "off the chain";
 }
 
 // --- the diff ---------------------------------------------------------------
@@ -260,80 +264,160 @@ export function diff(tracked, current, { threshold, today, isFresh, minDte = 0, 
 }
 
 // --- formatting -------------------------------------------------------------
+//
+// Built for a phone. Each metal + expiry gets a header line, then ONE <pre>
+// block holding up to three small tables (NEW, OUT, MOVED). Monospace keeps
+// the columns lined up; every table row stays within 30 characters so it
+// does not wrap on a phone at a large font size. No emoji inside <pre>: they
+// are wider than a monospace cell and break the alignment.
 
 export const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const rupee = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
-const price = (n) => "₹" + Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const dm = (iso) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
+const lp = (v, n) => String(v).padStart(n);
+const rp = (v, n) => String(v).padEnd(n);
+/** Premium as the chain quotes it: 1485.5, 612, 4.35 — no forced decimals. */
+const num = (n) => String(Number(Number(n).toFixed(2)));
+const grouped = (n) => Math.round(n).toLocaleString("en-IN");
+const strikeCol = (r) => rp(`${r.strike} ${r.type}`, 10);
+const signed = (n) => (n > 0 ? `+${n}` : String(n));
 
-export function tierMark(conv) {
-  return conv >= TIERS.fire ? "🔥" : conv >= TIERS.star ? "⭐" : "";
-}
+const rule = (threshold, minDte) => `CONV ≥ ${threshold}${minDte > 0 ? ` · new alerts need ${minDte}+ days left` : ""}`;
 
-// MCX metal options list one expiry per month (the builder keeps monthlies
-// only), so there is no weekly/monthly label to carry here.
-const contract = (r) => `${r.emoji} <b>${esc(r.symbol)} ${r.strike} ${r.type}</b> · ${dm(r.expiry)}`;
-const prem = (r) => `${price(r.ltp)}${r.unit ? esc(r.unit.replace("₹", "")) : ""}`;
-
-function line(e, threshold) {
-  const r = e.row;
-  const mark = tierMark(r.conviction);
-  switch (e.kind) {
-    case "NEW": {
-      const lot = r.lot ? ` · lot ${esc(r.lot)}` : "";
-      const block = r.block ? `\n      🔴 ${esc(r.block)}` : "";
-      const left = r.dte != null ? ` · ${r.dte}d left` : "";
-      return `🔔 NEW ${mark}${r.conviction}  ${contract(r)}${left}\n      prem ${prem(r)}${lot} · credit ${rupee(r.credit)}/lot${block}`;
+/** The monospace block for one metal + expiry. */
+export function sectionTable(sec) {
+  const tables = [];
+  let lines = [];
+  const close = () => { if (lines.length) tables.push(lines.join("\n")); lines = []; };
+  if (sec.NEW.length) {
+    lines.push(rp("NEW", 10) + lp("CONV", 5) + " " + lp("PREM", 7) + " " + lp("CREDIT", 6));
+    for (const e of sec.NEW) {
+      const r = e.row;
+      lines.push(strikeCol(r) + lp(r.conviction, 5) + " " + lp(num(r.ltp), 7) + " " + lp(grouped(r.credit), 6));
     }
-    case "MOVED":
-      return `${r.conviction > e.from ? "⬆️" : "⬇️"} ${e.from} → ${mark}${r.conviction}  ${contract(r)} · ${prem(r)}${r.block ? " · 🔴 blocked" : ""}`;
-    case "DROPPED":
-      return `🔻 ${e.from} → ${r.conviction}  ${contract(r)} · ${prem(r)}\n      below ${threshold}, no longer tracked`;
-    case "LEFT":
-      return `🚪 ${contract(r)} · last CONV ${e.from}\n      ${esc(e.why ?? "no longer on the list")}, no longer tracked`;
   }
+  close();
+  if (sec.OUT.length) {
+    lines.push(rp("OUT", 10) + lp("CONV", 5) + " " + "REASON");
+    for (const e of sec.OUT) {
+      const r = e.row;
+      const conv = e.kind === "DROPPED" ? `${e.from}>${r.conviction}` : e.from;
+      const why = e.kind === "DROPPED" ? `below ${sec.threshold}` : e.why ?? "off the list";
+      lines.push(strikeCol(r) + lp(conv, 5) + " " + why);
+    }
+  }
+  close();
+  if (sec.MOVED.length) {
+    lines.push(rp("MOVED", 10) + lp("CONV", 5) + " " + lp("PREM", 7) + " " + lp("CHG", 6));
+    for (const e of sec.MOVED) {
+      const r = e.row;
+      lines.push(strikeCol(r) + lp(`${e.from}>${r.conviction}`, 5) + " " + lp(num(r.ltp), 7) + " " + lp(signed(r.conviction - e.from), 6));
+    }
+  }
+  close();
+  // A blank line between the small tables keeps them apart at a glance.
+  return `<pre>${esc(tables.join("\n\n"))}</pre>`;
 }
 
-/** One message per run (split only if Telegram's length cap forces it). */
-const rule = (threshold, minDte) => `CONV ≥ ${threshold}${minDte > 0 ? `, entry ${minDte}+ days left` : ""}`;
+/**
+ * Group a run's events by metal + expiry. Sections holding an entry or exit
+ * come first (the original "NEW/DROPPED/LEFT before MOVED" rule), then metal
+ * order, then expiry; inside a section the tables run NEW, OUT, MOVED.
+ */
+export function groupSections(events, threshold) {
+  const map = new Map();
+  for (const e of events) {
+    const r = e.row;
+    const k = `${r.metal}|${r.expiry}`;
+    if (!map.has(k)) map.set(k, { metal: r.metal, emoji: r.emoji, symbol: r.symbol, expiry: r.expiry, threshold, NEW: [], OUT: [], MOVED: [] });
+    const sec = map.get(k);
+    (e.kind === "NEW" ? sec.NEW : e.kind === "MOVED" ? sec.MOVED : sec.OUT).push(e);
+    if (r.dte != null) sec.dte = r.dte;
+    if (r.lot) sec.lot = r.lot;
+    if (r.block) sec.block = r.block;
+  }
+  const byConv = (a, b) => b.row.conviction - a.row.conviction;
+  const list = [...map.values()];
+  for (const sec of list) {
+    sec.NEW.sort(byConv);
+    sec.OUT.sort((a, b) => (a.kind === b.kind ? b.from - a.from : a.kind === "DROPPED" ? -1 : 1));
+    sec.MOVED.sort(byConv);
+  }
+  const rank = (sec) => (sec.NEW.length || sec.OUT.length ? 0 : 1);
+  return list.sort((a, b) =>
+    rank(a) - rank(b) || METAL_IDS.indexOf(a.metal) - METAL_IDS.indexOf(b.metal) || a.expiry.localeCompare(b.expiry));
+}
 
+/** A long section is cut into pieces of at most `max` rows, keeping the
+ *  NEW → OUT → MOVED order, so no single block can outgrow a message. */
+function chunkSection(sec, max = 40) {
+  const all = ["NEW", "OUT", "MOVED"].flatMap((k) => sec[k].map((e) => [k, e]));
+  if (all.length <= max) return [sec];
+  const parts = [];
+  for (let i = 0; i < all.length; i += max) {
+    const part = { ...sec, NEW: [], OUT: [], MOVED: [] };
+    for (const [k, e] of all.slice(i, i + max)) part[k].push(e);
+    parts.push(part);
+  }
+  return parts;
+}
+
+function sectionText(sec) {
+  const head = [`${sec.emoji} <b>${esc(sec.symbol)} · ${dm(sec.expiry)}</b>`];
+  if (sec.dte != null) head.push(`${sec.dte}d left`);
+  if (sec.lot) head.push(`lot ${esc(sec.lot)}`);
+  const gate = sec.block ? `\n🔴 ${esc(sec.block)}` : "";
+  return `${head.join(" · ")}${gate}\n${sectionTable(sec)}`;
+}
+
+/** One message per run (split between sections only if Telegram's cap forces it). */
 export function formatMessages(events, { threshold, minDte = 0, when, armed = false }) {
   if (!events.length && !armed) return [];
-  const header = [`<b>${BRAND} · Metals ${rule(threshold, minDte)}</b> · ${when} IST`];
+  const title = `<b>${BRAND} alerts</b> · ${when} IST`;
+  const header = [title, `<i>${esc(rule(threshold, minDte))}</i>`];
   if (armed)
     header.push(events.length
-      ? `✅ Alerts armed. Already above the bar and now tracked (${events.length}):`
+      ? `✅ Alerts armed. Already above the bar, now tracked (${events.length}):`
       : "✅ Alerts armed. Nothing above the bar right now.");
-  const body = events.map((e) => line(e, threshold));
-  const footer = `<a href="${SCREENER_URL}">Open screener</a>`;
+  const footer = `<a href="${SCREENER_URL}">Open screener</a> · PREM as quoted · CREDIT ₹ per lot`;
   const out = [];
-  let cur = header.join("\n") + "\n";
-  for (const l of body) {
-    if (cur.length + l.length + footer.length + 4 > TG_LIMIT) {
-      out.push(cur.trimEnd());
-      cur = header[0] + " (cont.)\n";
+  let cur = header.join("\n");
+  for (const sec of groupSections(events, threshold).flatMap((x) => chunkSection(x))) {
+    const block = sectionText(sec);
+    if (cur.length + block.length + footer.length + 4 > TG_LIMIT) {
+      out.push(cur);
+      cur = `${title} (cont.)`;
     }
-    cur += "\n" + l;
+    cur += "\n\n" + block;
   }
-  out.push(cur.trimEnd() + "\n\n" + footer);
+  out.push(cur + "\n\n" + footer);
   return out;
 }
 
-const emptyDay = (date) => ({ date, runs: Object.fromEntries(METAL_IDS.map((id) => [id, 0])), NEW: 0, MOVED: 0, DROPPED: 0, LEFT: 0 });
+const emptyCounts = () => ({ NEW: 0, MOVED: 0, DROPPED: 0, LEFT: 0 });
+const emptyDay = (date) => ({
+  date,
+  runs: Object.fromEntries(METAL_IDS.map((id) => [id, 0])),
+  events: Object.fromEntries(METAL_IDS.map((id) => [id, emptyCounts()])),
+});
 
 export function formatHeartbeat(state, session, threshold, minDte = 0) {
   const d = state?.day?.date === session ? state.day : emptyDay(session);
   const dead = METAL_IDS.filter((id) => !(d.runs?.[id] > 0));
-  const last = state?.lastRunAt && d.date === session && !dead.length ? ` · last ${istTime(new Date(state.lastRunAt))}` : "";
-  const runs = METAL_IDS.map((id) => `${METALS[id].emoji} ${d.runs?.[id] ?? 0}`).join("  ");
+  const rows = [rp("", 8) + lp("RUNS", 5) + lp("NEW", 5) + lp("MOVE", 6) + lp("EXIT", 6)];
+  for (const id of METAL_IDS) {
+    const c = d.events?.[id] ?? emptyCounts();
+    rows.push(rp(METALS[id].label, 8) + lp(d.runs?.[id] ?? 0, 5) + lp(c.NEW, 5) + lp(c.MOVED, 6) + lp(c.DROPPED + c.LEFT, 6));
+  }
   const n = Object.keys(state?.tracked ?? {}).length;
+  const last = state?.lastRunAt && !dead.length ? ` · last run ${istTime(new Date(state.lastRunAt))} IST` : "";
   return [
     `${dead.length ? "⚠️" : "✓"} <b>${BRAND} alerts · end of day ${dm(session)}</b>`,
-    `Runs checked: ${runs}${last}`,
-    `${d.NEW} new, ${d.MOVED} moves, ${d.DROPPED + d.LEFT} exits · ${n} tracked now (${rule(threshold, minDte)})`,
+    `<pre>${esc(rows.join("\n"))}</pre>`,
+    `${n} tracked now${last}`,
+    `<i>${esc(rule(threshold, minDte))}</i>`,
     dead.length
-      ? `\n${dead.map((id) => METALS[id].label).join(", ")} got no fresh data today — check the Actions tab (Refresh MCX data) and the Upstox token.`
+      ? `\n⚠️ ${dead.map((id) => METALS[id].label).join(", ")} got no fresh data today. Check the Actions tab (Refresh MCX data) and the Upstox token.`
       : "",
   ].join("\n").trimEnd();
 }
@@ -341,9 +425,14 @@ export function formatHeartbeat(state, session, threshold, minDte = 0) {
 // --- state bookkeeping ------------------------------------------------------
 
 export function bumpDay(state, freshIds, events, session, nowIso) {
-  const day = state.day?.date === session ? { ...state.day, runs: { ...state.day.runs } } : emptyDay(session);
+  const prev = state.day?.date === session && state.day.events ? state.day : emptyDay(session);
+  const day = {
+    ...prev,
+    runs: { ...prev.runs },
+    events: Object.fromEntries(METAL_IDS.map((id) => [id, { ...(prev.events[id] ?? emptyCounts()) }])),
+  };
   for (const id of freshIds) day.runs[id] = (day.runs[id] ?? 0) + 1;
-  for (const e of events) day[e.kind] += 1;
+  for (const e of events) day.events[e.row.metal][e.kind] += 1;
   return { ...state, day, lastRunAt: nowIso };
 }
 
@@ -361,7 +450,7 @@ export function mockEvents() {
     { kind: "NEW", row: row("gold", "2026-10-29", 144000, "PE", 76, 612, "VRP negative — selling blocked", 34) },
     { kind: "NEW", row: row("copper", "2026-10-23", 1360, "PE", 71, 4.35, null, 28) },
     { kind: "DROPPED", from: 72, row: row("silver", "2026-10-27", 212000, "PE", 66, 1120) },
-    { kind: "LEFT", from: 74, row: row("gold", "2026-10-29", 158000, "CE", 74, 410), why: "filtered out: inside the gamma zone (< 0.6σ)" },
+    { kind: "LEFT", from: 74, row: row("gold", "2026-10-29", 158000, "CE", 74, 410), why: "gamma zone" },
     { kind: "MOVED", from: 73, row: row("silver", "2026-10-27", 216000, "PE", 75, 1310) },
     { kind: "MOVED", from: 78, row: row("copper", "2026-10-23", 1480, "CE", 77, 3.9) },
   ];

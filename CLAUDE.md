@@ -56,13 +56,23 @@ so it can't be mistaken for an NSE alert.
 | 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, reaches CONV ≥ 70 |
 | ⬆️⬇️ MOVED | tracked, still above the bar, CONV changed by any amount |
 | 🔻 DROPPED | tracked, fell below the bar → untracked (re-crossing is NEW again) |
-| 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "premium decayed"), in the money, off the fetched chain, or expiry day → untracked |
+| 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "prem decayed"), in the money, off the fetched chain, or expiry day → untracked |
 
 One message per run, **always with sound** — the owner explicitly asked for no
 silent messages, moves included. Don't add `disable_notification` without
-asking (a test pins it). NEW lines carry contract, expiry, CONV, premium, lot
-and credit per lot; a 🔴 line when that expiry's VRP or event gate blocks
-selling (the Sell tab's red banner). Tiers: ⭐ 75+, 🔥 80+. Threshold
+asking (a test pins it).
+
+**Layout (owner asked for table-like, 2026-09-26).** One header line per metal
++ expiry (`🥈 SILVERM · 27 Oct · 32d left · lot 5 kg`, then a 🔴 line when that
+expiry's VRP or event gate blocks selling), followed by ONE `<pre>` block with
+up to three small tables — `NEW` (CONV, PREM, CREDIT per lot), `OUT` (CONV,
+REASON) and `MOVED` (CONV was>now, PREM, CHG). Sections holding an entry or
+exit come first. Rules a test pins: every `<pre>` row ≤ 30 characters (wider
+wraps on the owner's phone at a large font size), and no emoji inside `<pre>`
+(they are wider than a monospace cell and break the columns). That is why the
+⭐/🔥 tiers are gone and reasons are short ("prem decayed", "gamma zone",
+"in the money", "off the chain", "expiry gone"). The end-of-day heartbeat is a
+per-metal table (runs, new, moves, exits). Threshold
 `ALERT_MIN_CONV_METALS`, default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
 (tick *mock* for an invented alert through the real formatter, labelled MOCK).
 

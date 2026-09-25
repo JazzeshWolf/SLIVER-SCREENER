@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
-  collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
+  collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, groupSections,
   mockEvents, sendTelegram, run,
 } from "./alerts.mjs";
 
@@ -207,7 +207,7 @@ describe("collectMetal", () => {
       block: "VRP negative — selling blocked",
     });
     expect(rows.get("silver|2026-10-27|270000|CE")).toMatchObject({ displayed: false, ok: true });
-    expect(rows.get("silver|2026-10-27|200000|PE")).toMatchObject({ ok: false, why: expect.stringMatching(/premium decayed/) });
+    expect(rows.get("silver|2026-10-27|200000|PE")).toMatchObject({ ok: false, why: "prem decayed" });
   });
 
   it("reads GOLDM's lot as 100 g (credit is already premium × 10)", () => {
@@ -230,8 +230,8 @@ describe("collectMetal", () => {
   it("explains a missing strike from the expiry's context", () => {
     const { context } = collectMetal("silver", snap, view);
     expect(explainMissing(row({ strike: 230000, type: "CE" }), context)).toMatch(/in the money/);
-    expect(explainMissing(row({ strike: 300000, type: "CE" }), context)).toMatch(/dropped off/);
-    expect(explainMissing(row({ expiry: "2026-11-23" }), context)).toMatch(/no longer listed/);
+    expect(explainMissing(row({ strike: 300000, type: "CE" }), context)).toMatch(/off the chain/);
+    expect(explainMissing(row({ expiry: "2026-11-23" }), context)).toMatch(/expiry gone/);
     const thin = collectMetal("copper", { mcx: { symbol: "COPPER" } }, {
       expiries: [{ ...view.expiries[0], screen: { tooThin: true, candidates: [] }, shown: { CE: [], PE: [] } }],
     });
@@ -240,68 +240,97 @@ describe("collectMetal", () => {
 });
 
 describe("formatting", () => {
-  it("marks tiers at 75 and 80", () => {
-    expect(tierMark(80)).toBe("🔥");
-    expect(tierMark(76)).toBe("⭐");
-    expect(tierMark(72)).toBe("");
-  });
+  const unpre = (m) => m.replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
+  const preLines = (m) => [...m.matchAll(/<pre>([\s\S]*?)<\/pre>/g)].flatMap((x) => unpre(x[1]).split("\n"));
 
   it("labels every message as MCX so it can't be mistaken for the NSE screener", () => {
-    const [m] = formatMessages([{ kind: "NEW", row: row() }], { threshold: 70, when: "14:05" });
-    expect(m.startsWith("<b>⚖️ MCX")).toBe(true);
-    expect(m).toContain("SILVERM 262000 CE");
-    expect(m).toContain("27 Oct");
-    expect(m).toContain("lot 5 kg");
-    expect(m).toContain("credit ₹7,428/lot");
-    expect(m).toContain("₹1,485.50/kg");
+    const [m] = formatMessages([{ kind: "NEW", row: row({ dte: 32 }) }], { threshold: 70, when: "14:05" });
+    expect(m.startsWith("<b>⚖️ MCX alerts</b>")).toBe(true);
+    expect(m).toContain("🥈 <b>SILVERM · 27 Oct</b> · 32d left · lot 5 kg");
   });
 
-  it("states the days rule in the header and shows days left on NEW lines", () => {
-    const [m] = formatMessages([{ kind: "NEW", row: row({ dte: 32 }) }], { threshold: 70, minDte: 10, when: "14:05" });
-    expect(m).toContain("Metals CONV ≥ 70, entry 10+ days left");
-    expect(m).toContain("27 Oct · 32d left");
+  it("puts each metal + expiry in one monospace table that fits a phone", () => {
+    const [m] = formatMessages(mockEvents(), { threshold: 70, minDte: 10, when: "14:05" });
+    const lines = preLines(m);
+    expect(lines).toContain("NEW        CONV    PREM CREDIT");
+    expect(lines).toContain("262000 CE    81  1485.5  7,428");
+    expect(lines).toContain("212000 PE 72>66 below 70");
+    expect(lines).toContain("158000 CE    74 gamma zone");
+    expect(lines).toContain("216000 PE 73>75    1310     +2");
+    expect(lines).toContain("1480 CE   78>77     3.9     -1");
+    for (const l of lines) expect(l.length).toBeLessThanOrEqual(30);
+    // Emoji are wider than a monospace cell; they would break the columns.
+    for (const l of lines) expect(l).not.toMatch(/\p{Extended_Pictographic}/u);
+    // The gate is printed once, under its expiry's header.
+    expect(m).toContain("🥇 <b>GOLDM · 29 Oct</b> · 34d left · lot 100 g\n🔴 VRP negative");
+  });
+
+  it("orders entries and exits before drift: sections with NEW/OUT first, tables NEW, OUT, MOVED", () => {
+    const secs = groupSections([
+      { kind: "MOVED", from: 71, row: row({ metal: "silver", conviction: 72 }) },
+      { kind: "NEW", row: row({ metal: "copper", symbol: "COPPER", expiry: "2026-10-23", strike: 1360, type: "PE" }) },
+    ], 70);
+    expect(secs.map((x) => x.metal)).toEqual(["copper", "silver"]);
+    const [m] = formatMessages(mockEvents(), { threshold: 70, when: "14:05" });
+    const silver = unpre(m.slice(m.indexOf("SILVERM"), m.indexOf("GOLDM")));
+    expect(silver.indexOf("NEW")).toBeLessThan(silver.indexOf("OUT"));
+    expect(silver.indexOf("OUT")).toBeLessThan(silver.indexOf("MOVED"));
+  });
+
+  it("states the rules under the title", () => {
+    const [m] = formatMessages([{ kind: "NEW", row: row() }], { threshold: 70, minDte: 10, when: "14:05" });
+    expect(m).toContain("<i>CONV ≥ 70 · new alerts need 10+ days left</i>");
     const s = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [], "2026-09-24", "2026-09-24T17:50:00Z");
-    expect(formatHeartbeat(s, "2026-09-24", 70, 10)).toContain("(CONV ≥ 70, entry 10+ days left)");
+    expect(formatHeartbeat(s, "2026-09-24", 70, 10)).toContain("new alerts need 10+ days left");
   });
 
   it("escapes HTML and splits under Telegram's length cap", () => {
-    const events = Array.from({ length: 80 }, (_, i) => ({
-      kind: "NEW", row: row({ strike: 200000 + i, block: "a < b & c" }),
-    }));
+    const events = [
+      ...Array.from({ length: 150 }, (_, i) => ({
+        kind: "NEW", row: row({ strike: 200000 + i, expiry: i < 75 ? "2026-10-27" : "2026-11-23", block: "a < b & c" }),
+      })),
+      { kind: "LEFT", from: 71, row: row({ strike: 1 }), why: "x<y" },
+    ];
     const msgs = formatMessages(events, { threshold: 70, when: "10:40" });
     expect(msgs.length).toBeGreaterThan(1);
     for (const m of msgs) expect(m.length).toBeLessThanOrEqual(4096);
-    expect(msgs[0]).toContain("a &lt; b &amp; c");
-    expect(msgs.join("").match(/🔔 NEW/g)).toHaveLength(80);
+    expect(msgs.join("")).toContain("a &lt; b &amp; c");
+    expect(msgs.join("")).toContain("x&lt;y");
+    expect(msgs.flatMap(preLines).filter((l) => l.endsWith(" 7,428"))).toHaveLength(150);
   });
 
   it("arming lists the starting set, and says so when it is empty", () => {
     const armed = formatMessages([{ kind: "NEW", row: row() }], { threshold: 70, when: "09:20", armed: true });
     expect(armed[0]).toContain("Alerts armed");
-    expect(armed[0]).toContain("SILVERM 262000 CE");
+    expect(armed[0]).toContain("262000 CE");
     expect(formatMessages([], { threshold: 70, when: "09:20", armed: true })[0]).toContain("Nothing above the bar");
     expect(formatMessages([], { threshold: 70, when: "09:20" })).toEqual([]);
   });
 
-  it("the mock goes through the real formatter and shows every line type", () => {
+  it("the mock goes through the real formatter and shows every table and metal", () => {
     const [m] = formatMessages(mockEvents(), { threshold: 70, when: "14:05" });
-    for (const mark of ["🔔 NEW", "🔻", "🚪", "⬆️", "⬇️", "🥈", "🥇", "🟠", "🔴"]) expect(m).toContain(mark);
+    for (const mark of ["NEW ", "OUT ", "MOVED ", "🥈", "🥇", "🟠", "🔴"]) expect(m).toContain(mark);
   });
 
-  it("heartbeat warns, by name, when a metal got no fresh data", () => {
-    const s = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [], "2026-09-24", "2026-09-24T17:50:00Z");
-    expect(formatHeartbeat(s, "2026-09-24", 70)).toMatch(/^✓/);
+  it("heartbeat is a per-metal table and warns, by name, when a metal got no fresh data", () => {
+    const ev = (metal, kind) => ({ kind, row: { metal } });
+    const s = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [ev("silver", "NEW"), ev("gold", "LEFT")], "2026-09-24", "2026-09-24T17:50:00Z");
+    const hb = formatHeartbeat(s, "2026-09-24", 70);
+    expect(hb).toMatch(/^✓/);
+    expect(unpre(hb)).toContain("Silver      1    1     0     0");
+    expect(unpre(hb)).toContain("Gold        1    0     0     1");
     const partial = bumpDay({ tracked: {} }, ["silver", "gold"], [], "2026-09-24", "2026-09-24T17:50:00Z");
-    const hb = formatHeartbeat(partial, "2026-09-24", 70);
-    expect(hb).toMatch(/^⚠️/);
-    expect(hb).toContain("Copper got no fresh data");
+    expect(formatHeartbeat(partial, "2026-09-24", 70)).toMatch(/^⚠️[\s\S]*Copper got no fresh data/);
     expect(formatHeartbeat(null, "2026-09-24", 70)).toMatch(/Silver, Gold, Copper/);
   });
 
-  it("counts a day's events per session", () => {
-    let s = bumpDay({}, ["silver"], [{ kind: "NEW" }, { kind: "MOVED" }], "2026-09-24", "x");
-    s = bumpDay(s, ["silver", "gold"], [{ kind: "MOVED" }], "2026-09-24", "y");
-    expect(s.day).toMatchObject({ runs: { silver: 2, gold: 1, copper: 0 }, NEW: 1, MOVED: 2 });
+  it("counts a day's runs and events per metal, per session", () => {
+    const ev = (metal, kind) => ({ kind, row: { metal } });
+    let s = bumpDay({}, ["silver"], [ev("silver", "NEW"), ev("silver", "MOVED")], "2026-09-24", "x");
+    s = bumpDay(s, ["silver", "gold"], [ev("gold", "MOVED")], "2026-09-24", "y");
+    expect(s.day.runs).toEqual({ silver: 2, gold: 1, copper: 0 });
+    expect(s.day.events.silver).toMatchObject({ NEW: 1, MOVED: 1 });
+    expect(s.day.events.gold).toMatchObject({ MOVED: 1 });
     expect(bumpDay(s, [], [], "2026-09-25", "z").day.runs.silver).toBe(0);
   });
 });
