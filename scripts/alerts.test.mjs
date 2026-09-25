@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
-  collectMetal, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
+  collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
   mockEvents, sendTelegram, run,
 } from "./alerts.mjs";
 
@@ -199,6 +199,18 @@ describe("collectMetal", () => {
   it("reads GOLDM's lot as 100 g (credit is already premium × 10)", () => {
     const { rows } = collectMetal("gold", { mcx: { symbol: "GOLDM" } }, view);
     expect([...rows.values()][0]).toMatchObject({ lot: "100 g", symbol: "GOLDM", emoji: "🥇", unit: "₹/10g" });
+  });
+
+  it("watches the current and next expiry only; a DTE-0 expiry gives up its slot", () => {
+    const ex = (optionExpiry, optionDte) => ({ ...view.expiries[0], optionExpiry, optionDte });
+    const pick = (...es) => watchedExpiries({ expiries: es }).map((e) => e.optionExpiry);
+    expect(pick(ex("2026-11-27", 63), ex("2026-10-29", 34), ex("2026-12-29", 95))).toEqual(["2026-10-29", "2026-11-27"]);
+    // Gold on 25 Sep: that day's expiry is done, so October and November are watched.
+    expect(pick(ex("2026-09-25", 0), ex("2026-10-29", 34), ex("2026-11-27", 63))).toEqual(["2026-10-29", "2026-11-27"]);
+    const { rows } = collectMetal("gold", { mcx: { symbol: "GOLDM" } }, {
+      expiries: [ex("2026-10-29", 34), ex("2026-11-27", 63), ex("2026-12-29", 95)],
+    });
+    expect(new Set([...rows.values()].map((r) => r.expiry))).toEqual(new Set(["2026-10-29", "2026-11-27"]));
   });
 
   it("explains a missing strike from the expiry's context", () => {

@@ -52,7 +52,7 @@ so it can't be mistaken for an NSE alert.
 
 | event | when |
 |---|---|
-| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry) reaches CONV ≥ 70 |
+| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, reaches CONV ≥ 70 |
 | ⬆️⬇️ MOVED | tracked, still above the bar, CONV changed by any amount |
 | 🔻 DROPPED | tracked, fell below the bar → untracked (re-crossing is NEW again) |
 | 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "premium decayed"), in the money, off the fetched chain, or expiry day → untracked |
@@ -109,6 +109,15 @@ Things that will bite:
   reporting, nearly every run that has something tracked sends a message: 3–4
   a day at today's cadence, ~20 a day during the mid-August cadence, and a
   10-minute scheduler would mean most of ~85 in-session runs.
+- **Current and next expiry only** (`ALERT_EXPIRIES = 2`, owner's choice
+  2026-09-25, 70 on all three metals). Far months stay on the screen but never
+  alert. An expiry on its last day (DTE 0) has no ranked strikes and gives up
+  its slot, so on gold's 25 Sep expiry day the watch is Oct + Nov. No
+  minimum-DTE filter: the current expiry alerts right up to its last day.
+- **The alerts do not score anything.** They call the Sell tab's own screen;
+  moving its glue into `sellView.ts` was checked against `main` over 894
+  archived snapshots (40,243 scored strikes) with zero differences. A change
+  to CONV belongs in `sellCandidates.ts`, where the screen sees it too.
 - MCX metal options list one expiry per month, so alerts carry no
   weekly/monthly label (the NSE engine's `isMonthly` has nothing to do here).
 

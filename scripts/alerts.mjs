@@ -52,6 +52,9 @@ import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 
 export const DEFAULT_THRESHOLD = 70;
 export const TIERS = { star: 75, fire: 80 };
+/** Expiries watched per metal: the current one and the next (owner's choice,
+ *  2026-09-25). Far months stay on the screen but never alert. */
+export const ALERT_EXPIRIES = 2;
 const BRAND = "⚖️ MCX";
 const SCREENER_URL = "https://jazzeshwolf.github.io/SLIVER-SCREENER/";
 const TG_LIMIT = 3900; // Telegram caps a message at 4096 chars; leave headroom.
@@ -148,18 +151,30 @@ const lotLabel = (metal, symbol) =>
   /\(([^)]+)\)/.exec(metal.contracts.find((c) => c.symbol === symbol)?.label ?? "")?.[1] ?? null;
 
 /**
- * Rows for every strike the screener scored, from one metal's sell view (see
- * src/lib/sellView.ts). `displayed` marks the Sell tab's list — the only rows
- * allowed to START tracking. Rejected legs are kept (ok: false) so a tracked
- * strike that gets filtered out can say why it left.
+ * The expiries alerts watch: the ALERT_EXPIRIES nearest that can still be sold.
+ * An expiry on its last day (DTE 0) has no ranked strikes and doesn't take a
+ * slot — its tracked strikes leave as "expires today" and the watch moves on
+ * to the next two months.
+ */
+export function watchedExpiries(view) {
+  return view.expiries
+    .filter((e) => e.optionExpiry && (e.optionDte ?? 0) > 0)
+    .sort((a, b) => a.optionExpiry.localeCompare(b.optionExpiry))
+    .slice(0, ALERT_EXPIRIES);
+}
+
+/**
+ * Rows for every strike the screener scored on the watched expiries, from one
+ * metal's sell view (see src/lib/sellView.ts). `displayed` marks the Sell
+ * tab's list — the only rows allowed to START tracking. Rejected legs are kept
+ * (ok: false) so a tracked strike that gets filtered out can say why it left.
  */
 export function collectMetal(id, snap, view) {
   const metal = METALS[id];
   const symbol = snap.mcx?.symbol ?? metal.feedSymbol;
   const rows = new Map();
   const context = new Map(); // optionExpiry → { fut, tooThin }
-  for (const e of view.expiries) {
-    if (!e.optionExpiry) continue;
+  for (const e of watchedExpiries(view)) {
     context.set(e.optionExpiry, { fut: e.fut, tooThin: !!e.screen.tooThin });
     const shown = new Set([...e.shown.PE, ...e.shown.CE].map((c) => `${c.strike}${c.type}`));
     const block = e.gates.blocked
