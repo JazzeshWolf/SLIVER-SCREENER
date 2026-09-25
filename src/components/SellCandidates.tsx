@@ -1,13 +1,12 @@
 import { useMemo, useState } from "preact/hooks";
 import type { McxData, RegimeResult, SellCandidate } from "../lib/types";
 import { screenSellCandidates, candidateTone } from "../lib/sellCandidates";
+import { shortlist } from "../lib/sellView";
 import { premiumSellScore } from "../lib/scoring";
 import { contractsFor, lotUnitsFor, metalForSymbol } from "../lib/instrument";
 import type { MetalConfig } from "../lib/instrument";
 import { fmtOi } from "../lib/chain";
 import { Card, Pill, fmt, fmtInt } from "./ui";
-
-const TOP_N = 8;
 
 // Shared by the header and every row so the columns stay locked together.
 const GRID =
@@ -51,7 +50,9 @@ export function SellCandidates({
     [mcx, score, regime, lotUnits, override],
   );
 
-  const rows = screen.candidates.filter((c) => c.ok && c.type === side);
+  // Shared with the Telegram alerts (scripts/alerts.mjs): the alerts may only
+  // announce a strike this list shows, so the cap and filter live in one place.
+  const rows = shortlist(screen, side);
   const rejects = screen.candidates.filter((c) => !c.ok && c.type === side);
   const dte = mcx.mcx.optionDte ?? mcx.mcx.dte;
   // Same gates the premium-sell card runs. A ranked shortlist is an implicit
@@ -134,7 +135,7 @@ export function SellCandidates({
           </div>
 
           <div className="max-h-[58vh] overflow-y-auto">
-            {rows.slice(0, TOP_N).map((c) => (
+            {rows.map((c) => (
               <Row
                 key={`${c.type}-${c.strike}`}
                 c={c}

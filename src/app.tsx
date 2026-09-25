@@ -20,6 +20,7 @@ import { GexCard } from "./components/GexCard";
 import { FearGauge } from "./components/FearGauge";
 import { OptionChainTable } from "./components/OptionChainTable";
 import { SellCandidates } from "./components/SellCandidates";
+import { decisionScore } from "./lib/sellView";
 import { KeyLevels } from "./components/KeyLevels";
 import { PositioningVol } from "./components/PositioningVol";
 import { PositionsPanel } from "./components/PositionsPanel";
@@ -145,7 +146,7 @@ function MetalDashboard({
               <>
                 <SellCandidates
                   mcx={dash.mcx}
-                  score={dash.regime ? dash.scores?.[dash.regime.dteHorizon].score ?? null : null}
+                  score={decisionScore(dash.scores, dash.regime)}
                   regime={dash.regime}
                 />
                 {dash.premium && (

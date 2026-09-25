@@ -40,6 +40,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm # only the alert step installs anything
 
       - name: Build data snapshot
         env:
@@ -65,3 +66,31 @@ jobs:
           else
             echo "No data changes."
           fi
+
+      # Telegram conviction alerts (scripts/alerts.mjs; see CLAUDE.md). CONV is
+      # not in the snapshot — the Sell tab computes it — so the script recomputes
+      # it through the tab's own TypeScript module (src/lib/sellView.ts), hence
+      # npm ci + vite-node. It judges freshness itself (live chain this build,
+      # lastLiveAt moved, captured in MCX hours, chain changed) and holds
+      # otherwise. `main` only: a feature-branch dispatch must never
+      # move the real alert state. Deliberately NOT continue-on-error: a broken
+      # alert path should turn the run red, and a missing end-of-day heartbeat
+      # is the second tripwire. The data is already committed by this point, so
+      # a failure here cannot hold the screener back.
+      - name: Conviction alerts
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ALERT_MIN_CONV_METALS: ${{ vars.ALERT_MIN_CONV_METALS }}
+          ALERT_MIN_DTE_METALS: ${{ vars.ALERT_MIN_DTE_METALS }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "::warning::TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set — alerts skipped."
+            exit 0
+          fi
+          npm ci --no-audit --no-fund
+          scripts/alerts-state.sh pull
+          npm run -s alerts
+          scripts/alerts-state.sh push metals

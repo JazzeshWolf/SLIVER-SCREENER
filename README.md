@@ -95,6 +95,7 @@ npm run dev        # local dev server
 npm test           # unit tests (scoring, options math, stats)
 npm run build      # type-check + production build to dist/
 npm run build:data # run the data builder locally (fail-soft without an MCX source)
+npm run alerts:replay # replay archived snapshots through the Telegram alerts (prints, never sends)
 ```
 
 ## The metal registry (`src/lib/metals.mjs` + `metals.d.mts`)
