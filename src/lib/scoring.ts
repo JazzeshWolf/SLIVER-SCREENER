@@ -194,10 +194,16 @@ export function factorConfigFor(metalId: string): FactorConfig[] {
 }
 
 
+/** A factor's lookback window at a horizon — read-only, so the factor card can
+ *  describe the same window the score used ("over the last 10 sessions"). */
+export function factorWindow(key: string, horizon: Horizon): number {
+  return FACTOR_DEFS.find((d) => d.key === key)?.windows[horizon] ?? 0;
+}
+
 const BULLISH_THRESHOLD = 3;
 const MIN_OBS_FOR_FULL_CONFIDENCE = 30;
 /** Annualized curve slope (%) at which the term-structure signal saturates. */
-const TERM_STRUCTURE_FULL_PCT = 20;
+export const TERM_STRUCTURE_FULL_PCT = 20;
 
 /** Raw per-factor signal in [-1, +1], or null when inputs are missing. */
 function factorSignal(

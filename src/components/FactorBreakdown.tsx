@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
-import type { Horizon, HorizonScore, Pillar } from "../lib/types";
+import type { Horizon, HorizonScore, LiveInputs, McxData, Pillar } from "../lib/types";
+import { factorStory, readsAs } from "../lib/factorStory";
 import { PILLAR_LABELS } from "../lib/types";
 import type { MetalConfig } from "../lib/metals.mjs";
 import { Card, SectionTitle } from "./ui";
@@ -53,10 +54,15 @@ export function FactorBreakdown({
   decision,
   horizon,
   metal,
+  live,
+  mcx,
 }: {
   decision: HorizonScore;
   horizon: Horizon;
   metal: MetalConfig;
+  /** The inputs the score was computed from, for the "right now" line. */
+  live: LiveInputs;
+  mcx: McxData;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   // "Global / COMEX" on the metals, "Global / NYMEX" on crude.
@@ -130,12 +136,18 @@ export function FactorBreakdown({
               <FactorBar s={f.s} present={f.present} />
             </button>
             {open === f.key && (
-              <p className="mt-1.5 mb-0.5 text-[11px] leading-snug text-white/50 pl-3.5 border-l border-white/10">
-                {DECODE[f.key] ?? "—"}{" "}
-                {f.present
-                  ? `Currently leaning ${f.s > 0.05 ? "bullish" : f.s < -0.05 ? "bearish" : "neutral"}.`
-                  : "No data for this factor right now — its weight is redistributed across the others."}
-              </p>
+              <div className="mt-1.5 mb-0.5 pl-3.5 border-l border-white/10 space-y-1">
+                {/* What is happening right now, from the numbers the score used. */}
+                <p className="text-[12px] leading-snug text-white/80">
+                  <span className="text-sky-300 font-semibold">Right now · </span>
+                  {factorStory(f, horizon, live, mcx, metal) ??
+                    (f.present
+                      ? readsAs(f)
+                      : "No data for this factor right now — its weight is redistributed across the others.")}
+                </p>
+                {/* What the factor measures, in general. */}
+                <p className="text-[11px] leading-snug text-white/45">{DECODE[f.key] ?? "—"}</p>
+              </div>
             )}
                 </div>
               ))}
