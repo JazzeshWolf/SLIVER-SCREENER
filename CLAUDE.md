@@ -11,6 +11,7 @@ traps: the things that break silently or that a well-meaning change would undo.
 | Data builder | `scripts/build-data.mjs`, run by `.github/workflows/data.yml` | commits `public/data/{silver,gold,copper,index,latest}.json` to **`main`** with ordinary commits — the git history of those files is the only snapshot archive |
 | Site | `.github/workflows/deploy.yml` → GitHub Pages | the client reads the raw `main` copy of the data, so data commits don't redeploy |
 | Telegram alerts | last step of `data.yml` → `scripts/alerts.mjs`, state on the `alerts-state` branch | see below |
+| EOD archive | separate **private** repo `JazzeshWolf/sliver-screener-eod-archive`, 08:35 IST Tue–Sat | reads this repo's `main` history; calls `scripts/score-snapshot.mjs` — see below |
 
 ## ⚠️ Scheduling: GitHub's cron is NOT keeping the advertised cadence
 
@@ -27,6 +28,27 @@ POSTing `workflow_dispatch` to
 with body `{"ref":"main"}` and a fine-grained PAT (Actions: read & write). Not
 set up here yet; if it is, note the job and the PAT's expiry in the
 credentials table.
+
+## The EOD archive (separate private repo)
+
+`JazzeshWolf/sliver-screener-eod-archive` keeps one closing snapshot per MCX
+session (chains + every scored strike), plus frozen settled outcomes, so we can
+later test whether CONV predicts results. Its README is the design; the parts
+that constrain THIS repo:
+
+- **It reads `main`'s history.** It picks each session's close from the data
+  commits by `feed.lastLiveAt`, which is why it can catch up skipped days and
+  why the 33 sessions from 11 Aug were backfilled. **If live data ever moves to a
+  force-pushed branch, that stops working** and a missed archive day becomes
+  unrecoverable. Update the archive before making that change.
+- **`scripts/score-snapshot.mjs` is its contract** (schema 1, pinned by
+  `score-snapshot.test.mjs`). The archive runs it with vite-node on each day's
+  files, so CONV in the archive is exactly what the Sell tab computes. Keep the
+  output backwards compatible; bump `SCHEMA` if a field has to change meaning.
+- **`feed.chainOk` / `feed.lastLiveAt` are load-bearing there too.** A build that
+  re-serves an old chain must keep `chainOk: false` and not move `lastLiveAt`.
+- About 73 KB per session, around 18 MB a year. The archive's database is never
+  committed; it is published as the `db-latest` release asset.
 
 ## 🔑 Credentials & expiry (the things that will silently break this)
 
