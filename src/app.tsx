@@ -121,11 +121,13 @@ function MetalDashboard({
                 {dash.regime && dash.scores && (
                   <RegimeCard regime={dash.regime} scores={dash.scores} track={dash.track} />
                 )}
-                {dash.regime && dash.scores && (
+                {dash.regime && dash.scores && dash.baseMcx && (
                   <FactorBreakdown
                     decision={dash.scores[dash.regime.dteHorizon]}
                     horizon={dash.regime.dteHorizon}
                     metal={meta}
+                    live={dash.live}
+                    mcx={dash.baseMcx}
                   />
                 )}
                 {dash.mcx && <MarketStructure mcx={dash.mcx} />}
