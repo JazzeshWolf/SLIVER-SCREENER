@@ -8,7 +8,7 @@ traps: the things that break silently or that a well-meaning change would undo.
 
 | Part | Where | Notes |
 |---|---|---|
-| Data builder | `scripts/build-data.mjs`, run by `.github/workflows/data.yml` | commits `public/data/{silver,gold,copper,index,latest}.json` to **`main`** with ordinary commits — the git history of those files is the only snapshot archive |
+| Data builder | `scripts/build-data.mjs`, run by `.github/workflows/data.yml` | commits `public/data/{silver,gold,copper,crude,index,latest}.json` to **`main`** with ordinary commits — the git history of those files is the only snapshot archive |
 | Site | `.github/workflows/deploy.yml` → GitHub Pages | the client reads the raw `main` copy of the data, so data commits don't redeploy |
 | Telegram alerts | last step of `data.yml` → `scripts/alerts.mjs`, state on the `alerts-state` branch | see below |
 
@@ -48,8 +48,8 @@ a chat, an issue or a log line.
 The last step of `data.yml` messages the owner's Telegram bot — the one the NSE
 screener already uses, same chat — when a strike on the Sell tab crosses the
 bar, and follows it afterwards. Every message is headed **⚖️ MCX** and every
-line carries the metal's emoji and contract (🥈 SILVERM / 🥇 GOLDM / 🟠 COPPER),
-so it can't be mistaken for an NSE alert.
+line carries the metal's emoji and contract (🥈 SILVERM / 🥇 GOLDM / 🟠 COPPER /
+🛢️ CRUDEOILM), so it can't be mistaken for an NSE alert.
 
 | event | when |
 |---|---|
@@ -83,7 +83,8 @@ Things that will bite:
   changed (holidays re-serve yesterday's prices under a new timestamp). A held
   metal's tracked strikes are neither reported nor dropped.
 - **MCX hours are not NSE's.** 09:00 → 23:30 IST while the US is on daylight
-  time (2nd Sunday of March → 1st Sunday of November), 23:55 IST otherwise.
+  time (2nd Sunday of March → 1st Sunday of November), 23:55 IST otherwise —
+  crude keeps the same session as the metals.
   Runs outside that — including GitHub's 02:00–03:00 IST stragglers — never alert.
 - **Delivery is at-least-once.** State is written only after Telegram accepts
   every message; a failed send or state push turns the run red and the next
@@ -111,7 +112,8 @@ Things that will bite:
   a day at today's cadence, ~20 a day during the mid-August cadence, and a
   10-minute scheduler would mean most of ~85 in-session runs.
 - **Current and next expiry only** (`ALERT_EXPIRIES = 2`, owner's choice
-  2026-09-25, 70 on all three metals). Far months stay on the screen but never
+  2026-09-25, 70 on all three metals; crude, added 2026-09-26, inherits both
+  and the 10-day entry rule). Far months stay on the screen but never
   alert. An expiry on its last day (DTE 0) has no ranked strikes and gives up
   its slot, so on gold's 25 Sep expiry day the watch is Oct + Nov.
 - **10+ days to expiry to enter** (`DEFAULT_MIN_DTE`, owner's choice
@@ -128,6 +130,32 @@ Things that will bite:
   to CONV belongs in `sellCandidates.ts`, where the screen sees it too.
 - MCX metal options list one expiry per month, so alerts carry no
   weekly/monthly label (the NSE engine's `isMonthly` has nothing to do here).
+  Crude is monthly too (options ~2 business days before the future's ~19th).
+
+## 🛢️ Crude oil (CRUDEOILM) — added 2026-09-26
+
+Crude rides the same registry, builder, screen and alerts as the metals. Where
+it differs, the difference is a registry field — keep it that way rather than
+branching on `id === "crude"`:
+
+- **Parity is the settlement rule** (`parityKind: "settlement"`): MCX crude
+  settles on NYMEX WTI × the RBI rate, so no duty/GST and no domestic premium.
+  The basis card and the Outlook's India-local driver ignore the gap by design.
+  Don't "fix" it by adding levies.
+- **The curve comes from the MCX strip** (`curveFrom: "mcx"`), and it is a
+  scored factor for crude only (`termStructure`, backwardation = bullish). The
+  Yahoo front-vs-spot fallback the metals use would compare crude's front
+  future with itself; `source: "carry"` never counts as a curve. Don't weight
+  `termStructure` for a metal: bullion sits in contango by construction.
+- **First live run is the real test.** Nothing here has met a live CRUDEOILM
+  chain: check the Actions log for `upstox: CRUDEOILM N expiries` and
+  `curve (MCX strip)`. If the instrument master has no CRUDEOILM options, the
+  builder logs the CRUDEOIL rows it did find and crude stays `est.` — and the
+  heartbeat goes ⚠️ naming Crude Oil every night until it is fixed.
+- **Its first fresh run announces what is already above the bar as NEW.**
+  Arming is per state file, not per metal, so adding a commodity to a live
+  state sends one ordinary message listing crude's strikes ≥ 70 (10+ days).
+- The replay has no crude history until the cron has committed some.
 
 Replay the archive through the real engine (prints, never sends):
 `git fetch --depth=5000 origin main && npm run alerts:replay -- --since 2026-09-01 [--threshold 75] [--min-dte 0] [--quiet]`.

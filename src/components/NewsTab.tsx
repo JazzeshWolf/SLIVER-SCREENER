@@ -1,17 +1,19 @@
 import type { NewsItem } from "../lib/types";
+import type { MetalConfig } from "../lib/metals.mjs";
 import { Card, SectionTitle, Pill, timeAgo } from "./ui";
 
-function ImpactChip({ impact }: { impact: NewsItem["impact"] }) {
-  if (impact === "up") return <Pill tone="bull">↑ silver</Pill>;
-  if (impact === "down") return <Pill tone="bear">↓ silver</Pill>;
+function ImpactChip({ impact, name }: { impact: NewsItem["impact"]; name: string }) {
+  if (impact === "up") return <Pill tone="bull">↑ {name}</Pill>;
+  if (impact === "down") return <Pill tone="bear">↓ {name}</Pill>;
   return <Pill tone="warn">↕ mixed</Pill>;
 }
 
-export function NewsTab({ news }: { news: NewsItem[] }) {
+export function NewsTab({ news, metal }: { news: NewsItem[]; metal: MetalConfig }) {
+  const name = metal.label.toLowerCase();
   if (!news?.length) {
     return (
       <Card>
-        <SectionTitle>Silver news</SectionTitle>
+        <SectionTitle>{metal.label} news</SectionTitle>
         <p className="text-sm text-white/40">No headlines yet — populates on the next data refresh.</p>
       </Card>
     );
@@ -19,8 +21,8 @@ export function NewsTab({ news }: { news: NewsItem[] }) {
   return (
     <div className="space-y-2">
       <p className="text-[11px] text-white/35 px-1 leading-snug">
-        Silver headlines plus the macro stories that move it (Fed, dollar, inflation, gold) — trusted
-        outlets first (✓), nothing older than ~2½ weeks. Tap to read at the source. Impact is
+        {metal.label} headlines plus the stories that drive it (tagged “macro”) — trusted outlets
+        first (✓), nothing older than ~2½ weeks. Tap to read at the source. Impact is
         keyword-tagged (a lean, not gospel).
       </p>
       {news.map((n, i) => (
@@ -36,7 +38,7 @@ export function NewsTab({ news }: { news: NewsItem[] }) {
                   </span>
                 )}
               </span>
-              <ImpactChip impact={n.impact} />
+              <ImpactChip impact={n.impact} name={name} />
             </div>
             <div className="text-sm font-medium text-white/90 leading-snug">{n.title}</div>
             {n.snippet && (

@@ -32,6 +32,10 @@ const minDte = Number(arg("min-dte", DEFAULT_MIN_DTE));
 const quiet = process.argv.includes("--quiet");
 
 const git = (...a) => execFileSync("git", a, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+// A commodity added later (crude) has no file at older commits. That miss is
+// expected, so keep git's "fatal: path ... does not exist" off the terminal.
+const gitQuiet = (...a) =>
+  execFileSync("git", a, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
 const paths = METAL_IDS.map((id) => `public/data/${id}.json`);
 const commits = git("log", ref, "--reverse", `--since=${since}`, "--format=%H %cI", "--", ...paths)
   .trim().split("\n").filter(Boolean).map((l) => l.split(" "));
@@ -48,7 +52,7 @@ try {
   for (const [sha, at] of commits) {
     for (const id of METAL_IDS) {
       try {
-        writeFileSync(join(dataDir, `${id}.json`), git("show", `${sha}:public/data/${id}.json`));
+        writeFileSync(join(dataDir, `${id}.json`), gitQuiet("show", `${sha}:public/data/${id}.json`));
       } catch {
         rmSync(join(dataDir, `${id}.json`), { force: true });
       }

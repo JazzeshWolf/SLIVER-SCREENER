@@ -1,12 +1,13 @@
 import { useState } from "preact/hooks";
 import type { Horizon, HorizonScore, Pillar } from "../lib/types";
 import { PILLAR_LABELS } from "../lib/types";
+import type { MetalConfig } from "../lib/metals.mjs";
 import { Card, SectionTitle } from "./ui";
 
 // Plain-English decode of each engine factor — what it measures and how it
 // moves the metal. Keyed to the factor keys in src/lib/scoring.ts.
 const DECODE: Record<string, string> = {
-  dxy: "Dollar direction (inverse). Metals are priced in USD, so a falling dollar lifts them and a rising dollar weighs on them. Measured as z-scored dollar-index momentum.",
+  dxy: "Dollar direction (inverse). Metals and oil are priced in USD, so a falling dollar lifts them and a rising dollar weighs on them (for crude the link is looser, hence a smaller weight). Measured as z-scored dollar-index momentum.",
   real10y:
     "Real 10-year yield (inverse). Higher real yields raise the opportunity cost of holding a non-yielding asset → bearish; falling real yields → bullish. This is gold's single heaviest factor, and near-irrelevant for copper, which you buy to consume rather than to hold.",
   metalMomo:
@@ -18,12 +19,14 @@ const DECODE: Record<string, string> = {
   mcxPositioning:
     "MCX futures open interest vs price — are participants adding or cutting risk. Rising OI that confirms the price move adds conviction; rising OI against it is fresh opposing positioning.",
   usdInr:
-    "USD-INR. A weaker rupee lifts the MCX rupee price even when the international price is flat; a stronger rupee is a headwind. This is why MCX and COMEX can disagree.",
+    "USD-INR. A weaker rupee lifts the MCX rupee price even when the international price is flat; a stronger rupee is a headwind. This is why MCX and COMEX or NYMEX can disagree.",
   gsr: "Gold-silver ratio, mean-reverting. A stretched ratio (silver cheap vs gold) is a contrarian-bullish tell for silver.",
   gsrGold:
     "Gold-silver ratio seen from gold's side. A high ratio means gold is rich relative to silver — a mild headwind for gold, the mirror image of the same signal on the silver screen.",
   copperGold:
     "Copper/gold ratio — the market's cleanest free growth proxy. Rising = reflation and risk-on, bullish the industrial metal; falling = a growth scare. Replaces gold leadership, which tells you nothing about copper.",
+  termStructure:
+    "The futures curve's slope, nearest vs furthest listed month. Backwardation (prompt above deferred) means the market is paying up for supply now — tight, bullish; contango means it is paying to store the stuff — oversupplied, bearish. Crude only: the metals sit in contango by construction (cost of carry), so it would read as a permanent bear there.",
   structuralBias:
     "A small, constant prior for this metal's structural story. Slow-moving and deliberately modest, applied on 1W/1M only. It is a hand-set opinion, not a measurement — the one factor here that never reacts to today's data.",
 };
@@ -46,8 +49,18 @@ function FactorBar({ s, present }: { s: number; present: boolean }) {
 /** Pillar display order — heaviest evidence first, matching the playbook. */
 const PILLAR_ORDER: Pillar[] = ["global", "deriv", "tech", "local"];
 
-export function FactorBreakdown({ decision, horizon }: { decision: HorizonScore; horizon: Horizon }) {
+export function FactorBreakdown({
+  decision,
+  horizon,
+  metal,
+}: {
+  decision: HorizonScore;
+  horizon: Horizon;
+  metal: MetalConfig;
+}) {
   const [open, setOpen] = useState<string | null>(null);
+  // "Global / COMEX" on the metals, "Global / NYMEX" on crude.
+  const pillarLabel = (p: Pillar) => (p === "global" ? `Global / ${metal.comex.exchange}` : PILLAR_LABELS[p]);
   // Show the factors that carry weight at this horizon (present or not), the
   // heaviest first — mirrors what actually drives the score.
   const rows = decision.factors
@@ -77,7 +90,7 @@ export function FactorBreakdown({ decision, horizon }: { decision: HorizonScore;
           <div key={g.pillar}>
             <div className="flex items-baseline justify-between gap-2 mb-1.5">
               <span className="text-[10px] uppercase tracking-wider text-white/40">
-                {PILLAR_LABELS[g.pillar]}
+                {pillarLabel(g.pillar)}
               </span>
               <span className="flex items-baseline gap-2 text-[10px] tnum">
                 <span className="text-white/25">{(g.weight * 100).toFixed(0)}%</span>

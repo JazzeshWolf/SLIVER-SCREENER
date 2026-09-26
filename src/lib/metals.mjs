@@ -18,6 +18,12 @@
 //     silver: $/oz × 32.1507   → ₹/kg    (troy oz per kg)
 //     gold:   $/oz × 0.3215069 → ₹/10g   (= 10 g ÷ 31.1035 g/oz)
 //     copper: $/lb × 2.20462   → ₹/kg    (lb per kg) — see parityConfidence
+//     crude:  $/bbl × 1        → ₹/bbl   (no levies — see parityKind)
+//
+// Crude oil is not a metal, but it is an MCX option on a monthly future with
+// the same plumbing, so it lives here too. Where it genuinely differs (what
+// its "parity" means, where its curve comes from, which factors drive it) the
+// difference is a registry field, not an `if (id === "crude")` downstream.
 //
 // UNITS. `quoteUnitsPerLot` is deliberately NOT called "lot size". MCX quotes
 // gold in ₹ per 10 g but sells it in 100 g lots, so ₹/lot = premium × 10, not
@@ -36,6 +42,7 @@ export const METALS = {
     label: "Silver",
     emoji: "🥈",
     family: "SILVER",
+    sector: "bullion",
     // The contract the data pipeline actually pulls. The mini is the default
     // because it is what a retail premium seller trades; the big contract's
     // chain is deeper but its lot is 6× the margin.
@@ -61,6 +68,11 @@ export const METALS = {
     gst: 0.03,
     // Hand-verified to the rupee against the live snapshot (see AUDIT.md G1).
     parityConfidence: "verified",
+    parityKind: "import",
+    // Rough realized-vol multiple of gold, used ONLY to seed a flagged IV proxy
+    // while the metal's own history is too short to compute realized vol.
+    volBetaToGold: 1.6,
+    curveFrom: "intl",
 
     // --- feeds -------------------------------------------------------------
     // COMEX reference for the term-structure ladder (contango/backwardation).
@@ -87,6 +99,7 @@ export const METALS = {
       structuralLabel: "Structural deficit bias",
       structuralNote:
         "Silver has run a multi-year physical supply deficit. A small, constant bullish prior; slow-moving, 1W/1M only.",
+      macroKeys: ["dxy", "real10y"],
       weights: {
         dxy: { "1D": 0.24, "1W": 0.17, "1M": 0.13 },
         real10y: { "1D": 0.18, "1W": 0.14, "1M": 0.12 },
@@ -100,7 +113,7 @@ export const METALS = {
       },
     },
 
-    comex: { root: "SI", spot: "SI=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
+    comex: { exchange: "COMEX", root: "SI", spot: "SI=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
 
     // Google News queries + the regexes that split "about this metal" from
     // "about a driver of this metal". Copper's drivers are nothing like
@@ -134,6 +147,7 @@ export const METALS = {
     label: "Gold",
     emoji: "🥇",
     family: "GOLD",
+    sector: "bullion",
     feedSymbol: "GOLDM",
     contracts: [
       // 100 g lot quoted in ₹/10 g → 10 quote units per lot, NOT 100.
@@ -149,6 +163,9 @@ export const METALS = {
     duty: 0.15, // same bullion regime as silver since 2026-05-13
     gst: 0.03,
     parityConfidence: "verified",
+    parityKind: "import",
+    volBetaToGold: 1.0,
+    curveFrom: "intl",
 
     // Gold is a pure macro instrument: real yields carry the most weight of any
     // single factor in the app. There is no "gold leadership" factor here — it
@@ -171,6 +188,7 @@ export const METALS = {
       structuralLabel: "Central-bank bid",
       structuralNote:
         "Sustained official-sector buying has been a persistent floor under gold. Small and constant — it is a level story, not a timing signal, so it is weighted well below silver's deficit prior.",
+      macroKeys: ["dxy", "real10y"],
       weights: {
         dxy: { "1D": 0.26, "1W": 0.18, "1M": 0.14 },
         real10y: { "1D": 0.26, "1W": 0.25, "1M": 0.23 },
@@ -183,7 +201,7 @@ export const METALS = {
       },
     },
 
-    comex: { root: "GC", spot: "GC=F", months: { 1: "G", 3: "J", 5: "M", 7: "Q", 11: "Z" } },
+    comex: { exchange: "COMEX", root: "GC", spot: "GC=F", months: { 1: "G", 3: "J", 5: "M", 7: "Q", 11: "Z" } },
 
     news: {
       query: "gold price OR gold MCX OR gold demand OR central bank gold buying",
@@ -211,6 +229,7 @@ export const METALS = {
     label: "Copper",
     emoji: "🟠",
     family: "COPPER",
+    sector: "base",
     feedSymbol: "COPPER",
     contracts: [{ symbol: "COPPER", label: "COPPER (2500 kg)", quoteUnitsPerLot: 2500 }],
     quoteUnit: "₹/kg",
@@ -231,6 +250,9 @@ export const METALS = {
     duty: 0.05,
     gst: 0.18,
     parityConfidence: "approximate",
+    parityKind: "import",
+    volBetaToGold: 1.3,
+    curveFrom: "intl",
 
     // Copper is an industrial metal, so the bullion factor set does not
     // transfer. Real yields barely matter (there is no opportunity-cost story
@@ -257,6 +279,9 @@ export const METALS = {
       structuralLabel: "Tight concentrate / electrification demand",
       structuralNote:
         "Concentrate is scarce (spot treatment charges have gone negative) while grid build-out, EVs and data centres add demand. A modest constant bullish prior — deliberately half silver's, because copper's tightness is more cyclical and can unwind fast.",
+      // Real yields are near-irrelevant to a metal you buy to consume, so
+      // copper's non-price pillar is the dollar plus the growth proxy.
+      macroKeys: ["dxy", "copperGold"],
       weights: {
         dxy: { "1D": 0.26, "1W": 0.22, "1M": 0.18 },
         real10y: { "1D": 0.06, "1W": 0.05, "1M": 0.04 },
@@ -269,7 +294,7 @@ export const METALS = {
       },
     },
 
-    comex: { root: "HG", spot: "HG=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
+    comex: { exchange: "COMEX", root: "HG", spot: "HG=F", months: { 2: "H", 4: "K", 6: "N", 8: "U", 11: "Z" } },
 
     // Copper is an industrial metal: its news is mines, smelters, tariffs,
     // inventories and China — not the Fed and not safe-haven flows.
@@ -294,10 +319,118 @@ export const METALS = {
 
     strikeStepFallback: 5, // ₹/kg; tick is ₹0.05
   },
+
+  crude: {
+    id: "crude",
+    label: "Crude Oil",
+    emoji: "🛢️",
+    family: "CRUDEOIL",
+    sector: "energy",
+    // The mini is the default for the same reason SILVERM is: it is what a
+    // retail premium seller trades. The big contract's lot is 10× the margin.
+    feedSymbol: "CRUDEOILM",
+    contracts: [
+      { symbol: "CRUDEOIL", label: "CRUDEOIL (100 bbl)", quoteUnitsPerLot: 100 },
+      { symbol: "CRUDEOILM", label: "CRUDEOILM (10 bbl)", quoteUnitsPerLot: 10 },
+    ],
+    quoteUnit: "₹/bbl",
+    lotNoun: "bbl",
+
+    // PARITY IS THE SETTLEMENT FORMULA, NOT AN IMPORT COST. MCX crude settles
+    // on the NYMEX WTI price converted at the RBI reference rate — that is how
+    // the April 2020 contract settled at −₹2,884 (−$37.63 × ₹76.6). No barrel
+    // is imported through it, so there is no duty, no GST and no domestic
+    // premium to read: the "basis" is feed timing and the FX fix, and it is
+    // zero at expiry by construction.
+    intlUnit: "$/bbl",
+    unitMult: 1,
+    duty: 0,
+    gst: 0,
+    // By construction rather than hand-verified: the formula is the exchange's
+    // own, so there is nothing to approximate (unlike copper's COMEX/LME gap).
+    parityConfidence: "verified",
+    parityKind: "settlement",
+    volBetaToGold: 2.2,
+    // Crude's curve is read off MCX's own futures strip, which the pipeline
+    // already fetches: it IS the WTI curve in rupees, since MCX settles on it.
+    // The Yahoo front-vs-spot fallback the metals use would compare the front
+    // future with itself (crude's only price series is that future) and turn
+    // feed timing into a fake contango.
+    curveFrom: "mcx",
+
+    // First-cut calibration, to be checked against the first live chains (see
+    // TODO.md). The mini's book is shallower than the big contract's, so
+    // minChainOi is a light gate: below it, refuse to rank at all. The scan is
+    // the widest in the app — crude gaps on OPEC+ headlines and weekly
+    // inventory prints, and runs hotter than silver.
+    screen: {
+      minOi: 25,
+      thinOi: 300,
+      minChainOi: 500,
+      romDivisor: 250,
+      priceScan: 0.08,
+      volScan: 0.3,
+    },
+
+    engine: {
+      structuralBias: -0.15,
+      structuralLabel: "Supply overhang · OPEC+ spare capacity",
+      structuralNote:
+        "OPEC+ holds spare capacity it has shown it will return to the market, and non-OPEC supply keeps growing, so rallies tend to meet new barrels. A small bearish prior that caps upside rather than predicting a fall — and the least durable prior in the app, since one OPEC+ meeting can reverse it. The live futures-curve factor is the check on it.",
+      // No real-yield story and no gold relationship. What stands in for the
+      // bullion macro pillar is the dollar plus the futures curve — the one
+      // free, live read on physical supply and demand.
+      macroKeys: ["dxy", "termStructure"],
+      weights: {
+        dxy: { "1D": 0.14, "1W": 0.12, "1M": 0.1 },
+        metalMomo: { "1D": 0.34, "1W": 0.24, "1M": 0.18 },
+        longTrend: { "1D": 0.0, "1W": 0.08, "1M": 0.14 },
+        mcxPositioning: { "1D": 0.2, "1W": 0.16, "1M": 0.12 },
+        usdInr: { "1D": 0.16, "1W": 0.14, "1M": 0.12 },
+        termStructure: { "1D": 0.16, "1W": 0.2, "1M": 0.22 },
+        structuralBias: { "1D": 0.0, "1W": 0.06, "1M": 0.12 },
+      },
+    },
+
+    // Reference contract only: the curve comes from MCX (curveFrom above), and
+    // this block supplies the exchange name for the COT card. NYMEX lists every
+    // month, and each stops trading ~3 business days before the 25th of the
+    // month BEFORE delivery.
+    comex: {
+      exchange: "NYMEX",
+      root: "CL",
+      spot: "CL=F",
+      months: { 0: "F", 1: "G", 2: "H", 3: "J", 4: "K", 5: "M", 6: "N", 7: "Q", 8: "U", 9: "V", 10: "X", 11: "Z" },
+    },
+
+    // Crude's news is OPEC+, inventories, refiners and geopolitics. The direct
+    // pattern names the crude complex rather than bare "oil", which in Indian
+    // business news is as likely to mean palm or edible oil.
+    news: {
+      query: "crude oil price OR MCX crude OR WTI crude OR Brent crude",
+      forecastQuery: "oil price forecast OR OPEC+ output OR crude oil demand OR crude inventories",
+      trustedSubject: "crude oil",
+      indirectQuery:
+        "OPEC+ meeting OR EIA crude inventories OR Middle East oil supply OR Russia oil sanctions OR China oil demand",
+      directPattern: "crude|brent|\\bwti\\b|opec|\\boil (price|prices|market|demand|supply|output|futures)|MCX",
+      indirectPattern:
+        "opec|\\beia\\b|\\biea\\b|inventor|stockpile|cushing|refiner|gasoline|distillate|shale|rig count|middle east|iran|israel|saudi|russia|sanction|hormuz|red sea|hurricane|china|dollar index|federal reserve|recession|geopolit",
+    },
+
+    intlFeeds: {
+      goldApi: null, // no free CORS crude quote → no browser live overlay, like copper
+      td: [], // spare the free Twelve Data credits: Yahoo's CL=F is the front future MCX tracks
+      yahoo: "CL=F",
+      stooq: "cl.f",
+    },
+    cotCode: "067651", // CFTC — WTI-PHYSICAL (CRUDE OIL, LIGHT SWEET), NYMEX
+
+    strikeStepFallback: 50, // ₹/bbl
+  },
 };
 
 /** Metal ids in the order the picker shows them. */
-export const METAL_IDS = ["silver", "gold", "copper"];
+export const METAL_IDS = ["silver", "gold", "copper", "crude"];
 
 /**
  * Every contract symbol the registry knows, across all metals. Passed to the

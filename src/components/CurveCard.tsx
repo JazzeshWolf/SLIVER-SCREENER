@@ -1,15 +1,21 @@
 import type { McxData } from "../lib/types";
-import { Card, SectionTitle, Pill, Implication, fmt, pct } from "./ui";
+import { metalForSymbol } from "../lib/instrument";
+import { Card, SectionTitle, Pill, Implication, fmt, fmtInt, pct } from "./ui";
 
 /**
- * COMEX silver futures term structure — contango vs backwardation.
- * OpenBB-style curve read (Yahoo/CME), the one international signal OpenBB is
- * good at that we lacked. Silver normally sits in mild contango (carry); a flip
- * toward backwardation flags physical tightness / squeeze risk for short calls.
+ * Futures term structure — contango vs backwardation. For the metals it is the
+ * international exchange's listed months (an OpenBB-style curve read via
+ * Yahoo); for crude it is MCX's own futures strip, which IS the WTI curve in
+ * rupees since MCX settles on WTI. Metals normally sit in mild contango
+ * (carry); a flip toward backwardation flags physical tightness / squeeze risk
+ * for short calls. For crude, contango is a glut signal rather than "normal".
  */
 export function CurveCard({ mcx }: { mcx: McxData }) {
   const c = mcx.curve;
   if (!c) return null; // no futures data → hide entirely (never fake it)
+  const metal = metalForSymbol(mcx.mcx.symbol);
+  const onMcx = c.source === "mcx";
+  const price = (v: number) => (onMcx ? `₹${fmtInt(v)}` : `$${fmt(v)}`);
 
   const back = c.structure === "backwardation";
   const flat = c.structure === "flat";
@@ -20,14 +26,18 @@ export function CurveCard({ mcx }: { mcx: McxData }) {
     ? "Near months trading ABOVE far months — physical tightness. Historically bullish and squeeze fuel: a real warning for short calls. Favour selling puts with cushion over selling calls."
     : flat
       ? "The curve is nearly flat — carry has compressed toward tightness. Not an alert yet, but watch for a slide into backwardation, which would tilt risk against short calls."
-      : "Normal contango — far months above near (cost of carry). No tightness signal; the curve isn't flashing squeeze risk. Neutral for an options seller.";
+      : metal.sector === "energy"
+        ? "Contango — later months priced above prompt: the market is paying to store oil, the signature of ample supply. A bearish lean for the price, and no squeeze warning for short calls."
+        : "Normal contango — far months above near (cost of carry). No tightness signal; the curve isn't flashing squeeze risk. Neutral for an options seller.";
 
   return (
     <Card>
-      <SectionTitle>Silver futures curve (COMEX)</SectionTitle>
+      <SectionTitle>
+        {metal.label} futures curve ({onMcx ? "MCX" : metal.comex.exchange})
+      </SectionTitle>
       <div className="flex items-end justify-between gap-2">
         <div>
-          <div className="text-2xl font-bold tnum">${fmt(c.front)}</div>
+          <div className="text-2xl font-bold tnum">{price(c.front)}</div>
           <div className="text-[10px] text-white/40 mt-0.5">
             nearest contract · annualized {pct(c.annualizedPct)}
           </div>
@@ -43,7 +53,7 @@ export function CurveCard({ mcx }: { mcx: McxData }) {
           const h = hi > lo ? 14 + ((m.price - lo) / (hi - lo)) * 26 : 26; // 14–40px bars
           return (
             <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
-              <div className="tnum text-[9px] text-white/50">{fmt(m.price)}</div>
+              <div className="tnum text-[9px] text-white/50">{onMcx ? fmtInt(m.price) : fmt(m.price)}</div>
               <div
                 className={`w-full rounded-sm ${back ? "bg-amber-400/50" : "bg-sky-400/40"}`}
                 style={{ height: `${h}px` }}
@@ -57,7 +67,13 @@ export function CurveCard({ mcx }: { mcx: McxData }) {
 
       <Implication tone={tone}>{impl}</Implication>
       <p className="text-[10px] text-white/30 mt-2">
-        COMEX (international) silver, not MCX — a structural backdrop, not a day-trade timing tool.
+        {onMcx
+          ? `MCX's own futures strip (${metal.quoteUnit}), nearest vs furthest listed month.` +
+            (metal.parityKind === "settlement"
+              ? ` MCX ${metal.label.toLowerCase()} settles on the ${metal.comex.exchange} price, so this is that curve in rupees.`
+              : "")
+          : `${metal.comex.exchange} (international) ${metal.label.toLowerCase()}, not MCX.`}{" "}
+        A structural backdrop, not a day-trade timing tool.
         {c.source === "carry" && " Only the front contract was available, so this is a front-vs-spot carry approximation."}
       </p>
     </Card>

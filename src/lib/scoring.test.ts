@@ -155,6 +155,50 @@ describe("scoreHorizon", () => {
     expect(w("copper", "dxy")).toBeGreaterThan(w("silver", "dxy"));
   });
 
+  it("gives crude its own factor set: the curve in, bullion and ratios out", () => {
+    const keys = factorConfigFor("crude").map((c) => c.key);
+    expect(keys).toContain("termStructure");
+    expect(keys).toContain("metalMomo");
+    expect(keys).toContain("dxy");
+    // Nothing prices crude the way gold prices silver, and a crude/gold "ratio"
+    // would just be crude's own momentum counted twice.
+    for (const k of ["goldMomo", "gsr", "gsrGold", "copperGold", "real10y"]) expect(keys).not.toContain(k);
+    // The metals sit in contango by construction (carry), so the curve factor
+    // must never reach their scores — it would read as a permanent bear.
+    for (const id of ["silver", "gold", "copper"]) {
+      expect(factorConfigFor(id).map((c) => c.key), id).not.toContain("termStructure");
+    }
+  });
+
+  it("reads crude's curve: backwardation bullish, contango bearish, carry ignored", () => {
+    const crude = (curve: McxData["curve"]) => {
+      const m = { ...mcxFixture({ symbol: "CRUDEOILM" }), curve };
+      return scoreHorizon("1M", emptyLive(), m).factors.find((f) => f.key === "termStructure")!;
+    };
+    const curve = (annualizedPct: number, source: "mcx" | "curve" | "carry" = "mcx") => ({
+      front: 5500, structure: "flat" as const, annualizedPct, months: [], source,
+    });
+    expect(crude(curve(-10)).s).toBeCloseTo(0.5, 9); // backwardation → bullish
+    expect(crude(curve(10)).s).toBeCloseTo(-0.5, 9); // contango → bearish
+    expect(crude(curve(-60)).s).toBe(1); // saturates
+    expect(crude(curve(-10, "curve")).present).toBe(true); // a real listed curve counts too
+    // A front-vs-spot approximation is not a curve: absent, weight redistributed.
+    expect(crude(curve(-10, "carry")).present).toBe(false);
+    expect(crude(null).present).toBe(false);
+  });
+
+  it("caps crude's confidence when its non-price pillar (dollar + curve) is missing", () => {
+    const live = emptyLive({ metalHistory: momentum(60, 80), usdInrHistory: momentum(86, 87) });
+    const bare = { ...mcxFixture({ symbol: "CRUDEOILM" }), curve: null };
+    const withCurve = {
+      ...bare,
+      curve: { front: 5500, structure: "backwardation" as const, annualizedPct: -8, months: [], source: "mcx" as const },
+    };
+    const a = scoreHorizon("1M", live, bare);
+    const b = scoreHorizon("1M", live, withCurve);
+    expect(b.confidence).toBeGreaterThan(a.confidence);
+  });
+
   it("flips the gold-silver ratio sign between silver and gold", () => {
     // Same ratio, opposite meaning: silver cheap vs gold is bullish silver and
     // mildly bearish gold. Sharing one key would silently invert one of them.

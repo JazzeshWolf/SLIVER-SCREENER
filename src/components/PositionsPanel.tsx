@@ -9,17 +9,18 @@ import {
 } from "../lib/options";
 import { cacheGet, cacheSet } from "../lib/cache";
 import { contractsFor, lotUnitsFor, metalForSymbol } from "../lib/instrument";
+import { strikeStep } from "../lib/metals.mjs";
 import { Card, SectionTitle, Pill, fmtInt } from "./ui";
 
 /** A sold option the user is carrying. Prices are in the metal's quote unit
- * (₹/kg for silver & copper, ₹/10g for gold) — see metals.mjs. */
+ * (₹/kg for silver & copper, ₹/10g for gold, ₹/bbl for crude) — see metals.mjs. */
 export interface SoldPosition {
   id: string;
   type: "CE" | "PE";
   strike: number;
   premium: number; // the price the option was SOLD at, per quote unit
   lots: number;
-  lotUnits: number; // ₹ quote units per lot (SILVERM 5, GOLDM 10, COPPER 2500)
+  lotUnits: number; // ₹ quote units per lot (SILVERM 5, GOLDM 10, COPPER 2500, CRUDEOILM 10)
   expiry: string; // ISO date of the option expiry
   openedAt: string; // ISO date
   manualCmp?: number | null; // user-entered current option price, per quote unit
@@ -66,6 +67,8 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
   const defaultLotUnits = lotUnitsFor(metal, mcx.mcx.symbol);
   const atmIv = mcx.options.atmIv;
   const chain = mcx.options.chain ?? [];
+  // Suggested strikes land on a strike that exists: ₹500 on gold, ₹50 on crude.
+  const step = strikeStep(metal, chain);
 
   // Available option expiries: live list, else the front expiry, else generated.
   const expiries = useMemo(() => {
@@ -279,7 +282,7 @@ export function PositionsPanel({ mcx }: { mcx: McxData }) {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Field label={`Strike (${metal.quoteUnit})`} value={form.strike} onInput={(v) => setForm({ ...form, strike: v })} placeholder={F ? String(Math.round((F * (form.type === "CE" ? 1.06 : 0.94)) / 500) * 500) : ""} />
+            <Field label={`Strike (${metal.quoteUnit})`} value={form.strike} onInput={(v) => setForm({ ...form, strike: v })} placeholder={F ? String(Math.round((F * (form.type === "CE" ? 1.06 : 0.94)) / step) * step) : ""} />
             <Field label="Sold at (option price) *" value={form.premium} onInput={(v) => setForm({ ...form, premium: v })} placeholder="e.g. 2500" />
             <Field label="Option CMP now (optional)" value={form.cmp} onInput={(v) => setForm({ ...form, cmp: v })} placeholder="today's price" />
             <Field label="Lots" value={form.lots} onInput={(v) => setForm({ ...form, lots: v })} />

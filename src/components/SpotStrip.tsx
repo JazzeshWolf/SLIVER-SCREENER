@@ -1,5 +1,6 @@
 import type { LiveInputs, McxData } from "../lib/types";
-import { Card, arrow, fmt, fmtInt } from "./ui";
+import type { MetalConfig } from "../lib/metals.mjs";
+import { Card, arrow, fmt, fmtInt, pct } from "./ui";
 
 function Cell({
   label,
@@ -29,19 +30,25 @@ function dirOf(hist: { v: number }[]): number | null {
   return hist[hist.length - 1].v - hist[hist.length - 2].v;
 }
 
-export function SpotStrip({ live, mcx }: { live: LiveInputs; mcx: McxData | null }) {
+export function SpotStrip({ live, mcx, metal }: { live: LiveInputs; mcx: McxData | null; metal: MetalConfig }) {
   const gsr = live.xauUsd && live.metalUsd ? live.xauUsd / live.metalUsd : null;
+  // A gold/crude "ratio" means nothing, so crude's third cell is its curve.
+  const curve = mcx?.curve ?? null;
   return (
     <Card>
       <div className="grid grid-cols-3 gap-y-3 gap-x-2">
-        <Cell label="Silver $/oz" value={fmt(live.metalUsd)} dir={dirOf(live.metalHistory)} />
+        <Cell label={`${metal.label} ${metal.intlUnit}`} value={fmt(live.metalUsd)} dir={dirOf(live.metalHistory)} />
         <Cell label="Gold $/oz" value={fmt(live.xauUsd, 0)} dir={dirOf(live.xauHistory)} />
-        <Cell label="GSR" value={fmt(gsr, 1)} />
+        {metal.sector === "energy" ? (
+          <Cell label="Curve (ann.)" value={curve ? pct(curve.annualizedPct) : "—"} sub={curve?.structure} />
+        ) : (
+          <Cell label="GSR" value={fmt(gsr, 1)} />
+        )}
         <Cell label={live.usdBroad ? "USD idx" : "DXY"} value={fmt(live.dxy, 1)} dir={dirOf(live.dxyHistory)} />
         <Cell label="USD-INR" value={fmt(live.usdInr, 2)} dir={dirOf(live.usdInrHistory)} />
         <Cell label="Real 10y" value={live.real10y == null ? "—" : `${fmt(live.real10y)}%`} />
         <Cell
-          label="MCX ₹/kg"
+          label={`MCX ${metal.quoteUnit}`}
           value={fmtInt(mcx?.mcx.fut ?? null)}
           sub={mcx?.mcx.fut && mcx.mcx.prevClose ? `${arrow(mcx.mcx.fut - mcx.mcx.prevClose)} prev ${fmtInt(mcx.mcx.prevClose)}` : undefined}
         />

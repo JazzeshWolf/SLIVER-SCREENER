@@ -2,9 +2,9 @@
 
 **Live:** https://jazzeshwolf.github.io/SLIVER-SCREENER/
 
-A free, mobile-first, **static** dashboard for selling **MCX metal options** — 🥈 **Silver**,
-🥇 **Gold** and 🟠 **Copper**. Pick a metal on open; each gets its own data file, its own factor
-weights and its own narrative. It answers three questions at a glance:
+A free, mobile-first, **static** dashboard for selling **MCX options** — 🥈 **Silver**,
+🥇 **Gold**, 🟠 **Copper** and 🛢️ **Crude Oil** (CRUDEOILM). Pick one on open; each gets its own
+data file, its own factor weights and its own narrative. It answers three questions at a glance:
 
 1. **Which way is the wind blowing?** — a multi-horizon (1D / 1W / 1M) directional sentiment engine
    that resolves to a **regime** (trend vs chop) and the structure to sell.
@@ -23,25 +23,27 @@ Two **hard gates** sit on top of the premium-sell score and can override it outr
   because a whole-window veto would fire nearly every month and train you to ignore it.
 
 > **It is a decision aid, not a signal.** The directional weights are hand-set priors, **not
-> backtested** — and there are now three sets of them. Trust the *regime*, the horizon *divergence*
-> and the two gates, not the decimal. Silver's tails are violent and copper's book is thin — short-vol
-> positions still need defined risk.
+> backtested** — and there are now four sets of them. Trust the *regime*, the horizon *divergence*
+> and the two gates, not the decimal. Silver's tails are violent, copper's book is thin and crude
+> gaps on OPEC+ headlines — short-vol positions still need defined risk.
 
-## The three metals
+## The four commodities
 
 They are different assets wearing the same exchange, so almost nothing is shared but the plumbing.
+Crude oil is not a metal, but it is an MCX option on a monthly future with the same plumbing, so it
+lives in the same registry (the code still says "metal" throughout).
 
-| | 🥈 Silver | 🥇 Gold | 🟠 Copper |
-|---|---|---|---|
-| Contract | SILVERM (5 kg) | GOLDM (100 g) | COPPER (2500 kg) |
-| Quote | ₹/kg | **₹/10g** | ₹/kg |
-| ₹ per lot | prem × 5 | prem × **10** | prem × 2500 |
-| Parity | $/oz × 32.1507 | $/oz × 0.3215 | $/lb × 2.20462 |
-| Duty + GST | 15% + 3% | 15% + 3% | 5% + 18% |
-| Heaviest factor | dollar / momentum | **real yields** (.23) | **dollar** (.18) |
-| Cross-metal | gold leadership | GSR (sign flipped) | **copper/gold ratio** |
-| Structural prior | deficit +0.6 | central banks +0.2 | concentrate +0.3 |
-| Sell screener | OI ≥ 25 | OI ≥ 25 | **OI ≥ 100, chain ≥ 1,500** |
+| | 🥈 Silver | 🥇 Gold | 🟠 Copper | 🛢️ Crude oil |
+|---|---|---|---|---|
+| Contract | SILVERM (5 kg) | GOLDM (100 g) | COPPER (2500 kg) | CRUDEOILM (10 bbl) |
+| Quote | ₹/kg | **₹/10g** | ₹/kg | ₹/bbl |
+| ₹ per lot | prem × 5 | prem × **10** | prem × 2500 | prem × 10 |
+| Parity | $/oz × 32.1507 | $/oz × 0.3215 | $/lb × 2.20462 | **WTI $/bbl × 1** (settlement rule) |
+| Duty + GST | 15% + 3% | 15% + 3% | 5% + 18% | **none** |
+| Heaviest factor | dollar / momentum | **real yields** (.23) | **dollar** (.18) | momentum (1D) / **curve** (1M, .22) |
+| Cross-asset | gold leadership | GSR (sign flipped) | **copper/gold ratio** | **futures curve** (MCX strip) |
+| Structural prior | deficit +0.6 | central banks +0.2 | concentrate +0.3 | OPEC+ overhang **−0.15** |
+| Sell screener | OI ≥ 25 | OI ≥ 25 | **OI ≥ 100, chain ≥ 1,500** | OI ≥ 25, chain ≥ 500 |
 
 - **GOLDM is quoted per 10 g but sold in 100 g lots**, so ₹/lot is premium × 10, not × 100. The
   registry field is called `quoteUnitsPerLot` precisely so that error is hard to write.
@@ -52,6 +54,17 @@ They are different assets wearing the same exchange, so almost nothing is shared
   server's ~10-minute cadence only.
 - **Copper's option book is genuinely thin.** Below 1,500 total chain OI the sell screener refuses to
   rank at all and says so, rather than producing a confident shortlist of unfillable strikes.
+- **Crude's "parity" is its settlement rule, not an import cost.** MCX crude settles on the NYMEX WTI
+  price converted at the RBI reference rate (that is how April 2020 settled at −₹2,884), so there is
+  no duty, GST or domestic premium in it. The basis card says so instead of reading a gap as local
+  tightness (`parityKind: "settlement"`).
+- **Crude's curve is MCX's own futures strip** (`curveFrom: "mcx"`), which the pipeline already
+  fetches — it *is* the WTI curve in rupees. Backwardation (prompt above deferred) is a scored,
+  bullish factor for crude (`termStructure`); it is deliberately not weighted for the metals, which
+  sit in contango by construction.
+- **Crude has no free CORS spot API either** — like copper, it moves on the server's cadence only.
+- **Crude's calibration is a first cut.** Its weights, OPEC+ prior, OI gates and margin scan have not
+  yet met a live CRUDEOILM chain — see `TODO.md`.
 
 ## Architecture ($0)
 
@@ -69,7 +82,7 @@ GitHub Actions cron ─(every 10m)─────┘      │ reads
   Actions cron** acts as a serverless backend: it runs `scripts/build-data.mjs` during market hours
   and commits one snapshot per metal. Data is ~10 min delayed — fine for a premium seller.
 - The builder fetches **shared macro once** (dollar, rates, rupee, gold, US prints) and the MCX
-  instrument master once, then loops the metals **sequentially** — three metals × four expiries ×
+  instrument master once, then loops the metals **sequentially** — four commodities × four expiries ×
   ~50 option quotes would burst Upstox's rate limit inside a 10-minute cron. Fail-soft is **per
   metal**: a dead copper feed cannot blank out silver.
 
@@ -78,6 +91,7 @@ public/data/index.json    picker cards (price, %chg, IV rank, VRP, health) — s
 public/data/silver.json   full snapshot: live macro + MCX contract + chain + expiries + COT + news
 public/data/gold.json
 public/data/copper.json
+public/data/crude.json
 public/data/latest.json   byte-identical silver copy, kept for older deployed clients
 ```
 - Every fetch **fails soft**: on error it falls back to the last-good cached value and flags the UI
@@ -110,6 +124,11 @@ Every metal's parity collapses to one formula, `intl × unitMult × usdInr × (1
 is why the registry can stay pure data. **Strike step is derived from the live chain** (median gap),
 never hardcoded — MCX moved gold's option interval from ₹100 to ₹500 in Jan 2026.
 
+Where a commodity genuinely differs, the difference is a field, not an `if (id === …)` downstream:
+`sector` (bullion / base / energy — which cross-asset panels mean anything), `parityKind` (import
+cost vs settlement rule), `curveFrom` (international listed months vs the MCX strip),
+`engine.macroKeys` (which non-price factors the confidence guard requires) and `volBetaToGold`.
+
 ## The scoring engine (`src/lib/scoring.ts`)
 
 - **Directional score `S(h)`** for `h ∈ {1D, 1W, 1M}`: `S = 10 × Σ(wᵢ·sᵢ) × confidence`. Short windows
@@ -119,6 +138,8 @@ never hardcoded — MCX moved gold's option interval from ₹100 to ₹500 in Ja
   horizon in the registry so each column visibly sums to 1. Real yields are gold's heaviest factor
   and near-irrelevant to copper; copper swaps gold leadership for the copper/gold growth ratio; the
   gold-silver ratio has two keys so its sign flips correctly between the silver and gold screens.
+  Crude drops real yields and gold altogether and reads its futures curve (`termStructure`, ±20%/yr
+  annualized saturates; a front-vs-spot "carry" approximation never counts).
 - Factors are tagged with one of four **pillars** (Global / Derivatives / Technicals / INR & domestic)
   for display, so the breakdown reads in the same vocabulary as the bullion verdict playbook.
 - **Robustness:** missing factors are **dropped and their weight redistributed** pro-rata (never a

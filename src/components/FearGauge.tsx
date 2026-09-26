@@ -1,6 +1,7 @@
 import type { McxData } from "../lib/types";
 import { iv30d, fearZone } from "../lib/vix";
 import { Card, SectionTitle } from "./ui";
+import { metalForSymbol } from "../lib/instrument";
 
 // Speedometer arc helpers (same math as BiasGauge): 180° sweep, left→right.
 function polar(cx: number, cy: number, r: number, angleDeg: number) {
@@ -23,11 +24,13 @@ function arcPath(cx: number, cy: number, rO: number, rI: number, a0: number, a1:
 const ZONES = ["#22c55e", "#a3e635", "#eab308", "#f97316", "#ef4444"];
 
 /**
- * Silver's fear gauge = its own option-implied vol (the India-VIX analog; no
- * official Silver VIX exists). Headline is a 30-day constant-maturity ATM IV;
- * the needle sits at the IV percentile vs history (calm → fear).
+ * A metal's fear gauge = its own option-implied vol (the India-VIX analog; no
+ * official MCX VIX exists for any of them). Headline is a 30-day
+ * constant-maturity ATM IV; the needle sits at the IV percentile vs history
+ * (calm → fear).
  */
 export function FearGauge({ mcx }: { mcx: McxData }) {
+  const metal = metalForSymbol(mcx.mcx.symbol);
   const vix = iv30d(mcx.expiries);
   const o = mcx.options;
   const pct = o.ivPercentile; // 0..100, drives the needle + zone
@@ -47,7 +50,7 @@ export function FearGauge({ mcx }: { mcx: McxData }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-2">
-        <SectionTitle>Silver fear gauge — option IV</SectionTitle>
+        <SectionTitle>{metal.label} fear gauge — option IV</SectionTitle>
         <span className="text-[10px] uppercase tracking-wider text-white/30">
           {vix?.source === "30d" ? "30-day" : "front"}
         </span>
@@ -92,8 +95,8 @@ export function FearGauge({ mcx }: { mcx: McxData }) {
       </div>
 
       <p className="text-[10px] text-white/30 mt-2 pt-2 border-t border-white/5">
-        No official “Silver VIX” exists — this is silver's own option-implied vol (the India-VIX
-        analog), 30-day constant-maturity from the MCX chain.
+        No official MCX “{metal.label} VIX” exists — this is {metal.label.toLowerCase()}'s own
+        option-implied vol (the India-VIX analog), 30-day constant-maturity from the MCX chain.
         {(rankEstimated || vix?.estimated) && " Rank is vs realized-vol history (proxy) until ~a month of real IV accrues."}
       </p>
     </Card>

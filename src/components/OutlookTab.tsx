@@ -43,7 +43,7 @@ export function OutlookTab({ outlook }: { outlook: Outlook }) {
       <Card className="bg-gradient-to-b from-[#141a24] to-[#11161f]">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-white/40">30-Day Silver Outlook</div>
+            <div className="text-[10px] uppercase tracking-wider text-white/40">30-Day {outlook.metalLabel} Outlook</div>
             <div className="text-xl font-bold mt-0.5">{outlook.leanLabel}</div>
           </div>
           <Pill tone={outlook.leanTone}>

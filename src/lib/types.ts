@@ -14,7 +14,7 @@ export interface Point {
 
 /** Live, browser-fetched market inputs (international + FX + rates). */
 export interface LiveInputs {
-  metalUsd: number | null; // silver spot, $/oz
+  metalUsd: number | null; // the metal's international price, in its intlUnit ($/oz, $/lb, $/bbl)
   xauUsd: number | null; // gold spot, $/oz
   usdInr: number | null; // ₹ per $
   dxy: number | null; // dollar index (ICE DXY, or Fed Broad USD when usdBroad)
@@ -53,7 +53,7 @@ export interface McxData {
   liveParity?: boolean;
   mcx: {
     symbol: string;
-    fut: number | null; // ₹/kg
+    fut: number | null; // in the metal's quote unit (₹/kg, ₹/10g, ₹/bbl)
     prevClose: number | null;
     expiry: string | null; // future expiry — drives basis convergence
     dte: number | null; // days to FUTURE expiry
@@ -90,17 +90,17 @@ export interface McxData {
   };
   /** Gamma-exposure read (pinning vs ranging) from the option chain. */
   gex?: GexData | null;
-  /** COMEX silver futures term structure (contango vs backwardation). */
+  /** Futures term structure (contango vs backwardation) — see CurveData.source. */
   curve?: CurveData | null;
   /** Live-feed / Upstox-token health, so the UI can warn when the token is dead. */
   feed?: FeedHealth | null;
   /** Per-monthly-expiry bundles behind the expiry selector (nearest first). */
   expiries?: ExpiryBundle[] | null;
-  /** CFTC Commitments of Traders — COMEX silver speculative net positioning. */
+  /** CFTC Commitments of Traders — speculative net positioning on the reference exchange. */
   cot?: CotData | null;
-  /** Silver-relevant news headlines with auto-tagged impact + source links. */
+  /** Headlines about this metal and its drivers, with auto-tagged impact + source links. */
   news?: NewsItem[];
-  /** Recent macro prints (actual vs prior) that move silver. */
+  /** Recent US macro prints (actual vs prior), with a note on what each means for this metal. */
   prints?: EconPrint[];
   events: MarketEvent[];
 }
@@ -141,13 +141,16 @@ export interface FeedHealth {
   lastLiveAt: string | null; // ISO of the last run with a real live option chain
 }
 
-/** COMEX silver futures term structure — contango vs backwardation. */
+/** Futures term structure — contango vs backwardation. */
 export interface CurveData {
-  front: number; // $/oz, nearest listed contract
+  front: number; // nearest listed contract: $ for "curve"/"carry", ₹ (MCX quote unit) for "mcx"
   structure: "contango" | "flat" | "backwardation";
   annualizedPct: number; // annualized slope %, + = contango, − = backwardation
   months: { label: string; price: number }[]; // ladder, nearest → furthest
-  source: "curve" | "carry"; // "carry" = front-vs-spot approximation (weaker)
+  // "curve" = the international exchange's listed months (Yahoo);
+  // "mcx"   = MCX's own futures strip (the metal's `curveFrom: "mcx"`);
+  // "carry" = front-vs-spot approximation (weakest — never scored).
+  source: "curve" | "carry" | "mcx";
 }
 
 /** Gamma exposure summary — EXPERIMENTAL (thin MCX OI, crude dealer assumption). */

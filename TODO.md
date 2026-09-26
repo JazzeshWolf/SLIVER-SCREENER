@@ -10,6 +10,12 @@
   the wrong anchor: MCX tracks LME while the only free feed is COMEX, and §232 has held them
   hundreds of dollars a tonne apart. westmetall.com publishes LME cash/3M free — if it parses,
   switching is a one-line registry change (`unitMult: 0.001`, `intlUnit: "$/t"`).
+- [ ] **Verify crude (CRUDEOILM) live in CI.** Built and tested against a mocked Upstox feed only.
+  First `main` run: the log must show `upstox: CRUDEOILM N expiries` (not "no CRUDEOILM contracts"),
+  chain legs, a sane ATM IV, a ₹50-ish derived strike step, `curve (MCX strip)` and a COT pull for
+  CFTC 067651; the Sell tab must show ₹/lot = premium × 10. Then check the first-cut calibration
+  against reality — OI floors (`minOi` 25, `minChainOi` 500) against the actual book, and the
+  modelled margin (`priceScan` 8%, `volScan` 30%) against the broker's real CRUDEOILM short margin.
 - [ ] **Verify gold + copper live in CI.** Local runs have no Upstox token, so GOLDM/COPPER chains
   have never been exercised against the real instrument master. First `workflow_dispatch` run should
   be checked for: real chain legs, sane ATM IV, derived strike step, and **₹/lot = premium × 10 on
@@ -25,9 +31,16 @@
 - [ ] AI brief upgrade for News (Anthropic key → smart impact score + "why it matters" per headline).
   The keyword tagger still mis-signs headlines (AUDIT B3) and now runs on three metals' feeds.
 - [ ] Per-metal seasonality note (bullion festive/wedding window; copper's CNY destock → Q2 restock).
+- [ ] **Crude event calendar.** The EIA weekly petroleum report (Wednesdays) and OPEC+ meetings move
+  crude more than the US prints do, but neither is on the radar yet: a weekly weight-1 event would
+  zero the premium score's event component three days in seven, so it needs its own treatment
+  rather than a line in `buildEvents`. OPEC+ dates are not published far ahead.
 - [ ] Visual polish pass (spacing, charts, motion).
 
 ## ✅ Done
+- [x] **Crude oil (CRUDEOILM)** — fourth commodity: registry entry (10 bbl lot, WTI × USD-INR
+  settlement parity, CFTC 067651), its own factor table with the MCX futures curve as a scored
+  factor, Outlook copy, per-metal wording on the shared cards, Telegram alerts (🛢️).
 - [x] **Three metals** — silver, gold (GOLDM) and copper, chosen from a picker on open. Per-metal
   data files, factor weights, screener calibration and narrative.
 - [x] **Metal registry** (`src/lib/metals.mjs` + `.d.mts`) — one source of truth shared by the

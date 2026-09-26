@@ -1,14 +1,18 @@
 import type { McxData } from "../lib/types";
 import { Card, SectionTitle, Pill, Implication, fmtInt } from "./ui";
 import { Sparkline } from "./Sparkline";
+import { metalForSymbol } from "../lib/instrument";
 
 export function CotCard({ mcx }: { mcx: McxData }) {
   const cot = mcx.cot;
+  const metal = metalForSymbol(mcx.mcx.symbol);
+  // "COMEX silver", "NYMEX crude oil" — the market the CFTC report covers.
+  const market = `${metal.comex.exchange} ${metal.label.toLowerCase()}`;
   if (!cot) {
     return (
       <Card>
         <SectionTitle>Speculative positioning (CFTC CoT)</SectionTitle>
-        <p className="text-sm text-white/40">Loading COMEX silver positioning…</p>
+        <p className="text-sm text-white/40">Loading {market} positioning…</p>
       </Card>
     );
   }
@@ -39,7 +43,7 @@ export function CotCard({ mcx }: { mcx: McxData }) {
       </div>
       <Implication tone={tone}>{impl}</Implication>
       <p className="text-[10px] text-white/30 mt-2">
-        COMEX silver, weekly (Tue data, ~3-day lag). A contrarian / override signal — strongest at
+        {market}, weekly (Tue data, ~3-day lag). A contrarian / override signal — strongest at
         extremes, not a day-to-day timing tool.
       </p>
     </Card>
