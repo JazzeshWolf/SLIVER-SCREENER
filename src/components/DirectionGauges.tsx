@@ -60,6 +60,13 @@ export function DirectionGauges({
         </p>
       )}
 
+      {outlook?.liveRead && (
+        <p className="mt-3 rounded-xl bg-sky-500/10 ring-1 ring-sky-400/20 px-3 py-2 text-[12px] leading-snug text-white/80">
+          <span className="text-sky-300 font-semibold">Live market · </span>
+          {outlook.liveRead}
+        </p>
+      )}
+
       {outlook && (
         <button
           onClick={onOpenOutlook}

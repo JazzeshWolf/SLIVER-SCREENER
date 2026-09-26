@@ -163,6 +163,14 @@ branching on `id === "crude"`:
   Yahoo front-vs-spot fallback the metals use would compare crude's front
   future with itself; `source: "carry"` never counts as a curve. Don't weight
   `termStructure` for a metal: bullion sits in contango by construction.
+- **No fixed structural opinion — the live curve is the supply read** (owner's
+  call, 2026-09-26). Crude's `structuralBias` is 0 and unweighted; the weight
+  sits on `termStructure` (1W .26, 1M .34), and `src/lib/curveRead.ts` states
+  it in words on the Score tab, the Outlook and the curve card: "The live
+  market says the futures curve is steeply backwardated (October ₹8,843, …),
+  which signals a tight market." Don't reintroduce a hand-set OPEC+ prior —
+  the first live run showed one ("supply overhang") contradicting a steeply
+  backwardated, tight market.
 - **First live run is the real test.** Nothing here has met a live CRUDEOILM
   chain: check the Actions log for `upstox: CRUDEOILM N expiries` and
   `curve (MCX strip)`. If the instrument master has no CRUDEOILM options, the

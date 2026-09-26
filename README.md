@@ -40,9 +40,9 @@ lives in the same registry (the code still says "metal" throughout).
 | ₹ per lot | prem × 5 | prem × **10** | prem × 2500 | prem × 10 |
 | Parity | $/oz × 32.1507 | $/oz × 0.3215 | $/lb × 2.20462 | **WTI $/bbl × 1** (settlement rule) |
 | Duty + GST | 15% + 3% | 15% + 3% | 5% + 18% | **none** |
-| Heaviest factor | dollar / momentum | **real yields** (.23) | **dollar** (.18) | momentum (1D) / **curve** (1M, .22) |
+| Heaviest factor | dollar / momentum | **real yields** (.23) | **dollar** (.18) | momentum (1D) / **live curve** (1M, .34) |
 | Cross-asset | gold leadership | GSR (sign flipped) | **copper/gold ratio** | **futures curve** (MCX strip) |
-| Structural prior | deficit +0.6 | central banks +0.2 | concentrate +0.3 | OPEC+ overhang **−0.15** |
+| Structural prior | deficit +0.6 | central banks +0.2 | concentrate +0.3 | **none** — read live from the curve |
 | Sell screener | OI ≥ 25 | OI ≥ 25 | **OI ≥ 100, chain ≥ 1,500** | OI ≥ 25, chain ≥ 500 |
 
 - **GOLDM is quoted per 10 g but sold in 100 g lots**, so ₹/lot is premium × 10, not × 100. The
@@ -63,8 +63,13 @@ lives in the same registry (the code still says "metal" throughout).
   bullish factor for crude (`termStructure`); it is deliberately not weighted for the metals, which
   sit in contango by construction.
 - **Crude has no free CORS spot API either** — like copper, it moves on the server's cadence only.
-- **Crude's calibration is a first cut.** Its weights, OPEC+ prior, OI gates and margin scan have not
-  yet met a live CRUDEOILM chain — see `TODO.md`.
+- **Crude has no fixed structural opinion.** Its supply story is read live from the curve, which
+  carries the weight a prior would, and the screen says it in words with the month prices — e.g.
+  *"The live market says the futures curve is steeply backwardated (October ₹8,843, November ₹8,511,
+  December ₹8,281), which signals a tight market."* (`src/lib/curveRead.ts`, Score tab + Outlook +
+  curve card).
+- **Crude's calibration is a first cut.** Its weights, OI gates and margin scan are still to be
+  checked against more live CRUDEOILM chains — see `TODO.md`.
 
 ## Architecture ($0)
 

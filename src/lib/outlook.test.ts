@@ -100,22 +100,51 @@ describe("outlook narrative is per metal", () => {
     expect(t).not.toContain("gold-silver ratio");
   });
 
-  it("gives crude its own drivers — curve, OPEC+, inventories — and no metals story", () => {
+  it("gives crude its own drivers — live curve, inventories — and no metals story", () => {
     const t = allText("crude");
     expect(t).toContain("futures curve");
-    expect(t).toContain("opec+");
     expect(t).toContain("eia");
     for (const bad of ["gold leadership", "gold-silver ratio", "solar", "real yield", "treatment charges", "import-parity"]) {
       expect(t, bad).not.toContain(bad);
     }
   });
 
-  it("points the structural driver the way the registry prior points", () => {
+  it("points the metals' structural driver the way their registry prior points", () => {
     const structural = (id: string) =>
-      outlookFor(id).drivers.find((d) => d.category === copyFor(id).structural.label)!.stance;
+      outlookFor(id).drivers.find((d) => d.category === copyFor(id).structural!.label)!.stance;
     expect(structural("silver")).toBe("up");
     expect(structural("copper")).toBe("up");
-    expect(structural("crude")).toBe("down"); // supply overhang
+  });
+
+  it("gives crude no fixed supply opinion — its supply story is the live curve", () => {
+    expect(copyFor("crude").structural).toBeNull();
+    const cats = outlookFor("crude").drivers.map((d) => d.category.toLowerCase());
+    expect(cats.some((c) => c.includes("opec") || c.includes("overhang"))).toBe(false);
+  });
+
+  it("says in words what crude's live curve says, prices and all", () => {
+    const m = METALS.crude;
+    const l = live();
+    const mcx = {
+      ...mcxFor(m.feedSymbol),
+      curve: {
+        front: 8843, structure: "backwardation" as const, annualizedPct: -38.66, source: "mcx" as const,
+        months: [{ label: "Oct'26", price: 8843 }, { label: "Nov'26", price: 8511 }, { label: "Dec'26", price: 8281 }],
+      },
+    };
+    const scores = scoreAllHorizons(l, mcx, "crude");
+    const o = buildOutlook(l, mcx, scores, deriveRegime(scores, 25), null, { premiumPct: 0, gsr: null });
+    const sentence =
+      "The live market says the futures curve is steeply backwardated (October ₹8,843, November ₹8,511, December ₹8,281), which signals a tight market.";
+    expect(o.liveRead).toBe(sentence);
+    const curve = o.drivers.find((d) => d.category === copyFor("crude").lead!.label)!;
+    expect(curve.note).toBe(sentence);
+    expect(curve.stance).toBe("up");
+    expect(curve.live).toBe(true);
+  });
+
+  it("leaves the metals' screens without a live curve read-out", () => {
+    for (const id of ["silver", "gold", "copper"]) expect(outlookFor(id).liveRead, id).toBeNull();
   });
 
   it("does not read crude's basis as a domestic premium", () => {

@@ -372,11 +372,17 @@ export const METALS = {
       volScan: 0.3,
     },
 
+    // NO FIXED STRUCTURAL OPINION (owner's call, 2026-09-26). Crude's supply
+    // story is read live from the futures curve instead: the weight a static
+    // prior would carry sits on `termStructure`, and the screen says in words
+    // what the curve says (src/lib/curveRead.ts). The first live run showed
+    // why — a hand-set "supply overhang" prior met a steeply backwardated,
+    // tight market.
     engine: {
-      structuralBias: -0.15,
-      structuralLabel: "Supply overhang · OPEC+ spare capacity",
+      structuralBias: 0,
+      structuralLabel: "No fixed prior — read live from the curve",
       structuralNote:
-        "OPEC+ holds spare capacity it has shown it will return to the market, and non-OPEC supply keeps growing, so rallies tend to meet new barrels. A small bearish prior that caps upside rather than predicting a fall — and the least durable prior in the app, since one OPEC+ meeting can reverse it. The live futures-curve factor is the check on it.",
+        "Crude carries no hand-set structural opinion: its supply story is read live from the futures curve, which gets the weight a fixed prior would.",
       // No real-yield story and no gold relationship. What stands in for the
       // bullion macro pillar is the dollar plus the futures curve — the one
       // free, live read on physical supply and demand.
@@ -387,8 +393,7 @@ export const METALS = {
         longTrend: { "1D": 0.0, "1W": 0.08, "1M": 0.14 },
         mcxPositioning: { "1D": 0.2, "1W": 0.16, "1M": 0.12 },
         usdInr: { "1D": 0.16, "1W": 0.14, "1M": 0.12 },
-        termStructure: { "1D": 0.16, "1W": 0.2, "1M": 0.22 },
-        structuralBias: { "1D": 0.0, "1W": 0.06, "1M": 0.12 },
+        termStructure: { "1D": 0.16, "1W": 0.26, "1M": 0.34 },
       },
     },
 
