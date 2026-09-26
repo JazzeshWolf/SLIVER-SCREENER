@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
   collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
@@ -260,7 +261,7 @@ describe("formatting", () => {
     const [m] = formatMessages([{ kind: "NEW", row: row({ dte: 32 }) }], { threshold: 70, minDte: 10, when: "14:05" });
     expect(m).toContain("Metals CONV ≥ 70, entry 10+ days left");
     expect(m).toContain("27 Oct · 32d left");
-    const s = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [], "2026-09-24", "2026-09-24T17:50:00Z");
+    const s = bumpDay({ tracked: {} }, METAL_IDS, [], "2026-09-24", "2026-09-24T17:50:00Z");
     expect(formatHeartbeat(s, "2026-09-24", 70, 10)).toContain("(CONV ≥ 70, entry 10+ days left)");
   });
 
@@ -285,17 +286,28 @@ describe("formatting", () => {
 
   it("the mock goes through the real formatter and shows every line type", () => {
     const [m] = formatMessages(mockEvents(), { threshold: 70, when: "14:05" });
-    for (const mark of ["🔔 NEW", "🔻", "🚪", "⬆️", "⬇️", "🥈", "🥇", "🟠", "🔴"]) expect(m).toContain(mark);
+    for (const mark of ["🔔 NEW", "🔻", "🚪", "⬆️", "⬇️", "🥈", "🥇", "🟠", "🛢️", "🔴"]) expect(m).toContain(mark);
+  });
+
+  it("prices a crude line per barrel on the mini's 10 bbl lot", () => {
+    const [m] = formatMessages(mockEvents().filter((e) => e.row.metal === "crude"), { threshold: 70, when: "14:05" });
+    expect(m).toContain("🛢️ <b>CRUDEOILM");
+    expect(m).toContain("/bbl");
+    expect(m).toContain("lot 10 bbl");
   });
 
   it("heartbeat warns, by name, when a metal got no fresh data", () => {
-    const s = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [], "2026-09-24", "2026-09-24T17:50:00Z");
+    const s = bumpDay({ tracked: {} }, METAL_IDS, [], "2026-09-24", "2026-09-24T17:50:00Z");
     expect(formatHeartbeat(s, "2026-09-24", 70)).toMatch(/^✓/);
-    const partial = bumpDay({ tracked: {} }, ["silver", "gold"], [], "2026-09-24", "2026-09-24T17:50:00Z");
+    expect(formatHeartbeat(s, "2026-09-24", 70)).toContain("🛢️ 1");
+    const partial = bumpDay({ tracked: {} }, ["silver", "gold", "crude"], [], "2026-09-24", "2026-09-24T17:50:00Z");
     const hb = formatHeartbeat(partial, "2026-09-24", 70);
     expect(hb).toMatch(/^⚠️/);
     expect(hb).toContain("Copper got no fresh data");
-    expect(formatHeartbeat(null, "2026-09-24", 70)).toMatch(/Silver, Gold, Copper/);
+    // A crude feed that never comes up is exactly what this tripwire is for.
+    const noCrude = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [], "2026-09-24", "2026-09-24T17:50:00Z");
+    expect(formatHeartbeat(noCrude, "2026-09-24", 70)).toContain("Crude Oil got no fresh data");
+    expect(formatHeartbeat(null, "2026-09-24", 70)).toMatch(/Silver, Gold, Copper, Crude Oil/);
   });
 
   it("counts a day's events per session", () => {
@@ -332,8 +344,13 @@ describe("run", () => {
   const IN_SESSION = "2026-09-24T08:40:00Z"; // Thu 14:10 IST
   function setup(lastLiveAt = IN_SESSION) {
     const root = mkdtempSync(join(tmpdir(), "alerts-test-"));
-    for (const id of ["silver", "gold", "copper"]) {
-      const s = JSON.parse(readFileSync(`public/data/${id}.json`, "utf8"));
+    for (const id of METAL_IDS) {
+      // A commodity with no archived snapshot yet (crude, until the cron first
+      // builds one) borrows copper's chain under its own contract, so the run
+      // still sees every commodity fresh and the heartbeat can come back ✓.
+      const file = existsSync(`public/data/${id}.json`) ? id : "copper";
+      const s = JSON.parse(readFileSync(`public/data/${file}.json`, "utf8"));
+      s.mcx = { ...s.mcx, symbol: METALS[id].feedSymbol };
       s.stale = false;
       s.feed = { ...(s.feed ?? {}), chainOk: true, lastLiveAt };
       writeFileSync(join(root, `${id}.json`), JSON.stringify(s));
@@ -350,7 +367,7 @@ describe("run", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toContain("Alerts armed");
     const state = JSON.parse(readFileSync(join(dirs.stateDir, "metals.json"), "utf8"));
-    expect(state.day).toMatchObject({ date: "2026-09-24", runs: { silver: 1, gold: 1, copper: 1 } });
+    expect(state.day).toMatchObject({ date: "2026-09-24", runs: { silver: 1, gold: 1, copper: 1, crude: 1 } });
     expect(state.metals.silver.lastLiveAt).toBe(IN_SESSION);
 
     await go(dirs, "2026-09-24T08:51:00Z", async (m) => sent.push(m));

@@ -8,6 +8,8 @@ import {
   probabilityOfTouch,
 } from "../lib/options";
 import { Card, SectionTitle, fmtInt } from "./ui";
+import { metalForSymbol } from "../lib/instrument";
+import { strikeStep } from "../lib/metals.mjs";
 
 const KIND_ICON: Record<string, string> = {
   fomc: "🏛️", us_cpi: "📊", us_jobs: "👷", rbi: "🇮🇳", mcx_expiry: "⏳", other: "📌",
@@ -27,8 +29,11 @@ export function ExpectedMoveCone({ mcx, events = [] }: { mcx: McxData; events?: 
   const tYears = dte != null ? dte / 365 : null;
   const ready = F !== null && iv !== null && tYears !== null && tYears > 0 && dte! > 0;
 
-  const [callStrike, setCallStrike] = useState<string>(F ? String(Math.round((F * 1.08) / 1000) * 1000) : "");
-  const [putStrike, setPutStrike] = useState<string>(F ? String(Math.round((F * 0.92) / 1000) * 1000) : "");
+  // Default strikes ~8% out, on a strike that exists: a fixed ₹1,000 grid would
+  // suggest a 2,000 call on ₹1,400 copper. ₹50 on crude, ₹500 on gold.
+  const step = strikeStep(metalForSymbol(mcx.mcx.symbol), mcx.options.chain);
+  const [callStrike, setCallStrike] = useState<string>(F ? String(Math.round((F * 1.08) / step) * step) : "");
+  const [putStrike, setPutStrike] = useState<string>(F ? String(Math.round((F * 0.92) / step) * step) : "");
 
   const geom = useMemo(() => {
     if (!ready) return null;

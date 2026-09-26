@@ -5,7 +5,7 @@ import { METAL_IDS, METALS } from "../lib/metals.mjs";
 import { fmtInt } from "./ui";
 
 /**
- * The entry screen: pick Silver, Gold or Copper.
+ * The entry screen: pick Silver, Gold, Copper or Crude Oil.
  *
  * Each card carries a live summary rather than just a name, because the first
  * question a premium seller asks is "which of these is worth looking at today?"
@@ -37,7 +37,7 @@ export function MetalPicker({ onSelect }: { onSelect: (id: string) => void }) {
     <div className="flex flex-col min-h-[100dvh] px-4 pt-10 pb-8">
       <h1 className="text-2xl font-bold tracking-tight">Metals Screener</h1>
       <p className="text-sm text-white/45 mt-1">
-        MCX options — pick a metal to see its direction, chain and sell candidates.
+        MCX options — pick a commodity to see its direction, chain and sell candidates.
       </p>
 
       <div className="mt-6 space-y-3">

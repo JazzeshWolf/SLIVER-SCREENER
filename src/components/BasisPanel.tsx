@@ -22,12 +22,19 @@ export function BasisPanel({
   const pp = derived.premiumPct;
   const dte = mcx.mcx.dte;
 
-  const tone = b === null ? "neutral" : b >= 0 ? "bull" : "bear";
+  // Crude's "fair value" is MCX's own settlement formula (WTI × USD-INR), not a
+  // landed-import cost: a gap is feed timing, never a domestic premium, so it
+  // is never painted bullish or bearish.
+  const settlement = metal.parityKind === "settlement";
+  const tone = b === null || settlement ? "neutral" : b >= 0 ? "bull" : "bear";
+  const intlName = `${metal.comex.exchange} ${metal.label.toLowerCase()}`;
 
   // --- Basis implication ---
   let bTone: "bull" | "bear" | "neutral" | "warn" = "neutral";
   let bText = "Waiting on price + fair value.";
-  if (pp != null) {
+  if (pp != null && settlement) {
+    bText = `This fair value is MCX's own settlement formula — the ${intlName} price × USD-INR, with no duty or GST — not a landed-import cost. The ${pct(pp)} gap is feed timing and the FX fix, not local demand: there is no domestic premium to read on ${metal.label.toLowerCase()}, and the gap is zero at expiry by construction.`;
+  } else if (pp != null) {
     if (pp > 0.5) {
       bTone = "bull";
       bText = `MCX trades ~${pp.toFixed(1)}% ABOVE landed-import fair value — a domestic PREMIUM. Local tightness (${(metal.duty * 100).toFixed(0)}% duty + import curbs) is making physical ${metal.label.toLowerCase()} scarce, so buyers pay up. Supportive for MCX vs global; and for a short-call seller a rich premium that deflates into expiry is a tailwind.`;
@@ -36,14 +43,16 @@ export function BasisPanel({
       bText = `MCX trades ~${Math.abs(pp).toFixed(1)}% BELOW fair value — a DISCOUNT. Weak local demand or ample supply; MCX may lag global ${metal.label.toLowerCase()}. A soft local signal.`;
     } else {
       bTone = "neutral";
-      bText = `MCX is trading right on import-parity fair value — cleanly tracking global silver with no domestic premium or discount distorting the price.`;
+      bText = `MCX is trading right on import-parity fair value — cleanly tracking global ${metal.label.toLowerCase()} with no domestic premium or discount distorting the price.`;
     }
   }
 
   // --- Convergence implication ---
   let cText = "Expiry data unavailable.";
   let cTone: "bull" | "bear" | "neutral" | "warn" = "neutral";
-  if (dte != null && pp != null) {
+  if (dte != null && settlement) {
+    cText = `~${dte} days to the future's expiry. Its final settlement price IS the ${intlName} price × the RBI rupee rate, so there is no basis to converge and no squeeze signal in it — watch ${metal.comex.exchange} and the rupee instead.`;
+  } else if (dte != null && pp != null) {
     if (dte <= 5) {
       cTone = "warn";
       cText = `Only ${dte} days to expiry. The ${pct(pp)} gap should be collapsing toward the structural duty/GST premium now. If it's still wide, watch for a last-minute squeeze near busy strikes — risk if you're short, edge if you're positioned for it.`;
@@ -63,11 +72,18 @@ export function BasisPanel({
           <Metric label="Future DTE" value={`${dte ?? "—"}`} />
         </div>
         <Implication tone={bTone}>{bText}</Implication>
-        <p className="text-[10px] text-white/30 mt-2">
-          FV = spot ({metal.intlUnit}) × {metal.unitMult.toFixed(6).replace(/0+$/, "")} × USD-INR × (1 +{" "}
-          {(metal.duty * 100).toFixed(0)}% duty + {(metal.gst * 100).toFixed(0)}% GST) → {metal.quoteUnit}.
-          Basis = how far MCX sits above/below that landed-import cost.
-        </p>
+        {settlement ? (
+          <p className="text-[10px] text-white/30 mt-2">
+            FV = {metal.comex.exchange} price ({metal.intlUnit}) × USD-INR → {metal.quoteUnit}. No duty or
+            GST: nothing is imported through this contract, it settles on that formula.
+          </p>
+        ) : (
+          <p className="text-[10px] text-white/30 mt-2">
+            FV = spot ({metal.intlUnit}) × {metal.unitMult.toFixed(6).replace(/0+$/, "")} × USD-INR × (1 +{" "}
+            {(metal.duty * 100).toFixed(0)}% duty + {(metal.gst * 100).toFixed(0)}% GST) → {metal.quoteUnit}.
+            Basis = how far MCX sits above/below that landed-import cost.
+          </p>
+        )}
         {metal.parityConfidence === "approximate" && (
           <p className="text-[10px] text-amber-300/70 mt-1.5 leading-relaxed">
             ⚠ Approximate for {metal.label.toLowerCase()}: the free price feed is COMEX, but MCX tracks

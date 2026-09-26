@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Telegram conviction alerts for the MCX metals screener.
+// Telegram conviction alerts for the MCX metals screener (and crude oil).
 //
 // Ported from the NSE screener's engine (JazzeshWolf/xerxes scripts/alerts.mjs)
 // and sending to the SAME bot and chat, so every message is headed "⚖️ MCX" to
@@ -87,8 +87,9 @@ export function usDst(iso) {
   return iso >= nthSunday(y, 3, 2) && iso < nthSunday(y, 11, 1);
 }
 
-/** MCX's close for bullion and base metals, IST minutes: 23:30 while the US is
- *  on daylight time, 23:55 while it is not (the session tracks COMEX). */
+/** MCX's close for bullion, base metals and energy, IST minutes: 23:30 while
+ *  the US is on daylight time, 23:55 while it is not (the session tracks the
+ *  US exchanges — COMEX for the metals, NYMEX for crude). */
 export const closeMinutes = (iso) => (usDst(iso) ? 23 * 60 + 30 : 23 * 60 + 55);
 
 /** Was this instant inside an MCX session (Mon–Fri, 09:00 → close IST)? */
@@ -347,7 +348,7 @@ export function bumpDay(state, freshIds, events, session, nowIso) {
   return { ...state, day, lastRunAt: nowIso };
 }
 
-/** Invented sample for `--mock`: every line type, one per metal. */
+/** Invented sample for `--mock`: every line type, and a line for every commodity. */
 export function mockEvents() {
   const row = (id, expiry, strike, type, conviction, ltp, block = null, dte = null) => {
     const m = METALS[id];
@@ -360,10 +361,12 @@ export function mockEvents() {
     { kind: "NEW", row: row("silver", "2026-10-27", 262000, "CE", 81, 1485.5, null, 32) },
     { kind: "NEW", row: row("gold", "2026-10-29", 144000, "PE", 76, 612, "VRP negative — selling blocked", 34) },
     { kind: "NEW", row: row("copper", "2026-10-23", 1360, "PE", 71, 4.35, null, 28) },
+    { kind: "NEW", row: row("crude", "2026-10-15", 4900, "PE", 74, 21, null, 19) },
     { kind: "DROPPED", from: 72, row: row("silver", "2026-10-27", 212000, "PE", 66, 1120) },
     { kind: "LEFT", from: 74, row: row("gold", "2026-10-29", 158000, "CE", 74, 410), why: "filtered out: inside the gamma zone (< 0.6σ)" },
     { kind: "MOVED", from: 73, row: row("silver", "2026-10-27", 216000, "PE", 75, 1310) },
     { kind: "MOVED", from: 78, row: row("copper", "2026-10-23", 1480, "CE", 77, 3.9) },
+    { kind: "MOVED", from: 71, row: row("crude", "2026-10-15", 6300, "CE", 76, 18) },
   ];
 }
 

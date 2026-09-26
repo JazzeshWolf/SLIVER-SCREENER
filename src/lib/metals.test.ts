@@ -21,8 +21,8 @@ import {
 import { fairValue, basis, premiumPct, toIntlPrice } from "./basis";
 
 describe("registry integrity", () => {
-  it("exposes exactly the three metals, each self-consistent", () => {
-    expect(METAL_IDS).toEqual(["silver", "gold", "copper"]);
+  it("exposes exactly the four commodities, each self-consistent", () => {
+    expect(METAL_IDS).toEqual(["silver", "gold", "copper", "crude"]);
     for (const id of METAL_IDS) {
       const m = METALS[id];
       expect(m.id).toBe(id);
@@ -35,6 +35,21 @@ describe("registry integrity", () => {
       expect(m.gst).toBeGreaterThanOrEqual(0);
       expect(m.cotCode).toMatch(/^\d{6}$/);
       expect(m.strikeStepFallback).toBeGreaterThan(0);
+      expect(["bullion", "base", "energy"]).toContain(m.sector);
+      expect(["import", "settlement"]).toContain(m.parityKind);
+      expect(["intl", "mcx"]).toContain(m.curveFrom);
+      expect(m.volBetaToGold).toBeGreaterThan(0);
+      expect(m.comex.exchange).toMatch(/^[A-Z]+$/);
+    }
+  });
+
+  it("only names weighted factors as a metal's macro pillar", () => {
+    // A typo here would silently switch off the guard that stops a score
+    // riding on momentum alone — the pillar would never count as present.
+    for (const id of METAL_IDS) {
+      const { macroKeys, weights } = METALS[id].engine;
+      expect(macroKeys.length, id).toBeGreaterThan(0);
+      for (const k of macroKeys) expect(weights, `${id} ${k}`).toHaveProperty(k);
     }
   });
 
@@ -63,6 +78,15 @@ describe("lot multipliers — ₹ per lot", () => {
     expect(2500 * quoteUnitsPerLot(METALS.silver, "SILVERMIC")).toBe(2_500); // 1 kg
     expect(2500 * quoteUnitsPerLot(METALS.gold, "GOLDM")).toBe(25_000); // 100 g @ ₹/10g
     expect(2500 * quoteUnitsPerLot(METALS.copper, "COPPER")).toBe(6_250_000); // 2500 kg
+    expect(2500 * quoteUnitsPerLot(METALS.crude, "CRUDEOILM")).toBe(25_000); // 10 bbl
+    expect(2500 * quoteUnitsPerLot(METALS.crude, "CRUDEOIL")).toBe(250_000); // 100 bbl
+  });
+
+  it("prices a CRUDEOILM leg on the mini's 10 bbl, not the big contract's 100", () => {
+    // The two crude contracts share a chain's strike range and differ 10× in
+    // lot, the same trap as SILVER vs SILVERM.
+    expect(quoteUnitsPerLot(METALS.crude, "CRUDEOILM")).toBe(10);
+    expect(quoteUnitsPerLot(METALS.crude, "CRUDEOIL")).toBe(100);
   });
 
   it("falls back to the metal's own feed contract for an unknown symbol", () => {
@@ -71,6 +95,7 @@ describe("lot multipliers — ₹ per lot", () => {
     expect(quoteUnitsPerLot(METALS.gold, "NONSENSE")).toBe(10);
     expect(quoteUnitsPerLot(METALS.silver, "NONSENSE")).toBe(5);
     expect(quoteUnitsPerLot(METALS.copper, "NONSENSE")).toBe(2500);
+    expect(quoteUnitsPerLot(METALS.crude, "NONSENSE")).toBe(10);
   });
 });
 
@@ -80,6 +105,8 @@ describe("metalForSymbol", () => {
     expect(metalForSymbol("SILVERMIC").id).toBe("silver");
     expect(metalForSymbol("GOLDM").id).toBe("gold");
     expect(metalForSymbol("COPPER").id).toBe("copper");
+    expect(metalForSymbol("CRUDEOILM").id).toBe("crude");
+    expect(metalForSymbol("CRUDEOIL").id).toBe("crude");
   });
 
   it("resolves an unlisted family member by longest prefix", () => {
@@ -87,6 +114,7 @@ describe("metalForSymbol", () => {
     // NOT fall through to silver the way the old default did.
     expect(metalForSymbol("GOLDPETAL").id).toBe("gold");
     expect(metalForSymbol("GOLDGUINEA").id).toBe("gold");
+    expect(metalForSymbol("crudeoilm").id).toBe("crude"); // case-insensitive
   });
 });
 
@@ -113,6 +141,17 @@ describe("import parity", () => {
     const fv = fairValue(METALS.copper, 5.5, 95.44)!;
     const byHand = 5.5 * 2.20462 * 95.44 * (1 + 0.05 + 0.18);
     expect(fv).toBeCloseTo(byHand, 4);
+  });
+
+  it("prices crude as WTI × USD-INR with no levies — MCX's settlement formula", () => {
+    // MCX crude settles on NYMEX WTI at the RBI rate. Nothing is imported, so
+    // a duty or GST here would invent a permanent fake "discount".
+    const fv = fairValue(METALS.crude, 65.2, 95.44)!;
+    expect(fv).toBeCloseTo(65.2 * 95.44, 6);
+    expect(METALS.crude.duty).toBe(0);
+    expect(METALS.crude.gst).toBe(0);
+    expect(METALS.crude.parityKind).toBe("settlement");
+    for (const id of ["silver", "gold", "copper"]) expect(METALS[id].parityKind, id).toBe("import");
   });
 
   it("flags copper's parity as approximate and bullion's as verified", () => {
@@ -159,6 +198,7 @@ describe("strikeStep", () => {
   it("derives the step from the listed strikes", () => {
     expect(strikeStep(METALS.silver, chainOf([120000, 121000, 122000, 123000]))).toBe(1000);
     expect(strikeStep(METALS.gold, chainOf([130000, 130500, 131000, 131500]))).toBe(500);
+    expect(strikeStep(METALS.crude, chainOf([5400, 5450, 5500, 5550, 5600]))).toBe(50);
   });
 
   it("uses the median gap, so one missing strike cannot skew it", () => {

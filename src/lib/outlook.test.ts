@@ -100,6 +100,38 @@ describe("outlook narrative is per metal", () => {
     expect(t).not.toContain("gold-silver ratio");
   });
 
+  it("gives crude its own drivers — curve, OPEC+, inventories — and no metals story", () => {
+    const t = allText("crude");
+    expect(t).toContain("futures curve");
+    expect(t).toContain("opec+");
+    expect(t).toContain("eia");
+    for (const bad of ["gold leadership", "gold-silver ratio", "solar", "real yield", "treatment charges", "import-parity"]) {
+      expect(t, bad).not.toContain(bad);
+    }
+  });
+
+  it("points the structural driver the way the registry prior points", () => {
+    const structural = (id: string) =>
+      outlookFor(id).drivers.find((d) => d.category === copyFor(id).structural.label)!.stance;
+    expect(structural("silver")).toBe("up");
+    expect(structural("copper")).toBe("up");
+    expect(structural("crude")).toBe("down"); // supply overhang
+  });
+
+  it("does not read crude's basis as a domestic premium", () => {
+    // outlookFor() hands every metal a +1.2% premium to parity. On an import
+    // parity that is local tightness; on crude it is feed timing, because MCX
+    // crude settles on WTI × USD-INR — so the local driver must not call it.
+    const local = (id: string) => outlookFor(id).drivers.find((d) => d.category === copyFor(id).local.label)!;
+    expect(local("silver").note).toContain("premium to import-parity");
+    expect(local("crude").note).not.toContain("premium");
+    expect(local("crude").note).toContain("by construction");
+  });
+
+  it("titles the outlook with the metal it describes", () => {
+    for (const id of METAL_IDS) expect(outlookFor(id).metalLabel, id).toBe(METALS[id].label);
+  });
+
   it("gives gold central-bank demand and no leadership driver", () => {
     const t = allText("gold");
     expect(t).toContain("official-sector");

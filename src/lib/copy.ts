@@ -6,9 +6,9 @@
 // client renders. Keeping them apart stops the builder importing paragraphs.
 //
 // The point of this file is that silver's story is NOT gold's story is NOT
-// copper's story. Before it existed, every metal's Outlook tab said "6th
-// straight annual supply deficit + solar/EV demand" — true of silver, false and
-// misleading on a copper screen.
+// copper's story is NOT crude's. Before it existed, every metal's Outlook tab
+// said "6th straight annual supply deficit + solar/EV demand" — true of
+// silver, false and misleading on a copper screen.
 // ---------------------------------------------------------------------------
 
 import type { Stance } from "./outlook";
@@ -21,13 +21,15 @@ export interface DriverCopy {
 }
 
 export interface MetalCopy {
-  /** Cross-metal driver: gold leadership for silver, the growth ratio for copper. */
+  /** Cross-asset driver: gold leadership for silver, the growth ratio for
+   *  copper, the futures curve for crude. */
   lead: (DriverCopy & { key: string; weight: number }) | null;
   /** The metal's own trend. */
   trend: DriverCopy;
   /** Relative-value ratio. */
   ratio: (DriverCopy & { key: string; weight: number }) | null;
-  /** Constant structural story — weight and text, no live input. */
+  /** Constant structural story — weight and text, no live input. Its stance
+   *  follows the sign of the registry's `engine.structuralBias`. */
   structural: { label: string; weight: number; note: string };
   /** Physical/flows watch item. Marked not-wired until a feed backs it. */
   flows: { label: string; weight: number; note: string };
@@ -170,6 +172,53 @@ const COPY: Record<string, MetalCopy> = {
       premium: "MCX is above import parity ({duty}% duty) — but note copper's parity here is anchored to COMEX while MCX tracks LME, so read the direction rather than the level.",
       discount: "MCX is below import parity — soft local demand, though the COMEX-anchored benchmark makes the level unreliable.",
       parity: "MCX near import parity; INR direction is the swing factor. Copper's parity anchor is approximate — see the basis card.",
+    },
+  },
+
+  crude: {
+    // The curve stands where gold leadership stands for silver: the one live
+    // read on the physical market that isn't the price itself.
+    lead: {
+      key: "termStructure",
+      weight: 16,
+      label: "Physical tightness · futures curve",
+      up: "The curve is in backwardation — prompt barrels priced above later ones, the market paying up for supply now. Physically tight, and supportive.",
+      down: "The curve is in contango — later barrels priced above prompt ones, the market paying to store oil. Oversupplied, and a drag.",
+      flat: "The curve is roughly flat — no clear tightness or glut signal from the physical market.",
+    },
+    trend: {
+      label: "Crude price trend",
+      up: "Crude's own momentum is positive (above its moving averages) — and crude tends to keep trending once systematic money joins in.",
+      down: "Crude is trending below its moving averages — momentum is negative.",
+      flat: "Crude is consolidating — no clear momentum either way.",
+    },
+    // No relative-value ratio: nothing prices crude the way gold prices silver.
+    ratio: null,
+    structural: {
+      label: "Supply · OPEC+ spare capacity",
+      weight: 10,
+      note: "OPEC+ holds spare capacity it has shown it will return to the market, and non-OPEC supply keeps growing — so rallies tend to meet new barrels. A small bearish prior, and the least durable one in the app: a single OPEC+ meeting or supply outage can reverse it, which is why the live curve outweighs it.",
+    },
+    flows: {
+      label: "Inventories · EIA weekly & Cushing",
+      weight: 12,
+      note: "US commercial crude and Cushing stocks (EIA, Wednesday evenings IST) are crude's most timely surprise signal: a bigger-than-expected draw is bullish, a build bearish, and the print itself can jolt the price. Know when it lands before carrying a short strike through a Wednesday.",
+    },
+    monetary: {
+      weight: 10,
+      label: "Macro · dollar",
+      up: "A softer dollar is supporting crude. The link is looser than for the metals — the oil–dollar correlation has flipped at times since the US became a net oil exporter — so it carries a small weight.",
+      down: "A firm dollar is weighing on crude — a modest headwind, looser than it is for the metals.",
+      flat: "The dollar is directionless — little macro push either way.",
+    },
+    // Crude's parity is its settlement formula (see metals.mjs), so there is no
+    // domestic premium to read: outlook.ts uses the rupee alone for this pillar.
+    local: {
+      label: "India local · INR",
+      weight: 14,
+      premium: "the gap is feed timing and the FX fix, not local demand — MCX crude settles on WTI × USD-INR.",
+      discount: "the gap is feed timing and the FX fix, not local demand — MCX crude settles on WTI × USD-INR.",
+      parity: "MCX crude is WTI × USD-INR by construction — it settles on NYMEX WTI at the RBI rate, with no duty or GST — so the rupee is the only local lever: a weaker rupee lifts MCX crude even when WTI is flat.",
     },
   },
 };

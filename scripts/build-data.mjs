@@ -214,7 +214,8 @@ async function fredSeries(id) {
 // --- CFTC Commitments of Traders (weekly speculative positioning) ---------
 // Free Socrata JSON API. Managed-money net (disaggregated) preferred; legacy
 // non-commercial net as fallback. Contract codes come from the registry
-// (silver 084691, gold 088691, copper 085692) — same endpoint, same shape.
+// (silver 084691, gold 088691, copper 085692, WTI crude 067651) — same
+// endpoint, same shape.
 async function fetchCot(contractCode) {
   const sources = [
     { id: "72hh-3qpy", long: "m_money_positions_long_all", short: "m_money_positions_short_all", label: "managed money" },
@@ -258,7 +259,9 @@ async function fetchCot(contractCode) {
 
 // --- Recent macro prints (FRED) — "what actually happened" for the radar ----
 // CPI YoY, monthly payrolls change, Fed target rate: the three US prints that
-// move silver hardest, each with the prior reading + a silver-impact read.
+// move the metals hardest, each with the prior reading + an impact read.
+// Fetched ONCE per run and shared, so the notes say "{metal}" and buildMetal
+// fills in the name — otherwise every screen would read "supportive for silver".
 async function fetchEconPrints() {
   if (!process.env.FRED_KEY) return [];
   const [cpi, payems, fed] = await Promise.all([
@@ -280,9 +283,9 @@ async function fetchEconPrints() {
       actual: round(a, 1), prior: round(p, 1), unit: "%",
       impact: cooling ? "up" : hot ? "down" : "twoway",
       note: cooling
-        ? "Inflation cooled vs the prior month → rate-cut hopes build → supportive for silver."
+        ? "Inflation cooled vs the prior month → rate-cut hopes build → supportive for {metal}."
         : hot
-          ? "Inflation ran hotter → cuts get pushed out, real yields firm → a silver headwind."
+          ? "Inflation ran hotter → cuts get pushed out, yields and the dollar firm → a {metal} headwind."
           : "Inflation flat vs prior — little new pressure either way.",
     });
   }
@@ -296,9 +299,9 @@ async function fetchEconPrints() {
       actual: Math.round(a), prior: Math.round(p), unit: "k",
       impact: weak ? "up" : strong ? "down" : "twoway",
       note: weak
-        ? "Job growth slowed vs prior → dovish tilt → silver supportive."
+        ? "Job growth slowed vs prior → dovish tilt → {metal} supportive."
         : strong
-          ? "Jobs came in stronger → hawkish risk, USD/yields firm → silver headwind."
+          ? "Jobs came in stronger → hawkish risk, USD/yields firm → {metal} headwind."
           : "Payrolls roughly in line with the prior month.",
     });
   }
@@ -315,9 +318,9 @@ async function fetchEconPrints() {
       actual: round(cur, 2), prior: round(prevRate, 2), unit: "%",
       impact: cutLast ? "up" : hikeLast ? "down" : "twoway",
       note: cutLast
-        ? `Last move was a CUT (${prevRate}% → ${cur}%) — easing bias supports silver.`
+        ? `Last move was a CUT (${prevRate}% → ${cur}%) — easing bias supports {metal}.`
         : hikeLast
-          ? `Last move was a HIKE (${prevRate}% → ${cur}%) — tightening pressures silver.`
+          ? `Last move was a HIKE (${prevRate}% → ${cur}%) — tightening pressures {metal}.`
           : `On hold at ${cur}% — watch the next FOMC for the turn.`,
     });
   }
@@ -334,8 +337,11 @@ function decodeEntities(s) {
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"').replace(/&#0?39;|&#x27;|&apos;/g, "'").replace(/&nbsp;/g, " ");
 }
-const BULL_KW = [/rate cut/i, /dovish/i, /weaker dollar/i, /dollar (falls|drops|weakens|slips)/i, /inflation/i, /safe[- ]?haven/i, /deficit/i, /shortage/i, /squeeze/i, /supply (crunch|tight|deficit)/i, /record high/i, /rally|rallies|surge|soar|jump|spike/i, /solar/i, /import dut|tariff/i, /geopolit|war|conflict|tension/i, /stimulus/i, /yields? (fall|drop|ease)/i, /buying|inflows/i, /bull/i];
-const BEAR_KW = [/rate hike/i, /hawkish/i, /stronger dollar/i, /dollar (rises|gains|strengthens|jumps)/i, /yields? (rise|jump|climb)/i, /(strong|robust|hot) jobs|jobs beat/i, /sell[- ]?off/i, /plunge|plummet|tumble|slump|crash|sink/i, /(falls|drops|slips|declines|slides)/i, /glut|oversupply|surplus/i, /profit[- ]?taking/i, /correction/i, /demand (cut|weak|soft|slump)/i, /outflows/i, /bear/i];
+// The supply/inventory patterns at the end of each list were added with crude
+// (OPEC+ output, EIA draws and builds) but read the same way for a metal: a
+// production cut or a stock draw is bullish, an output hike or a build bearish.
+const BULL_KW = [/rate cut/i, /dovish/i, /weaker dollar/i, /dollar (falls|drops|weakens|slips)/i, /inflation/i, /safe[- ]?haven/i, /deficit/i, /shortage/i, /squeeze/i, /supply (crunch|tight|deficit)/i, /record high/i, /rally|rallies|surge|soar|jump|spike/i, /solar/i, /import dut|tariff/i, /geopolit|war|conflict|tension/i, /stimulus/i, /yields? (fall|drop|ease)/i, /buying|inflows/i, /bull/i, /(cut|cuts|cutting|curb|curbs) (output|production|supply)/i, /(inventory|inventories|stockpiles?|crude|stock) draws?\b/i];
+const BEAR_KW = [/rate hike/i, /hawkish/i, /stronger dollar/i, /dollar (rises|gains|strengthens|jumps)/i, /yields? (rise|jump|climb)/i, /(strong|robust|hot) jobs|jobs beat/i, /sell[- ]?off/i, /plunge|plummet|tumble|slump|crash|sink/i, /(falls|drops|slips|declines|slides)/i, /glut|oversupply|surplus/i, /profit[- ]?taking/i, /correction/i, /demand (cut|weak|soft|slump)/i, /outflows/i, /bear/i, /(raise|raises|raising|boost|boosts|hike|hikes|increase|increases) (output|production|supply)/i, /(inventory|inventories|stockpiles?|crude|stock) builds?\b/i];
 function tagImpact(text) {
   let b = 0, r = 0;
   for (const re of BULL_KW) if (re.test(text)) b++;
@@ -642,18 +648,20 @@ function nextMonthlyExpiry(today = new Date()) {
 }
 
 /** Upcoming calendar: FOMC decision days (2026 schedule), NFP (first Friday,
- *  computed), CPI (release ≈ mid-month, date approximate), + MCX option expiry. */
-function buildEvents(optionExpiryIso) {
+ *  computed), CPI (release ≈ mid-month, date approximate), + MCX option expiry.
+ *  The effect text names the metal being built, not always silver. */
+function buildEvents(optionExpiryIso, metal) {
+  const m = metal.label.toLowerCase();
   const FOMC = ["2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17", "2026-07-29", "2026-09-16", "2026-10-28", "2026-12-09"];
   const CPI = ["2026-07-10", "2026-08-12", "2026-09-11", "2026-10-13", "2026-11-12", "2026-12-10"];
   const events = [];
   for (const d of FOMC) events.push({
     name: "Fed FOMC", date: d, kind: "fomc", impact: "twoway", weight: 3,
-    effect: "Dovish / cut → silver UP. Hawkish hold → silver DOWN. Biggest IV-crush event.",
+    effect: `Dovish / cut → ${m} UP. Hawkish hold → ${m} DOWN. Biggest IV-crush event.`,
   });
   for (const d of CPI) events.push({
     name: "US CPI", date: d, kind: "us_cpi", impact: "twoway", weight: 3,
-    effect: "Hot CPI → cuts fade, real yields up → silver DOWN. Cool CPI → silver UP. (Release date approximate.)",
+    effect: `Hot CPI → cuts fade, yields and the dollar firm → ${m} DOWN. Cool CPI → ${m} UP. (Release date approximate.)`,
   });
   // NFP: first Friday of this month + next 3.
   const now = new Date();
@@ -662,7 +670,7 @@ function buildEvents(optionExpiryIso) {
     while (d.getUTCDay() !== 5) d.setUTCDate(d.getUTCDate() + 1);
     events.push({
       name: "US Jobs (NFP)", date: d.toISOString().slice(0, 10), kind: "us_jobs", impact: "twoway", weight: 2,
-      effect: "Hot payrolls → hawkish Fed, ↑ yields & USD → silver DOWN. Weak jobs → silver UP.",
+      effect: `Hot payrolls → hawkish Fed, ↑ yields & USD → ${m} DOWN. Weak jobs → ${m} UP.`,
     });
   }
   if (optionExpiryIso) events.push({
@@ -715,7 +723,7 @@ function computeGex(chain, F, tYears) {
   return { netPct, regime, pinStrike, maxPain, callWall, putWall, coverage: rows.length };
 }
 
-// --- COMEX silver futures term structure (contango / backwardation) --------
+// --- Futures term structure (contango / backwardation) -----------------------
 // A lightweight "OpenBB-style" curve read, fetched from Yahoo (the same free
 // source OpenBB wraps) — OpenBB itself has no MCX data, so we only borrow the
 // international signal it's good at. Silver normally sits in mild CONTANGO
@@ -789,6 +797,31 @@ async function fetchCurve(metal, spotUsd) {
   }
   console.warn(`curve ${metal.id}: no futures data available`);
   return null;
+}
+
+/**
+ * The curve read off MCX's own futures strip: one point per distinct future
+ * the chain bundles carry (two option months can share a future, as SILVERM's
+ * do), nearest vs furthest, annualized. For crude this IS the NYMEX WTI curve
+ * in rupees, since MCX settles on it — and it costs no extra fetch. Used for
+ * metals whose registry says `curveFrom: "mcx"`; null with fewer than two
+ * futures.
+ */
+function mcxStripCurve(bundles) {
+  const byExpiry = new Map();
+  for (const b of bundles ?? []) {
+    if (b?.expiry && b.fut > 0 && !byExpiry.has(b.expiry)) byExpiry.set(b.expiry, b.fut);
+  }
+  const pts = [...byExpiry.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  if (pts.length < 2) return null;
+  const [nearExp, near] = pts[0];
+  const [farExp, far] = pts[pts.length - 1];
+  const days = (Date.parse(farExp) - Date.parse(nearExp)) / 86400000;
+  if (!(days > 0)) return null;
+  const annualizedPct = round((far / near - 1) * (365 / days) * 100, 2);
+  const label = (iso) => `${MONTHS[Number(iso.slice(5, 7)) - 1]}'${iso.slice(2, 4)}`;
+  console.log(`curve (MCX strip): ${pts.length} futures, annualized ${annualizedPct}%`);
+  return curveResult(near, annualizedPct, pts.map(([e, p]) => ({ label: label(e), price: p })), "mcx");
 }
 
 // --- per-strike OI change vs yesterday's close --------------------------------
@@ -984,10 +1017,10 @@ async function buildMetal(metal, shared, prev, instruments) {
   const metalCloses = metalHistory.map((p) => p.v);
   const xauCloses = xauHistory.map((p) => p.v);
   // Rough realized-vol beta to gold, used ONLY as a fallback when the metal's
-  // own history is too short to compute RV. Silver runs ~1.6x gold, copper
-  // ~1.3x; gold is itself, so 1.0. Hand-set and deliberately crude — it only
+  // own history is too short to compute RV (registry: silver 1.6, copper 1.3,
+  // crude 2.2; gold is itself, 1.0). Hand-set and deliberately crude — it only
   // ever seeds an estimate that is flagged `ivEstimated`.
-  const VOL_BETA_TO_GOLD = { silver: 1.6, gold: 1.0, copper: 1.3 }[metal.id] ?? 1.5;
+  const VOL_BETA_TO_GOLD = metal.volBetaToGold;
   function volSeries(closes, scale = 1) {
     const out = [];
     for (let i = 21; i < closes.length; i++) {
@@ -1082,8 +1115,13 @@ async function buildMetal(metal, shared, prev, instruments) {
   const expectedMove1sd = atmIv != null && fut != null ? Math.round(fut * atmIv * Math.sqrt(t)) : null;
   const basis = fut != null && fairValue != null ? Math.round(fut - fairValue) : null;
   const gex = computeGex(chain, fut, t);
-  // COMEX silver term structure — carry last-good if the fetch comes back empty.
-  const curve = (await fetchCurve(metal, metalUsd)) ?? prev?.curve ?? null;
+  // Futures term structure — MCX's own strip where the registry says so
+  // (crude), else the international exchange's listed months. Carry last-good
+  // if this run came back empty.
+  const curve =
+    (metal.curveFrom === "mcx" ? mcxStripCurve(ups?.expiries) : await fetchCurve(metal, metalUsd)) ??
+    prev?.curve ??
+    null;
 
   // Live-feed health — lets the UI say "token not working" instead of silently
   // showing stale last-good. A 401/403 on any authed Upstox call = bad token.
@@ -1205,15 +1243,15 @@ async function buildMetal(metal, shared, prev, instruments) {
     },
     basis: { fairValue: round(fairValue, 0), basis },
     gex,
-    curve, // COMEX silver futures term structure (contango/backwardation)
+    curve, // futures term structure (contango/backwardation); see curveFrom
     feed, // live-feed / token health (auth_failed → UI warns to refresh token)
     expiries, // per-monthly-expiry bundles behind the expiry selector
     oiBaseline, // per-expiry yesterday's-close OI baseline (drives per-strike oiChg)
 
     cot: cotNew ?? prev?.cot ?? null, // weekly + lagged; keep last-good
     news: news ?? prev?.news ?? [],
-    prints: prints.length ? prints : prev?.prints ?? [],
-    events: buildEvents(optionExpiryIso),
+    prints: prints.length ? prints.map((p) => ({ ...p, note: p.note.replaceAll("{metal}", metal.label.toLowerCase()) })) : prev?.prints ?? [],
+    events: buildEvents(optionExpiryIso, metal),
   };
 
   console.log(
@@ -1274,8 +1312,9 @@ async function main() {
   const summaries = [];
   let silverSnap = null;
 
-  // Sequential, not parallel: three metals x up to four expiries x ~50 option
-  // quotes each would burst Upstox's rate limit, and the cron has ten minutes.
+  // Sequential, not parallel: four commodities x up to four expiries x ~50
+  // option quotes each would burst Upstox's rate limit, and the cron has ten
+  // minutes.
   for (const id of BUILD_METALS) {
     const metal = METALS[id];
     let snap = null;

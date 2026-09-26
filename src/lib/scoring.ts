@@ -77,8 +77,9 @@ interface FactorConfig {
 /**
  * Every factor the engine knows, with its label, pillar and normalization
  * window. WEIGHTS are NOT here — they live per metal in the registry, because
- * the three metals genuinely weigh these differently: real yields dominate
- * gold, barely register for copper, and sit mid-table for silver.
+ * the commodities genuinely weigh these differently: real yields dominate
+ * gold, barely register for copper, sit mid-table for silver, and are absent
+ * for crude, which reads its futures curve instead.
  */
 const FACTOR_DEFS: Omit<FactorConfig, "weights">[] = [
   {
@@ -152,6 +153,18 @@ const FACTOR_DEFS: Omit<FactorConfig, "weights">[] = [
     windows: { "1D": 20, "1W": 60, "1M": 252 },
   },
   {
+    // The futures curve's slope. Backwardation (near months above far) means
+    // the market is paying up for prompt supply — physically tight, bullish;
+    // contango means it is paying to store the stuff — oversupplied, bearish.
+    // Crude's classic fundamental read. Deliberately NOT weighted for the
+    // metals: bullion sits in contango by construction (cost of carry), which
+    // this factor would read as a permanent bear.
+    key: "termStructure",
+    pillar: "deriv",
+    label: "Futures curve (backwardation = tight)",
+    windows: { "1D": 0, "1W": 0, "1M": 0 },
+  },
+  {
     key: "structuralBias",
     pillar: "global",
     label: "Structural bias",
@@ -183,6 +196,8 @@ export function factorConfigFor(metalId: string): FactorConfig[] {
 
 const BULLISH_THRESHOLD = 3;
 const MIN_OBS_FOR_FULL_CONFIDENCE = 30;
+/** Annualized curve slope (%) at which the term-structure signal saturates. */
+const TERM_STRUCTURE_FULL_PCT = 20;
 
 /** Raw per-factor signal in [-1, +1], or null when inputs are missing. */
 function factorSignal(
@@ -248,6 +263,15 @@ function factorSignal(
       const z = ratioZ(live.metalHistory, live.xauHistory, window);
       return z === null ? null : zToSignal(z);
     }
+    case "termStructure": {
+      // A point read, not a z-score: the slope's sign and size ARE the signal.
+      // A front-vs-spot "carry" approximation is not a curve, so it never
+      // counts — on a metal whose only price series is the front future it is
+      // feed timing dressed up as contango.
+      const c = mcx.curve;
+      if (!c || c.source === "carry" || !Number.isFinite(c.annualizedPct)) return null;
+      return clamp(-c.annualizedPct / TERM_STRUCTURE_FULL_PCT, -1, 1);
+    }
     case "structuralBias":
       return metal.engine.structuralBias;
     default:
@@ -308,21 +332,18 @@ function horizonConfidence(
  * Fraction of the macro-pillar weight actually backed by data — the guard that
  * stops a confident-looking score riding on momentum alone.
  *
- * WHICH factors count as the macro pillar is per metal. For bullion it is the
- * dollar and real yields. For copper, real yields are near-irrelevant (there is
- * no opportunity-cost story for a metal you buy to consume), so the pillar is
- * the dollar and the growth proxy instead.
+ * WHICH factors count as the macro pillar is per metal (`engine.macroKeys`).
+ * For bullion it is the dollar and real yields. For copper, real yields are
+ * near-irrelevant (there is no opportunity-cost story for a metal you buy to
+ * consume), so the pillar is the dollar and the growth proxy; for crude it is
+ * the dollar and the futures curve.
  */
-function macroPillarKeys(metal: MetalConfig): string[] {
-  return metal.id === "copper" ? ["dxy", "copperGold"] : ["dxy", "real10y"];
-}
-
 function macroCoverageOf(
   metal: MetalConfig,
   horizon: Horizon,
   contributions: FactorContribution[],
 ): number {
-  const keys = macroPillarKeys(metal);
+  const keys = metal.engine.macroKeys;
   let nominal = 0;
   let present = 0;
   for (const cfg of factorConfigFor(metal.id)) {
