@@ -132,6 +132,22 @@ Things that will bite:
   weekly/monthly label (the NSE engine's `isMonthly` has nothing to do here).
   Crude is monthly too (options ~2 business days before the future's ~19th).
 
+## 🔒 Silver, gold and copper conviction is frozen (owner's rule, 2026-09-26)
+
+The CONV rating for silver, gold and copper works — **do not change it**. That
+covers their direction-engine weights, structural priors and macro pillar
+(`engine` in `src/lib/metals.mjs`), their screener calibration (`screen`) and
+the CONV blend in `src/lib/sellCandidates.ts`. `src/lib/frozen.test.ts` pins
+every one of those numbers; if it fails, don't edit the numbers to make it
+pass — ask the owner.
+
+Any change that touches shared code (a new commodity, a new factor, a builder
+change) must leave their CONV byte-identical. Prove it the way the crude change
+did: run `sellView` over archived snapshots before and after (crude: 34,220
+scored strikes over 250 snapshots, zero differences) and compare
+`npm run alerts:replay` output (crude: same 159 messages; only heartbeats
+changed, because they now count crude). Crude's own numbers are free to tune.
+
 ## 🛢️ Crude oil (CRUDEOILM) — added 2026-09-26
 
 Crude rides the same registry, builder, screen and alerts as the metals. Where
