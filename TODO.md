@@ -38,6 +38,8 @@
 - [ ] Visual polish pass (spacing, charts, motion).
 
 ## ✅ Done
+- [x] **Crude reads its supply story live** — no fixed OPEC+ prior; the MCX futures curve carries
+  that weight and the screen states it with the month prices (`src/lib/curveRead.ts`).
 - [x] **Crude oil (CRUDEOILM)** — fourth commodity: registry entry (10 bbl lot, WTI × USD-INR
   settlement parity, CFTC 067651), its own factor table with the MCX futures curve as a scored
   factor, Outlook copy, per-metal wording on the shared cards, Telegram alerts (🛢️).

@@ -1,5 +1,6 @@
 import type { McxData } from "../lib/types";
 import { metalForSymbol } from "../lib/instrument";
+import { curveRead } from "../lib/curveRead";
 import { Card, SectionTitle, Pill, Implication, fmt, fmtInt, pct } from "./ui";
 
 /**
@@ -65,7 +66,9 @@ export function CurveCard({ mcx }: { mcx: McxData }) {
         })()}
       </div>
 
-      <Implication tone={tone}>{impl}</Implication>
+      <Implication tone={tone}>
+        {onMcx && curveRead(c) ? `${curveRead(c)!.text} ${impl}` : impl}
+      </Implication>
       <p className="text-[10px] text-white/30 mt-2">
         {onMcx
           ? `MCX's own futures strip (${metal.quoteUnit}), nearest vs furthest listed month.` +

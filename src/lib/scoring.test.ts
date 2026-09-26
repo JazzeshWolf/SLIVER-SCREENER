@@ -163,6 +163,8 @@ describe("scoreHorizon", () => {
     // Nothing prices crude the way gold prices silver, and a crude/gold "ratio"
     // would just be crude's own momentum counted twice.
     for (const k of ["goldMomo", "gsr", "gsrGold", "copperGold", "real10y"]) expect(keys).not.toContain(k);
+    // No hand-set supply opinion: the live curve carries that weight instead.
+    expect(keys).not.toContain("structuralBias");
     // The metals sit in contango by construction (carry), so the curve factor
     // must never reach their scores — it would read as a permanent bear.
     for (const id of ["silver", "gold", "copper"]) {

@@ -29,8 +29,9 @@ export interface MetalCopy {
   /** Relative-value ratio. */
   ratio: (DriverCopy & { key: string; weight: number }) | null;
   /** Constant structural story — weight and text, no live input. Its stance
-   *  follows the sign of the registry's `engine.structuralBias`. */
-  structural: { label: string; weight: number; note: string };
+   *  follows the sign of the registry's `engine.structuralBias`. Null where
+   *  the supply story is read live instead (crude reads its futures curve). */
+  structural: { label: string; weight: number; note: string } | null;
   /** Physical/flows watch item. Marked not-wired until a feed backs it. */
   flows: { label: string; weight: number; note: string };
   /** Monetary driver wording (real yields + dollar). */
@@ -180,8 +181,8 @@ const COPY: Record<string, MetalCopy> = {
     // read on the physical market that isn't the price itself.
     lead: {
       key: "termStructure",
-      weight: 16,
-      label: "Physical tightness · futures curve",
+      weight: 26,
+      label: "Supply read live · futures curve",
       up: "The curve is in backwardation — prompt barrels priced above later ones, the market paying up for supply now. Physically tight, and supportive.",
       down: "The curve is in contango — later barrels priced above prompt ones, the market paying to store oil. Oversupplied, and a drag.",
       flat: "The curve is roughly flat — no clear tightness or glut signal from the physical market.",
@@ -194,11 +195,9 @@ const COPY: Record<string, MetalCopy> = {
     },
     // No relative-value ratio: nothing prices crude the way gold prices silver.
     ratio: null,
-    structural: {
-      label: "Supply · OPEC+ spare capacity",
-      weight: 10,
-      note: "OPEC+ holds spare capacity it has shown it will return to the market, and non-OPEC supply keeps growing — so rallies tend to meet new barrels. A small bearish prior, and the least durable one in the app: a single OPEC+ meeting or supply outage can reverse it, which is why the live curve outweighs it.",
-    },
+    // No fixed supply opinion: the curve driver above IS the supply read, live
+    // (owner's call, 2026-09-26). It carries the weight the prior would have.
+    structural: null,
     flows: {
       label: "Inventories · EIA weekly & Cushing",
       weight: 12,
