@@ -8,48 +8,74 @@
    "expiry": "2026-10-23",
    "strike": 1300,
    "type": "PE",
-   "conviction": 73,
-   "ltp": 2.14,
+   "conviction": 72,
+   "ltp": 2.69,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 5350
+   "credit": 6725
+  },
+  "copper|2026-10-23|1500|CE": {
+   "metal": "copper",
+   "emoji": "🟠",
+   "symbol": "COPPER",
+   "expiry": "2026-10-23",
+   "strike": 1500,
+   "type": "CE",
+   "conviction": 81,
+   "ltp": 3.03,
+   "unit": "₹/kg",
+   "lot": "2500 kg",
+   "credit": 7575
+  },
+  "crude|2026-10-15|7700|PE": {
+   "metal": "crude",
+   "emoji": "🛢️",
+   "symbol": "CRUDEOILM",
+   "expiry": "2026-10-15",
+   "strike": 7700,
+   "type": "PE",
+   "conviction": 70,
+   "ltp": 75.2,
+   "unit": "₹/bbl",
+   "lot": "10 bbl",
+   "credit": 752
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-09-30T16:05:54.467Z",
-   "fingerprint": "2102219129f4d9c2",
+   "lastLiveAt": "2026-10-01T10:00:55.734Z",
+   "fingerprint": "b43c068a1202cd49",
    "regime": "chop"
   },
   "gold": {
-   "lastLiveAt": "2026-09-30T16:05:57.972Z",
-   "fingerprint": "29dea306e741ccb1",
+   "lastLiveAt": "2026-10-01T10:00:58.635Z",
+   "fingerprint": "3e4671940b0757d8",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-09-30T16:06:10.065Z",
-   "fingerprint": "7cad0108c84b2a7e",
-   "regime": "chop"
+   "lastLiveAt": "2026-10-01T10:01:02.809Z",
+   "fingerprint": "3951ff3638c3ecca",
+   "regime": "no_conviction"
   },
   "crude": {
-   "lastLiveAt": "2026-09-30T16:06:22.138Z",
-   "fingerprint": "fa35e4e8137ab445",
+   "lastLiveAt": "2026-10-01T10:01:06.740Z",
+   "fingerprint": "c1e140b9147860fb",
    "regime": "chop"
   }
  },
  "day": {
-  "date": "2026-09-30",
+  "date": "2026-10-01",
   "runs": {
-   "silver": 2,
-   "gold": 2,
-   "copper": 2,
-   "crude": 2
+   "silver": 1,
+   "gold": 1,
+   "copper": 1,
+   "crude": 1
   },
-  "NEW": 1,
+  "NEW": 2,
   "MOVED": 1,
   "DROPPED": 0,
   "LEFT": 0
  },
- "lastRunAt": "2026-09-30T16:06:26.784Z",
+ "lastRunAt": "2026-10-01T10:01:11.901Z",
  "heartbeatDate": "2026-09-30"
 }
