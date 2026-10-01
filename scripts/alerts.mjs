@@ -59,6 +59,29 @@ export const ALERT_EXPIRIES = 2;
  *  fewer left). Once tracked it is followed to its exit regardless. Override
  *  with the repo variable ALERT_MIN_DTE_METALS. */
 export const DEFAULT_MIN_DTE = 10;
+/**
+ * The broker's margin for one short option, as a fraction of the contract's
+ * value (future × units per lot). Used ONLY for the alerts' ROM column, which
+ * the owner compares with their broker's "max profit %". Not the screener's
+ * modelled SPAN margin (`marginPerLot`): that runs 4–5× under the broker's on
+ * these contracts (COPPER Oct 1480 CE, 1 Oct 2026: ₹72,503 modelled vs ₹3.25L
+ * at the broker), so ROM from it read 14% where the broker said 3.4%. It feeds
+ * CONV and is frozen, so the alerts carry their own number instead, read off
+ * the owner's broker. A commodity without one shows ROM as "–".
+ */
+export const MARGIN_PCT = {
+  copper: 0.093, // ₹3.25L ÷ (1,398.45 × 2,500 kg), COPPER Oct 1480 CE, 2026-10-01
+  silver: null,
+  gold: null,
+  crude: null,
+};
+
+/** Credit ÷ broker margin, in %: premium ÷ (margin rate × future). null without a rate or a future. */
+export function romPct(id, premium, fut) {
+  const pct = MARGIN_PCT[id];
+  return pct && fut > 0 && premium != null ? Number(((premium / (pct * fut)) * 100).toFixed(2)) : null;
+}
+
 const BRAND_ICON = "⚖️";
 const BRAND_NAME = "MCX";
 const BRAND = `${BRAND_ICON} ${BRAND_NAME}`;
@@ -198,9 +221,9 @@ export function collectMetal(id, snap, view) {
         metal: id, emoji: metal.emoji, symbol, expiry: e.optionExpiry, dte: e.optionDte,
         strike: c.strike, type: c.type, conviction: c.conv, ltp: c.premium,
         unit: metal.quoteUnit, lot: lotLabel(metal, symbol), credit: Math.round(c.credit),
-        // Return on the screener's modelled margin for one lot (not annualised),
-        // and its forecast chance the strike expires worthless.
-        rom: c.marginPerLot > 0 ? Number(((c.credit / c.marginPerLot) * 100).toFixed(2)) : null,
+        // Return on the broker's margin (not annualised; see MARGIN_PCT), and
+        // the screen's forecast chance the strike expires worthless.
+        rom: romPct(id, c.premium, e.fut),
         pop: Number.isFinite(c.pOtm) ? Number(c.pOtm.toFixed(4)) : null,
         displayed: shown.has(`${c.strike}${c.type}`), ok: c.ok,
         why: c.ok ? null : reasonOf(c.reasons),
@@ -387,7 +410,12 @@ function legend(rows, threshold, titles = new Set()) {
   }
   const lines = [];
   if (units.size) lines.push(`PREM ₹ ${[...units].map(([u, s]) => `${u} (${[...s].join(", ")})`).join(" · ")}`);
-  lines.push("ROM % = credit per lot ÷ margin per lot (screener's estimate)");
+  const ids = [...new Set(rows.map((r) => r.metal))].filter((id) => METALS[id]);
+  const rated = ids.filter((id) => MARGIN_PCT[id]);
+  const unrated = ids.filter((id) => !MARGIN_PCT[id]);
+  if (rated.length)
+    lines.push(`ROM % = credit ÷ broker margin (${rated.map((id) => `${METALS[id].feedSymbol} ${(MARGIN_PCT[id] * 100).toFixed(1)}%`).join(", ")} of contract value)`);
+  if (unrated.length) lines.push(`ROM – = no broker margin on file yet for ${unrated.map((id) => METALS[id].feedSymbol).join(", ")}`);
   lines.push("POP % = model's chance it expires worthless");
   if (threshold != null) lines.push(`DROPPED = fell below ${threshold} · REMOVED = off the list`);
   const extra = [
@@ -488,26 +516,27 @@ export function bumpDay(state, freshIds, events, session, nowIso) {
 /** Invented sample for `--mock`: a card for every commodity and a row in
  *  every section, dated from `today` so the days-left line stays plausible. */
 export function mockEvents(today = istDate()) {
-  const row = (id, days, strike, type, conviction, ltp, rom, pop, block = null) => {
+  const FUT = { silver: 226760, gold: 148339, copper: 1398.45, crude: 8907 };
+  const row = (id, days, strike, type, conviction, ltp, pop, block = null) => {
     const m = METALS[id];
     const symbol = m.feedSymbol;
     const units = m.contracts.find((c) => c.symbol === symbol).quoteUnitsPerLot;
     return {
       metal: id, emoji: m.emoji, symbol, expiry: addDays(today, days), dte: days, strike, type, conviction, ltp,
-      unit: m.quoteUnit, lot: lotLabel(m, symbol), credit: Math.round(ltp * units), rom, pop, block,
+      unit: m.quoteUnit, lot: lotLabel(m, symbol), credit: Math.round(ltp * units), rom: romPct(id, ltp, FUT[id]), pop, block,
     };
   };
   return [
-    { kind: "NEW", row: row("silver", 26, 262000, "CE", 81, 1485.5, 4.9, 0.93) },
-    { kind: "NEW", row: row("gold", 28, 144000, "PE", 76, 612, 2.1, 0.91, "VRP negative — selling blocked") },
-    { kind: "NEW", row: row("copper", 22, 1360, "PE", 71, 4.35, 12.4, 0.9) },
-    { kind: "NEW", row: row("crude", 14, 4900, "PE", 74, 21, 9.6, 0.92) },
-    { kind: "DROPPED", from: 72, row: row("silver", 26, 212000, "PE", 66, 1120, 3.7, 0.88) },
-    { kind: "LEFT", from: 71, row: row("silver", 26, 205000, "PE", 71, 640, 2.1, 0.95), why: "prem decayed" },
-    { kind: "LEFT", from: 74, row: row("gold", 28, 158000, "CE", 74, 410, 1.4, 0.9), why: "gamma zone" },
-    { kind: "MOVED", from: 73, row: row("silver", 26, 216000, "PE", 75, 1310, 4.3, 0.9) },
-    { kind: "MOVED", from: 78, row: row("copper", 22, 1480, "CE", 77, 3.9, 11.8, 0.92) },
-    { kind: "MOVED", from: 71, row: row("crude", 14, 6300, "CE", 76, 18, 8.1, 0.94) },
+    { kind: "NEW", row: row("silver", 26, 262000, "CE", 81, 1485.5, 0.93) },
+    { kind: "NEW", row: row("gold", 28, 144000, "PE", 76, 612, 0.91, "VRP negative — selling blocked") },
+    { kind: "NEW", row: row("copper", 22, 1360, "PE", 71, 4.35, 0.9) },
+    { kind: "NEW", row: row("crude", 14, 4900, "PE", 74, 21, 0.92) },
+    { kind: "DROPPED", from: 72, row: row("silver", 26, 212000, "PE", 66, 1120, 0.88) },
+    { kind: "LEFT", from: 71, row: row("silver", 26, 205000, "PE", 71, 640, 0.95), why: "prem decayed" },
+    { kind: "LEFT", from: 74, row: row("gold", 28, 158000, "CE", 74, 410, 0.9), why: "gamma zone" },
+    { kind: "MOVED", from: 73, row: row("silver", 26, 216000, "PE", 75, 1310, 0.9) },
+    { kind: "MOVED", from: 78, row: row("copper", 22, 1480, "CE", 77, 3.9, 0.92) },
+    { kind: "MOVED", from: 71, row: row("crude", 14, 6300, "CE", 76, 18, 0.94) },
   ];
 }
 

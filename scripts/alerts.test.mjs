@@ -6,7 +6,7 @@ import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
   collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatEod, bumpDay,
-  mockEvents, mockState, sendTelegram, run,
+  mockEvents, mockState, sendTelegram, run, romPct, MARGIN_PCT,
 } from "./alerts.mjs";
 
 const TODAY = "2026-10-14";
@@ -205,10 +205,24 @@ describe("collectMetal", () => {
     const { rows } = collectMetal("silver", snap, view);
     expect(rows.get("silver|2026-10-27|262000|CE")).toMatchObject({
       displayed: true, ok: true, conviction: 81, lot: "5 kg", credit: 5000, unit: "₹/kg",
-      rom: 4, pop: 0.9346, block: "VRP negative — selling blocked",
+      rom: null, pop: 0.9346, block: "VRP negative — selling blocked", // no broker margin for silver yet
     });
     expect(rows.get("silver|2026-10-27|270000|CE")).toMatchObject({ displayed: false, ok: true });
     expect(rows.get("silver|2026-10-27|200000|PE")).toMatchObject({ ok: false, why: "prem decayed" });
+  });
+
+  it("works ROM out on the broker's margin, not the screener's model", () => {
+    // COPPER Oct 1480 CE on 1 Oct 2026: the broker showed max profit ₹11,025
+    // (+3.4%) on ₹3.25L margin with the future at 1,398.45. The screener's
+    // modelled ₹72,503 margin would have said 14%.
+    const copper = { expiries: [{ ...view.expiries[0], fut: 1398.45,
+      screen: { tooThin: false, candidates: [cand(1480, "CE", 77, { premium: 4.41, credit: 11025, marginPerLot: 72503 })] },
+      shown: { CE: [cand(1480, "CE", 77)], PE: [] } }] };
+    const [r] = collectMetal("copper", { mcx: { symbol: "COPPER" } }, copper).rows.values();
+    expect(r.rom).toBeCloseTo(3.4, 1);
+    expect(romPct("copper", 4.41, 1398.45)).toBeCloseTo(3.39, 2);
+    expect(romPct("copper", 4.41, null)).toBeNull();
+    for (const id of METAL_IDS) if (!MARGIN_PCT[id]) expect(romPct(id, 100, 1000)).toBeNull();
   });
 
   it("reads GOLDM's lot as 100 g (credit is already premium × 10)", () => {
@@ -267,11 +281,12 @@ describe("formatting", () => {
     const [m] = formatMessages(mock(), opts);
     const lines = preLines(m);
     expect(lines).toContain("NEW       CONV  PREM ROM POP");
-    expect(lines).toContain("262000CE    81 1,486 4.9  93");
-    expect(lines).toContain("216000PE 73→75 1,310 4.3  90");
-    expect(lines).toContain("212000PE 72→66 1,120 3.7  88");
-    expect(lines).toContain("205000PE  71→–   640 2.1  95");
-    expect(lines).toContain("1360PE    71 4.35 12.4  90");
+    expect(lines).toContain("262000CE    81 1,486   –  93");
+    expect(lines).toContain("216000PE 73→75 1,310   –  90");
+    expect(lines).toContain("212000PE 72→66 1,120   –  88");
+    expect(lines).toContain("205000PE  71→–   640   –  95");
+    expect(lines).toContain("1360PE    71 4.35 3.3  90");
+    expect(lines).toContain("1480CE 78→77  3.9 3.0  92");
     // Every row of a card shares one set of widths, so the columns line up.
     const silver = preLines(m.slice(m.indexOf("SILVERM"), m.indexOf("GOLDM"))).filter(Boolean);
     expect(new Set(silver.map((l) => l.length)).size).toBe(1);
@@ -320,7 +335,10 @@ describe("formatting", () => {
   it("explains PREM's unit for the contracts in the message, and the other columns", () => {
     const [m] = formatMessages(mock(), opts);
     expect(m).toContain("PREM ₹ per kg (SILVERM, COPPER) · per 10 g (GOLDM) · per bbl (CRUDEOILM)");
-    expect(m).toContain("ROM % = credit per lot ÷ margin per lot (screener's estimate)");
+    expect(m).toContain("ROM % = credit ÷ broker margin (COPPER 9.3% of contract value)");
+    expect(m).toContain("ROM – = no broker margin on file yet for SILVERM, GOLDM, CRUDEOILM");
+    const [cu] = formatMessages([{ kind: "NEW", row: row({ metal: "copper", symbol: "COPPER", rom: 3.3 }) }], opts);
+    expect(cu).not.toContain("ROM –");
     expect(m).toContain("POP % = model's chance it expires worthless");
     expect(m).toContain("DROPPED = fell below 70 · REMOVED = off the list");
     expect(m.endsWith('<a href="https://jazzeshwolf.github.io/SLIVER-SCREENER/">Open screener</a>')).toBe(true);

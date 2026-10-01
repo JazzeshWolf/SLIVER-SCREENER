@@ -96,11 +96,19 @@ PREM (as quoted), ROM, POP:
   (too close to the price), DECAYED (premium too small), REMOVED (anything
   else: off the chain, thin, no IV…), EXPIRED (expiry day). The end-of-day
   cards use ABOVE.
-- **ROM = credit per lot ÷ the screener's modelled margin per lot**, not
-  annualised (the Sell tab's "Return on margin" is `romAnnual`). POP = `pOtm`,
-  the screen's forecast, not 1 − |Δ|. Both are stored in the tracked state so
-  an exit and the end-of-day cards can show them; state written before
-  2026-10-01 shows "–".
+- **ROM = credit ÷ the BROKER's margin**, not annualised: premium ÷
+  (`MARGIN_PCT[metal]` × future). The rates in `scripts/alerts.mjs` are read
+  off the owner's broker (COPPER 9.3%: Oct 1480 CE, ₹3.25L margin, future
+  1,398.45, broker's "max profit +3.4%"). **Never use the screener's
+  `marginPerLot` here**: its modelled SPAN runs 4–5× under the broker's
+  (₹72,503 for that strike), which made the first card build print ROM 14%
+  where the broker said 3.4%. That model feeds CONV and is frozen, so the
+  alerts keep their own rate. A commodity with no rate shows "–" and the
+  legend says so. MCX changes margins, so re-check a rate when the broker's
+  "max profit %" and the card disagree.
+- POP = `pOtm`, the screen's forecast, not 1 − |Δ| (92 vs the broker's 91 on
+  that strike). ROM and POP are stored in the tracked state so an exit and the
+  end-of-day cards can show them; state written before 2026-10-01 shows "–".
 - Cards holding a NEW lead (highest CONV first), then commodity order, then
   expiry. The legend under the cards names PREM's unit only for the contracts
   in that message (₹/kg, GOLDM per 10 g, CRUDEOILM per bbl).
