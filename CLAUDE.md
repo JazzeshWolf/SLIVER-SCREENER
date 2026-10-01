@@ -171,6 +171,12 @@ branching on `id === "crude"`:
   which signals a tight market." Don't reintroduce a hand-set OPEC+ prior —
   the first live run showed one ("supply overhang") contradicting a steeply
   backwardated, tight market.
+- **Crude's margin is calibrated to the broker** (owner's Sensibull, 1 Oct
+  2026: CRUDEOILM 15 Oct 7500 PE, future 8,883 → ₹27,392 a lot). That needs
+  a ±46% `priceScan`; the vol-scaled ±8% the metals' logic suggests modelled
+  ~₹3,100 and made EDGE read 11.5% of margin on a ~2% trade, inflating CONV.
+  `metals.test.ts` pins the model within 10% of that figure. Don't "fix" the
+  scan back toward the metals' range.
 - **First live run is the real test.** Nothing here has met a live CRUDEOILM
   chain: check the Actions log for `upstox: CRUDEOILM N expiries` and
   `curve (MCX strip)`. If the instrument master has no CRUDEOILM options, the
