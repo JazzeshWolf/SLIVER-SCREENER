@@ -191,6 +191,10 @@ export function collectMetal(id, snap, view) {
         metal: id, emoji: metal.emoji, symbol, expiry: e.optionExpiry, dte: e.optionDte,
         strike: c.strike, type: c.type, conviction: c.conv, ltp: c.premium,
         unit: metal.quoteUnit, lot: lotLabel(metal, symbol), credit: Math.round(c.credit),
+        // The screen's estimated margin per lot and its chance the leg expires
+        // worthless — the ROM and POP columns of the Telegram card.
+        margin: Number.isFinite(c.marginPerLot) ? Math.round(c.marginPerLot) : null,
+        pop: Number.isFinite(c.pOtm) ? c.pOtm : null,
         displayed: shown.has(`${c.strike}${c.type}`), ok: c.ok,
         why: c.ok ? null : `filtered out: ${c.reasons.map((r) => REASONS[r] ?? r).join(", ")}`,
         block,
@@ -216,6 +220,7 @@ export function explainMissing(t, context) {
 const snapshotOf = (r) => ({
   metal: r.metal, emoji: r.emoji, symbol: r.symbol, expiry: r.expiry, strike: r.strike, type: r.type,
   conviction: r.conviction, ltp: r.ltp, unit: r.unit, lot: r.lot, credit: r.credit,
+  margin: r.margin ?? null, pop: r.pop ?? null,
 });
 const keyOf = (r) => key(r.metal, r.expiry, r.strike, r.type);
 
@@ -261,61 +266,127 @@ export function diff(tracked, current, { threshold, today, isFresh, minDte = 0, 
 }
 
 // --- formatting -------------------------------------------------------------
+//
+// The Xerxes layout (owner's ask, 2026-10-01), so MCX and NSE alerts read the
+// same way: one card per contract and expiry — a bold header carrying the
+// metal's emoji and contract, then a <pre> table (monospace, with Telegram's
+// copy button) holding NEW / MOVED / DROPPED / REMOVED / EXPIRED sections that
+// share one set of columns. Rows stay ~34 characters so a phone held upright
+// doesn't wrap them. Emoji go only at a row's END (the ⭐/🔥 tier), where their
+// double width can't shift a later column.
 
 export const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const rupee = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
-const price = (n) => "₹" + Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const dm = (iso) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
+const ROWS_PER_BLOCK = 30;
 
 export function tierMark(conv) {
   return conv >= TIERS.fire ? "🔥" : conv >= TIERS.star ? "⭐" : "";
 }
 
-// MCX metal options list one expiry per month (the builder keeps monthlies
-// only), so there is no weekly/monthly label to carry here.
-const contract = (r) => `${r.emoji} <b>${esc(r.symbol)} ${r.strike} ${r.type}</b> · ${dm(r.expiry)}`;
-const prem = (r) => `${price(r.ltp)}${r.unit ? esc(r.unit.replace("₹", "")) : ""}`;
+/** Premium in at most ~5 characters: ₹1,486 · 79.4 · 2.32. */
+const num = (n) => (n >= 1000 ? Math.round(n).toLocaleString("en-IN")
+  : n >= 100 ? String(Number(Number(n).toFixed(1))) : String(Number(Number(n).toFixed(2))));
+const daysLeft = (expiry, today) =>
+  Math.round((Date.parse(`${expiry}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
 
-function line(e, threshold) {
-  const r = e.row;
-  const mark = tierMark(r.conviction);
-  switch (e.kind) {
-    case "NEW": {
-      const lot = r.lot ? ` · lot ${esc(r.lot)}` : "";
-      const block = r.block ? `\n      🔴 ${esc(r.block)}` : "";
-      const left = r.dte != null ? ` · ${r.dte}d left` : "";
-      return `🔔 NEW ${mark}${r.conviction}  ${contract(r)}${left}\n      prem ${prem(r)}${lot} · credit ${rupee(r.credit)}/lot${block}`;
-    }
-    case "MOVED":
-      return `${r.conviction > e.from ? "⬆️" : "⬇️"} ${e.from} → ${mark}${r.conviction}  ${contract(r)} · ${prem(r)}${r.block ? " · 🔴 blocked" : ""}`;
-    case "DROPPED":
-      return `🔻 ${e.from} → ${r.conviction}  ${contract(r)} · ${prem(r)}\n      below ${threshold}, no longer tracked`;
-    case "LEFT":
-      return `🚪 ${contract(r)} · last CONV ${e.from}\n      ${esc(e.why ?? "no longer on the list")}, no longer tracked`;
-  }
+/** Credit ÷ the screen's estimated margin per lot, in %. Null without a margin. */
+export function romPct(r) {
+  return r?.credit != null && r?.margin > 0 ? (r.credit / r.margin) * 100 : null;
 }
 
-/** One message per run (split only if Telegram's length cap forces it). */
+/**
+ * One card: every event for one contract and expiry. MCX options are monthly
+ * (the builder keeps monthlies only), so the line under the header always
+ * says "Monthly"; a 🔴 line says when that expiry's VRP or event gate blocks
+ * selling, and REMOVED rows get their reason under the table.
+ */
+function card(events, { today }) {
+  const r0 = events[0].row;
+  const dte = daysLeft(r0.expiry, today);
+  const left = dte <= 0 ? "expires today" : dte === 1 ? "1 day left" : `${dte} days left`;
+  const block = events.map((e) => e.row.block).find(Boolean);
+  const head =
+    `<b>${r0.emoji} ${esc(r0.symbol)} · ${dm(r0.expiry)}</b>\n` +
+    `Monthly · ${left}${r0.lot ? ` · lot ${esc(r0.lot)}` : ""}` +
+    (block ? `\n🔴 ${esc(block)}` : "");
+
+  const sections = [
+    ["NEW", events.filter((e) => e.kind === "NEW")],
+    ["MOVED", events.filter((e) => e.kind === "MOVED")],
+    ["DROPPED", events.filter((e) => e.kind === "DROPPED")],
+    ["REMOVED", events.filter((e) => e.kind === "LEFT" && !e.expiring)],
+    ["EXPIRED", events.filter((e) => e.kind === "LEFT" && e.expiring)],
+  ].filter(([, evs]) => evs.length);
+
+  const conv = (e) =>
+    e.kind === "NEW" ? String(e.row.conviction) : e.kind === "LEFT" ? `${e.from}→–` : `${e.from}→${e.row.conviction}`;
+  const rom = (r) => { const v = romPct(r); return v == null ? "–" : v.toFixed(1); };
+  const pop = (r) => (r.pop == null ? "–" : String(Math.round(r.pop * 100)));
+  const cells = (e) => [`${e.row.strike}${e.row.type}`, conv(e), e.row.ltp == null ? "–" : num(e.row.ltp), rom(e.row), pop(e.row)];
+  const all = events.map(cells);
+  const w = [0, 1, 2, 3, 4].map((i) =>
+    Math.max(i === 0 ? Math.max(...sections.map(([t]) => t.length)) : ["", "CONV", "PREM", "ROM", "POP"][i].length,
+      ...all.map((c) => c[i].length)));
+  const fmt = (c) => [c[0].padEnd(w[0]), ...c.slice(1).map((v, i) => v.padStart(w[i + 1]))].join(" ").trimEnd();
+  const mark = (e) => (e.kind === "NEW" || e.kind === "MOVED" ? tierMark(e.row.conviction) : "");
+
+  const body = sections.map(([title, evs]) =>
+    [fmt([title, "CONV", "PREM", "ROM", "POP"]), ...evs.map((e) => fmt(cells(e)) + (mark(e) ? ` ${mark(e)}` : ""))].join("\n"));
+  // Why a strike left: the one thing a table column can't carry on a phone.
+  const why = events
+    .filter((e) => e.kind === "LEFT" && !e.expiring)
+    .map((e) => `<i>${e.row.strike}${e.row.type}: ${esc(e.why ?? "no longer on the list")}</i>`);
+  return [`${head}\n<pre>${esc(body.join("\n\n"))}</pre>`, ...why].join("\n");
+}
+
+/** Cards ordered so fresh entries lead: groups holding a NEW first (highest
+ *  conviction first), then the rest by expiry. */
+function cards(events, opts) {
+  const groups = new Map();
+  for (const e of events) {
+    const k = `${e.row.symbol}|${e.row.expiry}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  }
+  const top = (evs) => Math.max(-1, ...evs.filter((e) => e.kind === "NEW").map((e) => e.row.conviction));
+  return [...groups.values()]
+    .sort((x, y) => top(y) - top(x) || x[0].row.expiry.localeCompare(y[0].row.expiry) || x[0].row.symbol.localeCompare(y[0].row.symbol))
+    .flatMap((evs) => {
+      // A very large group is split so no <pre> ever straddles two messages.
+      const parts = [];
+      for (let i = 0; i < evs.length; i += ROWS_PER_BLOCK) parts.push(card(evs.slice(i, i + ROWS_PER_BLOCK), opts));
+      return parts;
+    });
+}
+
+/** The alert rule in the heartbeat's words. */
 const rule = (threshold, minDte) => `CONV ≥ ${threshold}${minDte > 0 ? `, entry ${minDte}+ days left` : ""}`;
 
-export function formatMessages(events, { threshold, minDte = 0, when, armed = false }) {
+/** One message per run (split only if Telegram's length cap forces it). */
+export function formatMessages(events, { threshold, minDte = 0, when, today = istDate(), armed = false }) {
   if (!events.length && !armed) return [];
-  const header = [`<b>${BRAND} · Metals ${rule(threshold, minDte)}</b> · ${when} IST`];
+  const header = [`⚖️ <b>MCX · Commodities</b> · ${when} IST`];
+  header.push(`<i>Alert level: conviction ${threshold}+${minDte > 0 ? ` · entry ${minDte}+ days left` : ""}</i>`);
   if (armed)
     header.push(events.length
-      ? `✅ Alerts armed. Already above the bar and now tracked (${events.length}):`
-      : "✅ Alerts armed. Nothing above the bar right now.");
-  const body = events.map((e) => line(e, threshold));
-  const footer = `<a href="${SCREENER_URL}">Open screener</a>`;
+      ? `✅ Alerts armed — already above the bar, now tracked (${events.length})`
+      : "✅ Alerts armed — nothing above the bar right now");
+  const footer = [
+    "<i>PREM ₹ per kg / 10g / bbl · credit/lot = PREM × lot",
+    "ROM % = credit ÷ the screen's estimated margin per lot",
+    "POP % = model's chance it expires worthless",
+    `DROPPED = fell below ${threshold} · REMOVED = off the list</i>`,
+    `<a href="${SCREENER_URL}">Open screener</a>`,
+  ].join("\n");
   const out = [];
-  let cur = header.join("\n") + "\n";
-  for (const l of body) {
-    if (cur.length + l.length + footer.length + 4 > TG_LIMIT) {
+  let cur = header.join("\n");
+  for (const block of cards(events, { today })) {
+    if (cur.length + block.length + footer.length + 4 > TG_LIMIT) {
       out.push(cur.trimEnd());
-      cur = header[0] + " (cont.)\n";
+      cur = header[0] + " (cont.)";
     }
-    cur += "\n" + l;
+    cur += "\n\n" + block;
   }
   out.push(cur.trimEnd() + "\n\n" + footer);
   return out;
@@ -350,23 +421,26 @@ export function bumpDay(state, freshIds, events, session, nowIso) {
 
 /** Invented sample for `--mock`: every line type, and a line for every commodity. */
 export function mockEvents() {
-  const row = (id, expiry, strike, type, conviction, ltp, block = null, dte = null) => {
+  // Invented contracts at roughly current levels; margin is per lot, ROM and
+  // POP come out of it the way they do for a real alert.
+  const row = (id, expiry, strike, type, conviction, ltp, { block = null, margin = null, pop = 0.91 } = {}) => {
     const m = METALS[id];
     const symbol = m.feedSymbol;
     const lot = lotLabel(m, symbol);
     const units = m.contracts.find((c) => c.symbol === symbol).quoteUnitsPerLot;
-    return { metal: id, emoji: m.emoji, symbol, expiry, dte, strike, type, conviction, ltp, unit: m.quoteUnit, lot, credit: Math.round(ltp * units), block };
+    return { metal: id, emoji: m.emoji, symbol, expiry, strike, type, conviction, ltp, unit: m.quoteUnit, lot,
+      credit: Math.round(ltp * units), margin, pop, block };
   };
   return [
-    { kind: "NEW", row: row("silver", "2026-10-27", 262000, "CE", 81, 1485.5, null, 32) },
-    { kind: "NEW", row: row("gold", "2026-10-29", 144000, "PE", 76, 612, "VRP negative — selling blocked", 34) },
-    { kind: "NEW", row: row("copper", "2026-10-23", 1360, "PE", 71, 4.35, null, 28) },
-    { kind: "NEW", row: row("crude", "2026-10-15", 4900, "PE", 74, 21, null, 19) },
-    { kind: "DROPPED", from: 72, row: row("silver", "2026-10-27", 212000, "PE", 66, 1120) },
-    { kind: "LEFT", from: 74, row: row("gold", "2026-10-29", 158000, "CE", 74, 410), why: "filtered out: inside the gamma zone (< 0.6σ)" },
-    { kind: "MOVED", from: 73, row: row("silver", "2026-10-27", 216000, "PE", 75, 1310) },
-    { kind: "MOVED", from: 78, row: row("copper", "2026-10-23", 1480, "CE", 77, 3.9) },
-    { kind: "MOVED", from: 71, row: row("crude", "2026-10-15", 6300, "CE", 76, 18) },
+    { kind: "NEW", row: row("silver", "2026-10-27", 262000, "CE", 81, 1485.5, { margin: 185000, pop: 0.93 }) },
+    { kind: "NEW", row: row("gold", "2026-10-29", 144000, "PE", 76, 612, { block: "VRP negative — selling blocked", margin: 150000 }) },
+    { kind: "NEW", row: row("copper", "2026-10-23", 1360, "PE", 71, 4.35, { margin: 250000, pop: 0.9 }) },
+    { kind: "NEW", row: row("crude", "2026-10-15", 7500, "PE", 74, 55.25, { margin: 27400, pop: 0.92 }) },
+    { kind: "DROPPED", from: 72, row: row("silver", "2026-10-27", 212000, "PE", 66, 1120, { margin: 180000, pop: 0.88 }) },
+    { kind: "LEFT", from: 74, row: row("gold", "2026-10-29", 158000, "CE", 74, 410, { margin: 140000 }), why: "filtered out: inside the gamma zone (< 0.6σ)" },
+    { kind: "MOVED", from: 73, row: row("silver", "2026-10-27", 216000, "PE", 75, 1310, { margin: 182000, pop: 0.9 }) },
+    { kind: "MOVED", from: 78, row: row("copper", "2026-10-23", 1480, "CE", 77, 3.9, { margin: 240000, pop: 0.92 }) },
+    { kind: "MOVED", from: 71, row: row("crude", "2026-10-15", 10200, "CE", 76, 60.5, { margin: 28100, pop: 0.9 }) },
   ];
 }
 
@@ -379,7 +453,7 @@ const readJson = (p) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : n
  * in `stateDir`. `send` must throw when a message is not accepted — the state
  * is written only after every send has returned.
  */
-export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send, log = console.log }) {
+export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send, log = console.log, onEvents = () => {} }) {
   const { sellView } = await import("../src/lib/sellView.ts");
   const statePath = resolve(stateDir, "metals.json");
   const prev = readJson(statePath);
@@ -422,7 +496,8 @@ export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send,
     // loud NEW per contract — switching alerts on never floods, and nothing
     // already above the bar is swallowed either.
     const armed = !prev;
-    const msgs = formatMessages(events, { threshold, minDte, when, armed });
+    onEvents(events);
+    const msgs = formatMessages(events, { threshold, minDte, when, today, armed });
     for (const m of msgs) await send(m);
     const tally = events.reduce((a, e) => ((a[e.kind] = (a[e.kind] ?? 0) + 1), a), {});
     log(armed

@@ -48,8 +48,20 @@ a chat, an issue or a log line.
 The last step of `data.yml` messages the owner's Telegram bot — the one the NSE
 screener already uses, same chat — when a strike on the Sell tab crosses the
 bar, and follows it afterwards. Every message is headed **⚖️ MCX** and every
-line carries the metal's emoji and contract (🥈 SILVERM / 🥇 GOLDM / 🟠 COPPER /
+card carries the metal's emoji and contract (🥈 SILVERM / 🥇 GOLDM / 🟠 COPPER /
 🛢️ CRUDEOILM), so it can't be mistaken for an NSE alert.
+
+**Layout = the Xerxes one** (owner's ask, 2026-10-01): one card per contract and
+expiry — `<b>🛢️ CRUDEOILM · 15 Oct</b>`, then "Monthly · N days left · lot 10
+bbl", a 🔴 line if that expiry's VRP or event gate blocks selling, then a
+`<pre>` table (monospace, copy button) with NEW / MOVED / DROPPED / REMOVED /
+EXPIRED sections on one grid: strike+type, CONV (`72→78` for moves), PREM,
+ROM (credit ÷ the screen's **estimated** margin per lot, %) and POP (the
+model's chance it expires worthless). Tier emoji (⭐ 75+, 🔥 80+) sit only at a
+row's end, where they can't shift a column; a REMOVED strike's reason goes on
+an italic line under the table. Keep rows ~34 characters — wider wraps on a
+phone and breaks the alignment. The replay counts events from `run()`'s
+`onEvents` hook, not by parsing the text, so the layout can change freely.
 
 | event | when |
 |---|---|
@@ -60,9 +72,7 @@ line carries the metal's emoji and contract (🥈 SILVERM / 🥇 GOLDM / 🟠 CO
 
 One message per run, **always with sound** — the owner explicitly asked for no
 silent messages, moves included. Don't add `disable_notification` without
-asking (a test pins it). NEW lines carry contract, expiry, CONV, premium, lot
-and credit per lot; a 🔴 line when that expiry's VRP or event gate blocks
-selling (the Sell tab's red banner). Tiers: ⭐ 75+, 🔥 80+. Threshold
+asking (a test pins it). Tiers: ⭐ 75+, 🔥 80+. Threshold
 `ALERT_MIN_CONV_METALS`, default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
 (tick *mock* for an invented alert through the real formatter, labelled MOCK).
 

@@ -241,59 +241,120 @@ describe("collectMetal", () => {
 });
 
 describe("formatting", () => {
+  // The card layout is the Xerxes one (owner's ask, 2026-10-01).
+  const pre = (m) => m.slice(m.indexOf("<pre>") + 5, m.indexOf("</pre>")).split("\n");
+  const opts = { threshold: 70, when: "14:05", today: TODAY };
+
   it("marks tiers at 75 and 80", () => {
     expect(tierMark(80)).toBe("🔥");
     expect(tierMark(76)).toBe("⭐");
     expect(tierMark(72)).toBe("");
   });
 
-  it("labels every message as MCX so it can't be mistaken for the NSE screener", () => {
-    const [m] = formatMessages([{ kind: "NEW", row: row() }], { threshold: 70, when: "14:05" });
-    expect(m.startsWith("<b>⚖️ MCX")).toBe(true);
-    expect(m).toContain("SILVERM 262000 CE");
-    expect(m).toContain("27 Oct");
-    expect(m).toContain("lot 5 kg");
-    expect(m).toContain("credit ₹7,428/lot");
-    expect(m).toContain("₹1,485.50/kg");
+  it("heads every message ⚖️ MCX and every card with the metal's emoji and contract", () => {
+    const [m] = formatMessages([{ kind: "NEW", row: row({ margin: 185000, pop: 0.93 }) }], opts);
+    expect(m.startsWith("⚖️ <b>MCX")).toBe(true);
+    expect(m).toContain("<b>🥈 SILVERM · 27 Oct</b>\nMonthly · 13 days left · lot 5 kg\n<pre>");
+    expect(pre(m)).toEqual([
+      "NEW      CONV  PREM ROM POP",
+      "262000CE   72 1,486 4.0  93",
+    ]);
   });
 
-  it("states the days rule in the header and shows days left on NEW lines", () => {
-    const [m] = formatMessages([{ kind: "NEW", row: row({ dte: 32 }) }], { threshold: 70, minDte: 10, when: "14:05" });
-    expect(m).toContain("Metals CONV ≥ 70, entry 10+ days left");
-    expect(m).toContain("27 Oct · 32d left");
+  it("shows ROM as credit ÷ the screen's margin, and POP as the chance it expires worthless", () => {
+    // Crude's 7500 PE from the owner's Sensibull: ₹553 credit on ₹27,392 → 2.0%.
+    const r = row({ metal: "crude", emoji: "🛢️", symbol: "CRUDEOILM", expiry: "2026-10-15", strike: 7500, type: "PE",
+      conviction: 56, ltp: 55.25, unit: "₹/bbl", lot: "10 bbl", credit: 553, margin: 27392, pop: 0.912 });
+    const [m] = formatMessages([{ kind: "NEW", row: r }], opts);
+    expect(m).toContain("<b>🛢️ CRUDEOILM · 15 Oct</b>\nMonthly · 1 day left · lot 10 bbl");
+    expect(pre(m)[1]).toBe("7500PE   56 55.25 2.0  91");
+    // No margin or POP on record (an older tracked entry): a dash, never NaN.
+    const [old] = formatMessages([{ kind: "LEFT", from: 74, row: row(), why: "dropped off the fetched chain" }], opts);
+    expect(pre(old)[1]).toBe("262000CE 74→– 1,486   –   –");
+  });
+
+  it("states the rule under the header and the days left on the card", () => {
+    const [m] = formatMessages([{ kind: "NEW", row: row({ dte: 32 }) }], { ...opts, minDte: 10 });
+    expect(m).toContain("<i>Alert level: conviction 70+ · entry 10+ days left</i>");
+    expect(m).toContain("13 days left");
     const s = bumpDay({ tracked: {} }, METAL_IDS, [], "2026-09-24", "2026-09-24T17:50:00Z");
     expect(formatHeartbeat(s, "2026-09-24", 70, 10)).toContain("(CONV ≥ 70, entry 10+ days left)");
   });
 
-  it("escapes HTML and splits under Telegram's length cap", () => {
-    const events = Array.from({ length: 80 }, (_, i) => ({
+  it("splits a card into NEW / MOVED / DROPPED / REMOVED / EXPIRED sections on one grid", () => {
+    const events = [
+      { kind: "NEW", row: row({ strike: 262000, conviction: 81 }) },
+      { kind: "MOVED", from: 73, row: row({ strike: 216000, type: "PE", conviction: 75, ltp: 1310 }) },
+      { kind: "DROPPED", from: 72, row: row({ strike: 212000, type: "PE", conviction: 66, ltp: 1120 }) },
+      { kind: "LEFT", from: 74, row: row({ strike: 270000 }), why: "now in the money (future 271000)" },
+      { kind: "LEFT", from: 71, row: row({ strike: 275000 }), expiring: true, why: "expires today" },
+    ];
+    const [m] = formatMessages(events, opts);
+    const lines = pre(m);
+    expect(lines.filter((l) => /^[A-Z]+ +CONV/.test(l)).map((l) => l.split(" ")[0]))
+      .toEqual(["NEW", "MOVED", "DROPPED", "REMOVED", "EXPIRED"]);
+    expect(lines).toContain("216000PE 73→75 1,310   –   – ⭐");
+    expect(lines).toContain("262000CE    81 1,486   –   – 🔥");
+    // Every row and section head on the grid ends at the same column (tier
+    // emoji, the only thing allowed past it, are trimmed off first).
+    const widths = new Set(lines.filter(Boolean).map((l) => l.replace(/ [⭐🔥]$/u, "").length));
+    expect(widths.size).toBe(1);
+    // The reason a strike was removed rides under the table; an expiry doesn't need one.
+    expect(m).toContain("</pre>\n<i>270000CE: now in the money (future 271000)</i>");
+    expect(m).not.toContain("275000CE: expires today");
+  });
+
+  it("gives each contract and expiry its own card, cards with a NEW first", () => {
+    const events = [
+      { kind: "MOVED", from: 70, row: row({ expiry: "2026-10-27", strike: 250000, conviction: 72 }) },
+      { kind: "NEW", row: row({ metal: "copper", emoji: "🟠", symbol: "COPPER", expiry: "2026-10-23", strike: 1360, type: "PE", conviction: 71, ltp: 4.35 }) },
+      { kind: "NEW", row: row({ expiry: "2026-11-23", strike: 270000, conviction: 78 }) },
+    ];
+    const [m] = formatMessages(events, opts);
+    const heads = [...m.matchAll(/<b>(.+? · \d+ \w+)<\/b>/g)].map((x) => x[1]);
+    expect(heads).toEqual(["🥈 SILVERM · 23 Nov", "🟠 COPPER · 23 Oct", "🥈 SILVERM · 27 Oct"]);
+  });
+
+  it("puts the 🔴 gate on the card that it blocks", () => {
+    const [m] = formatMessages([{ kind: "NEW", row: row({ block: "VRP negative — selling blocked" }) }], opts);
+    expect(m).toContain("lot 5 kg\n🔴 VRP negative — selling blocked\n<pre>");
+  });
+
+  it("escapes HTML and splits under Telegram's length cap without breaking a table", () => {
+    const events = Array.from({ length: 200 }, (_, i) => ({
       kind: "NEW", row: row({ strike: 200000 + i, block: "a < b & c" }),
     }));
-    const msgs = formatMessages(events, { threshold: 70, when: "10:40" });
+    const msgs = formatMessages(events, opts);
     expect(msgs.length).toBeGreaterThan(1);
-    for (const m of msgs) expect(m.length).toBeLessThanOrEqual(4096);
+    for (const m of msgs) {
+      expect(m.length).toBeLessThanOrEqual(4096);
+      expect((m.match(/<pre>/g) ?? []).length).toBe((m.match(/<\/pre>/g) ?? []).length);
+    }
     expect(msgs[0]).toContain("a &lt; b &amp; c");
-    expect(msgs.join("").match(/🔔 NEW/g)).toHaveLength(80);
+    expect(msgs.join("\n").match(/^200\d\d\dCE /gm)).toHaveLength(200);
   });
 
   it("arming lists the starting set, and says so when it is empty", () => {
-    const armed = formatMessages([{ kind: "NEW", row: row() }], { threshold: 70, when: "09:20", armed: true });
+    const armed = formatMessages([{ kind: "NEW", row: row() }], { ...opts, armed: true });
     expect(armed[0]).toContain("Alerts armed");
-    expect(armed[0]).toContain("SILVERM 262000 CE");
-    expect(formatMessages([], { threshold: 70, when: "09:20", armed: true })[0]).toContain("Nothing above the bar");
-    expect(formatMessages([], { threshold: 70, when: "09:20" })).toEqual([]);
+    expect(armed[0]).toContain("262000CE");
+    expect(formatMessages([], { ...opts, armed: true })[0]).toContain("nothing above the bar");
+    expect(formatMessages([], opts)).toEqual([]);
   });
 
-  it("the mock goes through the real formatter and shows every line type", () => {
-    const [m] = formatMessages(mockEvents(), { threshold: 70, when: "14:05" });
-    for (const mark of ["🔔 NEW", "🔻", "🚪", "⬆️", "⬇️", "🥈", "🥇", "🟠", "🛢️", "🔴"]) expect(m).toContain(mark);
+  it("the mock goes through the real formatter and shows every section and commodity", () => {
+    const [m] = formatMessages(mockEvents(), opts);
+    for (const mark of ["NEW ", "MOVED ", "DROPPED ", "REMOVED ", "🥈 SILVERM", "🥇 GOLDM", "🟠 COPPER", "🛢️ CRUDEOILM", "🔴", "⭐", "🔥"]) {
+      expect(m).toContain(mark);
+    }
   });
 
   it("prices a crude line per barrel on the mini's 10 bbl lot", () => {
-    const [m] = formatMessages(mockEvents().filter((e) => e.row.metal === "crude"), { threshold: 70, when: "14:05" });
-    expect(m).toContain("🛢️ <b>CRUDEOILM");
-    expect(m).toContain("/bbl");
+    const [m] = formatMessages(mockEvents().filter((e) => e.row.metal === "crude"), opts);
+    expect(m).toContain("<b>🛢️ CRUDEOILM · 15 Oct</b>");
     expect(m).toContain("lot 10 bbl");
+    expect(m).toContain("7500PE");
+    expect(m).toContain("PREM ₹ per kg / 10g / bbl");
   });
 
   it("heartbeat warns, by name, when a metal got no fresh data", () => {
