@@ -81,6 +81,8 @@ function applyLiveSpot(
 export interface Dashboard {
   live: LiveInputs | null;
   mcx: McxData | null;
+  /** The snapshot the direction engine scored — before any expiry switch. */
+  baseMcx: McxData | null;
   expiries: ExpiryBundle[] | null;
   selectedExpiry: string | null;
   setSelectedExpiry: (optionExpiry: string) => void;
@@ -194,13 +196,14 @@ export function useDashboard(metalId: string = DEFAULT_METAL): Dashboard {
     return buildOutlook(live, viewMcx, scores, regime, premium, derived);
   }, [live, viewMcx, scores, regime, premium, derived]);
 
-  // Walk-forward self-check: how often the engine's lean matched what silver
-  // actually did. Recomputed only when the snapshot changes.
-  const track = useMemo(() => (live ? walkForwardHitRate(live) : null), [live]);
+  // Walk-forward self-check: how often the engine's lean matched what this
+  // metal actually did. Recomputed only when the snapshot changes.
+  const track = useMemo(() => (live ? walkForwardHitRate(live, id) : null), [live, id]);
 
   return {
     live,
     mcx: viewMcx,
+    baseMcx: mcx,
     expiries: mcx?.expiries ?? null,
     selectedExpiry,
     setSelectedExpiry,

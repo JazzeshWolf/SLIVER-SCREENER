@@ -121,10 +121,13 @@ function MetalDashboard({
                 {dash.regime && dash.scores && (
                   <RegimeCard regime={dash.regime} scores={dash.scores} track={dash.track} />
                 )}
-                {dash.regime && dash.scores && (
+                {dash.regime && dash.scores && dash.baseMcx && (
                   <FactorBreakdown
                     decision={dash.scores[dash.regime.dteHorizon]}
                     horizon={dash.regime.dteHorizon}
+                    metal={meta}
+                    live={dash.live}
+                    mcx={dash.baseMcx}
                   />
                 )}
                 {dash.mcx && <MarketStructure mcx={dash.mcx} />}
@@ -138,7 +141,7 @@ function MetalDashboard({
                   {dash.mcx && <ThetaRing mcx={dash.mcx} />}
                 </div>
                 {dash.mcx && <PositionsPanel mcx={dash.mcx} />}
-                <SpotStrip live={dash.live} mcx={dash.mcx} />
+                <SpotStrip live={dash.live} mcx={dash.mcx} metal={meta} />
               </>
             )}
 
@@ -155,7 +158,7 @@ function MetalDashboard({
                     ivEstimated={dash.mcx.options.ivRankEstimated ?? dash.mcx.options.ivEstimated}
                   />
                 )}
-                <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} />
+                <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} metal={meta} />
               </>
             )}
 
@@ -174,20 +177,23 @@ function MetalDashboard({
                 <FearGauge mcx={dash.mcx} />
                 <ExpectedMoveCone mcx={dash.mcx} events={dash.mcx.events} />
                 <GexCard gex={dash.mcx.gex} fut={dash.mcx.mcx.fut} />
-                <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} />
+                <EventRadar events={dash.mcx.events} prints={dash.mcx.prints} metal={meta} />
               </>
             )}
 
             {tab === "context" && (
               <>
-                <CorrelationPanel live={dash.live} gsr={dash.derived?.gsr ?? null} />
+                {/* Gold-silver ratio and silver–gold correlation: nothing there for crude. */}
+                {meta.sector !== "energy" && (
+                  <CorrelationPanel live={dash.live} gsr={dash.derived?.gsr ?? null} />
+                )}
                 {dash.mcx && <CurveCard mcx={dash.mcx} />}
                 {dash.mcx && <CotCard mcx={dash.mcx} />}
                 {dash.mcx && dash.derived && <BasisPanel mcx={dash.mcx} derived={dash.derived} />}
               </>
             )}
 
-            {tab === "news" && <NewsTab news={dash.mcx?.news ?? []} />}
+            {tab === "news" && <NewsTab news={dash.mcx?.news ?? []} metal={meta} />}
           </>
         )}
       </main>

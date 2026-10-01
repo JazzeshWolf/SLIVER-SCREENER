@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // Walk-forward self-check for the direction engine. For each of the last ~60
 // trading days we truncate every history to that date, recompute the 1W/1M
-// score with the SAME engine, and check whether the sign matched what silver
-// actually did over the next 5 / 21 trading days.
+// score with the SAME engine, and check whether the sign matched what the
+// metal actually did over the next 5 / 21 trading days.
 //
 // Honesty notes: this is a walk-forward consistency check on the app's own
 // data — weights are never refit, but it is NOT a rigorous backtest (no costs,
@@ -51,7 +51,11 @@ function truncate(live: LiveInputs, date: string): LiveInputs {
   };
 }
 
-export function walkForwardHitRate(live: LiveInputs, sampleDays = 60): TrackResult | null {
+/**
+ * `metalId` picks the factor table. Without it the stub's symbol would resolve
+ * to the default metal and every screen would be graded on silver's weights.
+ */
+export function walkForwardHitRate(live: LiveInputs, metalId?: string, sampleDays = 60): TrackResult | null {
   const xag = live.metalHistory;
   if (xag.length < 90) return null; // need history + lookahead to say anything
 
@@ -63,7 +67,7 @@ export function walkForwardHitRate(live: LiveInputs, sampleDays = 60): TrackResu
     const from = Math.max(60, end - la - sampleDays);
     for (let i = from; i <= end - la; i++) {
       const asOf = truncate(live, xag[i].t);
-      const hs = scoreHorizon(h, asOf, MCX_STUB);
+      const hs = scoreHorizon(h, asOf, MCX_STUB, metalId);
       if (Math.abs(hs.score) < MIN_LEAN) continue;
       const fwd = xag[i + la].v - xag[i].v;
       if (fwd === 0) continue;

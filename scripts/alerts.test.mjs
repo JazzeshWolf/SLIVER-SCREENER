@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
   collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, groupSections,
@@ -314,21 +315,21 @@ describe("formatting", () => {
 
   it("heartbeat is a per-metal table and warns, by name, when a metal got no fresh data", () => {
     const ev = (metal, kind) => ({ kind, row: { metal } });
-    const s = bumpDay({ tracked: {} }, ["silver", "gold", "copper"], [ev("silver", "NEW"), ev("gold", "LEFT")], "2026-09-24", "2026-09-24T17:50:00Z");
+    const s = bumpDay({ tracked: {} }, METAL_IDS, [ev("silver", "NEW"), ev("gold", "LEFT")], "2026-09-24", "2026-09-24T17:50:00Z");
     const hb = formatHeartbeat(s, "2026-09-24", 70);
     expect(hb).toMatch(/^✓/);
     expect(unpre(hb)).toContain("Silver      1    1     0     0");
     expect(unpre(hb)).toContain("Gold        1    0     0     1");
-    const partial = bumpDay({ tracked: {} }, ["silver", "gold"], [], "2026-09-24", "2026-09-24T17:50:00Z");
+    const partial = bumpDay({ tracked: {} }, ["silver", "gold", "crude"], [], "2026-09-24", "2026-09-24T17:50:00Z");
     expect(formatHeartbeat(partial, "2026-09-24", 70)).toMatch(/^⚠️[\s\S]*Copper got no fresh data/);
-    expect(formatHeartbeat(null, "2026-09-24", 70)).toMatch(/Silver, Gold, Copper/);
+    expect(formatHeartbeat(null, "2026-09-24", 70)).toMatch(/Silver, Gold, Copper, Crude Oil/);
   });
 
   it("counts a day's runs and events per metal, per session", () => {
     const ev = (metal, kind) => ({ kind, row: { metal } });
     let s = bumpDay({}, ["silver"], [ev("silver", "NEW"), ev("silver", "MOVED")], "2026-09-24", "x");
     s = bumpDay(s, ["silver", "gold"], [ev("gold", "MOVED")], "2026-09-24", "y");
-    expect(s.day.runs).toEqual({ silver: 2, gold: 1, copper: 0 });
+    expect(s.day.runs).toEqual({ silver: 2, gold: 1, copper: 0, crude: 0 });
     expect(s.day.events.silver).toMatchObject({ NEW: 1, MOVED: 1 });
     expect(s.day.events.gold).toMatchObject({ MOVED: 1 });
     expect(bumpDay(s, [], [], "2026-09-25", "z").day.runs.silver).toBe(0);
@@ -361,8 +362,13 @@ describe("run", () => {
   const IN_SESSION = "2026-09-24T08:40:00Z"; // Thu 14:10 IST
   function setup(lastLiveAt = IN_SESSION) {
     const root = mkdtempSync(join(tmpdir(), "alerts-test-"));
-    for (const id of ["silver", "gold", "copper"]) {
-      const s = JSON.parse(readFileSync(`public/data/${id}.json`, "utf8"));
+    for (const id of METAL_IDS) {
+      // A commodity with no archived snapshot yet (crude, until the cron first
+      // builds one) borrows copper's chain under its own contract, so the run
+      // still sees every commodity fresh and the heartbeat can come back ✓.
+      const file = existsSync(`public/data/${id}.json`) ? id : "copper";
+      const s = JSON.parse(readFileSync(`public/data/${file}.json`, "utf8"));
+      s.mcx = { ...s.mcx, symbol: METALS[id].feedSymbol };
       s.stale = false;
       s.feed = { ...(s.feed ?? {}), chainOk: true, lastLiveAt };
       writeFileSync(join(root, `${id}.json`), JSON.stringify(s));
@@ -379,7 +385,7 @@ describe("run", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toContain("Alerts armed");
     const state = JSON.parse(readFileSync(join(dirs.stateDir, "metals.json"), "utf8"));
-    expect(state.day).toMatchObject({ date: "2026-09-24", runs: { silver: 1, gold: 1, copper: 1 } });
+    expect(state.day).toMatchObject({ date: "2026-09-24", runs: { silver: 1, gold: 1, copper: 1, crude: 1 } });
     expect(state.metals.silver.lastLiveAt).toBe(IN_SESSION);
 
     await go(dirs, "2026-09-24T08:51:00Z", async (m) => sent.push(m));

@@ -60,6 +60,13 @@ export function DirectionGauges({
         </p>
       )}
 
+      {outlook?.liveRead && (
+        <p className="mt-3 rounded-xl bg-sky-500/10 ring-1 ring-sky-400/20 px-3 py-2 text-[12px] leading-snug text-white/80">
+          <span className="text-sky-300 font-semibold">Live market · </span>
+          {outlook.liveRead}
+        </p>
+      )}
+
       {outlook && (
         <button
           onClick={onOpenOutlook}
@@ -67,7 +74,7 @@ export function DirectionGauges({
         >
           <span className="text-[11px] text-white/55 leading-snug">
             This is the <span className="text-white/85 font-medium">momentum core</span>. Full weighted
-            read — adding CoT positioning, basis &amp; structural deficit — in Outlook.
+            read — adding CoT positioning, basis &amp; the structural story — in Outlook.
           </span>
           <span className="flex flex-col items-end shrink-0">
             <Pill tone={outlook.leanTone}>{outlook.leanLabel}</Pill>

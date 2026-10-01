@@ -139,6 +139,7 @@ export function SellCandidates({
               <Row
                 key={`${c.type}-${c.strike}`}
                 c={c}
+                unit={metal.quoteUnit}
                 open={openStrike === c.strike}
                 onToggle={() => setOpenStrike(openStrike === c.strike ? null : c.strike)}
               />
@@ -201,7 +202,7 @@ export function SellCandidates({
   );
 }
 
-function Row({ c, open, onToggle }: { c: SellCandidate; open: boolean; onToggle: () => void }) {
+function Row({ c, unit, open, onToggle }: { c: SellCandidate; unit: string; open: boolean; onToggle: () => void }) {
   const tone = candidateTone(c);
   const convColor =
     c.conv >= 70 ? "text-emerald-300" : c.conv >= 45 ? "text-sky-300" : "text-white/50";
@@ -258,7 +259,7 @@ function Row({ c, open, onToggle }: { c: SellCandidate; open: boolean; onToggle:
             <Detail label="Strike IV" value={`${(c.iv * 100).toFixed(1)}%`} />
             <Detail label="Tail loss (worst 5%)" value={`${c.tailPct.toFixed(0)}% of margin`} />
             <Detail label="Fair value (forecast)" value={fmt(c.fair, 1)} />
-            <Detail label="Edge" value={`${fmt(c.edge, 1)} ₹/kg`} />
+            <Detail label="Edge" value={`${fmt(c.edge, 1)} ${unit}`} />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Pill tone={tone}>

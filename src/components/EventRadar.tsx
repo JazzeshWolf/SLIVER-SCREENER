@@ -1,4 +1,5 @@
 import type { EconPrint, MarketEvent } from "../lib/types";
+import type { MetalConfig } from "../lib/metals.mjs";
 import { Card, SectionTitle, Pill } from "./ui";
 
 const KIND_LABEL: Record<MarketEvent["kind"], string> = {
@@ -8,9 +9,9 @@ const KIND_ICON: Record<MarketEvent["kind"], string> = {
   fomc: "🏛️", us_cpi: "📊", us_jobs: "👷", rbi: "🇮🇳", mcx_expiry: "⏳", other: "📌",
 };
 
-function ImpactChip({ impact }: { impact?: MarketEvent["impact"] }) {
-  if (impact === "up") return <Pill tone="bull">↑ silver</Pill>;
-  if (impact === "down") return <Pill tone="bear">↓ silver</Pill>;
+function ImpactChip({ impact, name }: { impact?: MarketEvent["impact"]; name: string }) {
+  if (impact === "up") return <Pill tone="bull">↑ {name}</Pill>;
+  if (impact === "down") return <Pill tone="bear">↓ {name}</Pill>;
   return <Pill tone="warn">↕ two-way</Pill>;
 }
 
@@ -29,7 +30,16 @@ function WeightBars({ weight = 1 }: { weight?: number }) {
   );
 }
 
-export function EventRadar({ events, prints = [] }: { events: MarketEvent[]; prints?: EconPrint[] }) {
+export function EventRadar({
+  events,
+  prints = [],
+  metal,
+}: {
+  events: MarketEvent[];
+  prints?: EconPrint[];
+  metal: MetalConfig;
+}) {
+  const name = metal.label.toLowerCase();
   const today = new Date();
   const upcoming = events
     .map((e) => ({ ...e, days: Math.ceil((new Date(e.date).getTime() - today.getTime()) / 86400000) }))
@@ -58,7 +68,7 @@ export function EventRadar({ events, prints = [] }: { events: MarketEvent[]; pri
                     </span>
                   </div>
                   <div className="mt-1.5 flex items-start gap-2">
-                    <ImpactChip impact={p.impact} />
+                    <ImpactChip impact={p.impact} name={name} />
                     <p className="text-[11px] text-white/55 leading-snug flex-1">{p.note}</p>
                   </div>
                 </div>
@@ -90,7 +100,7 @@ export function EventRadar({ events, prints = [] }: { events: MarketEvent[]; pri
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-start gap-2">
-                  <ImpactChip impact={e.impact} />
+                  <ImpactChip impact={e.impact} name={name} />
                   {e.effect && <p className="text-[11px] text-white/55 leading-snug flex-1">{e.effect}</p>}
                 </div>
               </div>

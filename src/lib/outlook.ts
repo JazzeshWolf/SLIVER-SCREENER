@@ -12,6 +12,7 @@
 // Metal analogues: inventories -> exchange stocks / ETF flows; supply outlooks
 // -> Silver Institute, central-bank buying, copper concentrate TC/RCs; macro
 // (real yields / dollar) dominates bullion, the dollar and China dominate copper.
+// Crude is the framework's home ground: the curve, OPEC+ and EIA inventories.
 // ---------------------------------------------------------------------------
 
 import type {
@@ -23,6 +24,7 @@ import type {
   RegimeResult,
 } from "./types";
 import { copyFor, say } from "./copy";
+import { curveRead } from "./curveRead";
 import { metalForSymbol } from "./instrument";
 
 export type Stance = "up" | "down" | "neutral";
@@ -36,6 +38,14 @@ export interface OutlookDriver {
 }
 
 export interface Outlook {
+  /** Which metal this is the outlook for, for the tab's heading. */
+  metalLabel: string;
+  /**
+   * The live futures curve in one sentence with its own prices, for metals
+   * whose curve is their supply read (crude, `curveFrom: "mcx"`). Null for
+   * the metals, whose screens are unchanged.
+   */
+  liveRead: string | null;
   leanLabel: string;
   leanTone: "bull" | "bear" | "neutral" | "warn";
   horizonScore: number;
@@ -81,6 +91,7 @@ export function buildOutlook(
   // said "supply deficit + solar demand" — true of silver, wrong on copper.
   const metal = metalForSymbol(mcx.mcx.symbol);
   const c = copyFor(metal.id);
+  const liveRead = metal.curveFrom === "mcx" ? curveRead(mcx.curve)?.text ?? null : null;
 
   // 1) Monetary — real yields + the dollar. Heaviest for gold, lightest for
   //    copper, which is why the weight comes from the copy table.
@@ -90,19 +101,28 @@ export function buildOutlook(
       ? `${c.monetary.down} (Macro series unavailable right now — this is the curated prior, not a live read.)`
       : say(c.monetary, mon));
 
-  // 2) Cross-metal driver: gold leadership for silver, the copper/gold growth
-  //    ratio for copper, nothing for gold (it leads the complex itself).
+  // 2) Cross-asset driver: gold leadership for silver, the copper/gold growth
+  //    ratio for copper, the futures curve for crude, nothing for gold (it
+  //    leads the complex itself).
+  //    Where the lead IS the live curve, say what the curve says, prices and all.
   if (c.lead) {
     const lead = liveStance([c.lead.key]);
-    add(c.lead.label, c.lead.weight, lead, "neutral", say(c.lead, lead));
+    const note = c.lead.key === "termStructure" && liveRead ? liveRead : say(c.lead, lead);
+    add(c.lead.label, c.lead.weight, lead, "neutral", note);
   }
 
   // 3) The metal's own trend.
   const own = liveStance(["metalMomo"]);
   add(c.trend.label, 16, own, "neutral", say(c.trend, own));
 
-  // 4) Structural story — constant, no live input, per metal.
-  add(c.structural.label, c.structural.weight, "up", "up", c.structural.note);
+  // 4) Structural story — constant, no live input, per metal. Its direction is
+  //    the registry prior's sign. Crude has none: its supply story is the live
+  //    curve driver above.
+  if (c.structural) {
+    const bias = metal.engine.structuralBias;
+    const structural: Stance = bias > 0 ? "up" : bias < 0 ? "down" : "neutral";
+    add(c.structural.label, c.structural.weight, structural, structural, c.structural.note);
+  }
 
   // 5) Physical / flows. NOT WIRED LIVE — no free feed serves exchange stocks
   //    or ETF tonnage on a schedule we can rely on, so this states what to
@@ -132,9 +152,11 @@ export function buildOutlook(
   }
   add("Positioning · CoT + MCX OI", 10, posStance, "neutral", posNote);
 
-  // 7) India local — duty, INR, basis premium.
+  // 7) India local — duty, INR, basis premium. A settlement-formula parity
+  //    (crude) carries no domestic premium — its gap is feed timing — so there
+  //    the rupee alone speaks for this pillar.
   const inr = liveStance(["usdInr"]);
-  const pp = derived?.premiumPct ?? null;
+  const pp = metal.parityKind === "import" ? derived?.premiumPct ?? null : null;
   const duty = (metal.duty * 100).toFixed(0);
   const indiaStance: Stance = pp != null && pp > 0.5 ? "up" : pp != null && pp < -0.5 ? "down" : (inr ?? "neutral");
   add(c.local.label, c.local.weight, indiaStance, indiaStance,
@@ -192,5 +214,5 @@ export function buildOutlook(
     `${driverTxt ? `, driven mainly by ${driverTxt}` : ""}. ` +
     `Treat it as a probabilistic lean, not a forecast — the source ensemble ran ~0.35 correlation with weekly returns (modest but real).`;
 
-  return { leanLabel, leanTone, horizonScore: f1m.score, confidence: f1m.confidence, netBias, drivers, positioning, volNote, playbook, summary };
+  return { metalLabel: metal.label, liveRead, leanLabel, leanTone, horizonScore: f1m.score, confidence: f1m.confidence, netBias, drivers, positioning, volNote, playbook, summary };
 }
