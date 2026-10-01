@@ -84,19 +84,37 @@ One message per run, **always with sound** — the owner explicitly asked for no
 silent messages, moves included. Don't add `disable_notification` without
 asking (a test pins it).
 
-**Layout (owner asked for table-like, 2026-09-26).** One header line per metal
-+ expiry (`🥈 SILVERM · 27 Oct · 32d left · lot 5 kg`, then a 🔴 line when that
-expiry's VRP or event gate blocks selling), followed by ONE `<pre>` block with
-up to three small tables — `NEW` (CONV, PREM, CREDIT per lot), `OUT` (CONV,
-REASON) and `MOVED` (CONV was>now, PREM, CHG). Sections holding an entry or
-exit come first. Rules a test pins: every `<pre>` row ≤ 30 characters (wider
-wraps on the owner's phone at a large font size), and no emoji inside `<pre>`
-(they are wider than a monospace cell and break the columns). That is why the
-⭐/🔥 tiers are gone and reasons are short ("prem decayed", "gamma zone",
-"in the money", "off the chain", "expiry gone"). The end-of-day heartbeat is a
-per-metal table (runs, new, moves, exits). Threshold
-`ALERT_MIN_CONV_METALS`, default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
-(tick *mock* for an invented alert through the real formatter, labelled MOCK).
+**Layout: the NSE screener's cards (owner's ask, 2026-10-01: "look like the
+nifty alerts").** Title `⚖️ MCX · HH:MM IST`, then `Alert level: conviction
+70+ · 10+ days to expiry`. One card per commodity + expiry: `🥈 SILVERM · 27 Oct`
+(bold), `26 days left · lot 5 kg`, a 🔴 line when that expiry's VRP or event
+gate blocks selling, then ONE `<pre>` holding sections with the same five
+columns as xerxes — strike+type, CONV (`81`, `73→75`, `71→–` for an exit),
+PREM (as quoted), ROM, POP:
+
+- NEW, MOVED, DROPPED, then exits titled by reason: ITM (in the money), GAMMA
+  (too close to the price), DECAYED (premium too small), REMOVED (anything
+  else: off the chain, thin, no IV…), EXPIRED (expiry day). The end-of-day
+  cards use ABOVE.
+- **ROM = credit per lot ÷ the screener's modelled margin per lot**, not
+  annualised (the Sell tab's "Return on margin" is `romAnnual`). POP = `pOtm`,
+  the screen's forecast, not 1 − |Δ|. Both are stored in the tracked state so
+  an exit and the end-of-day cards can show them; state written before
+  2026-10-01 shows "–".
+- Cards holding a NEW lead (highest CONV first), then commodity order, then
+  expiry. The legend under the cards names PREM's unit only for the contracts
+  in that message (₹/kg, GOLDM per 10 g, CRUDEOILM per bbl).
+
+Rules a test pins: every `<pre>` row ≤ 34 characters (xerxes's width; wider
+wraps on a phone held upright), rows in a card share one set of column widths,
+and no emoji inside `<pre>` (wider than a monospace cell, they break the
+columns). The **end-of-day report** replaces the old heartbeat: `📋 MCX · end
+of day 1 Oct` (⚠️ when a commodity had no fresh run), a per-commodity table
+(Runs, New, Moves, Exits, Now), `Last run`, then `⚖️ At 70+ at the close (N)`
+with the tracked contracts as ABOVE cards. Threshold `ALERT_MIN_CONV_METALS`,
+default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual
+check: Actions → **Send test alert** (tick *mock* for an invented alert AND an
+invented end-of-day report through the real formatter, labelled MOCK).
 
 Things that will bite:
 - **CONV is not in the snapshot.** The Sell tab computes it in the browser, so
@@ -130,10 +148,11 @@ Things that will bite:
   message listing what is already above the bar, then normal operation.
   Deleting the `alerts-state` branch is the way to reset tracking without a
   flood. Arming waits for the first fresh in-session run.
-- **The heartbeat** goes out on the first run after the close (so today:
-  usually GitHub's 02:00–03:00 IST run): runs checked per metal, new/moves/exits,
-  tracked count, ⚠️ naming any metal with zero fresh runs. No heartbeat by
-  morning = the workflow didn't run after the close.
+- **The end-of-day report** (the heartbeat) goes out on the first run after
+  the close (so today: usually GitHub's 02:00–03:00 IST run): runs checked per
+  commodity, new/moves/exits, tracked count, ⚠️ naming any commodity with zero
+  fresh runs, then what is still at the bar. No report by morning = the
+  workflow didn't run after the close. `state.heartbeatDate` keeps its name.
 - **High CONV on metals mostly means short-dated.** Replaying 12 Aug–25 Sep
   2026: ~77% of NEW alerts at ≥ 70 fired with ≤ 10 days to expiry (median 6),
   in every band — `romAnnual` divides by tenor. The ⭐/🔥 tiers do not pick out

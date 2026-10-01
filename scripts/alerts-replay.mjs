@@ -62,14 +62,11 @@ try {
     await run({
       dataDir, stateDir, now, threshold, minDte,
       log: () => {},
+      onEvents: (events, { armed }) => {
+        if (!armed) for (const e of events) kinds[e.kind]++;
+      },
       send: (text) => {
         messages++;
-        for (const l of text.split("\n")) {
-          if (l.startsWith("🔔 NEW")) kinds.NEW++;
-          else if (l.startsWith("⬆️") || l.startsWith("⬇️")) kinds.MOVED++;
-          else if (l.startsWith("🔻")) kinds.DROPPED++;
-          else if (l.startsWith("🚪")) kinds.LEFT++;
-        }
         const d = istDate(now);
         perDay.set(d, (perDay.get(d) ?? 0) + 1);
         if (!quiet) console.log(`===== ${istDate(now)} ${istTime(now)} IST (commit ${sha.slice(0, 7)}) =====\n${text}\n`);

@@ -3,7 +3,7 @@ name: Send test alert
 # Manual check that the Telegram secrets are wired up: Actions → "Send test
 # alert" → Run workflow. The bot should reply "⚖️ MCX metals alerts connected".
 # Tick "mock" to also receive an invented alert rendered by the real formatter
-# (every line type, labelled MOCK) so you can see and hear what a live one is
+# (every section, plus a mock end-of-day report, labelled MOCK) so you can see and hear what a live one is
 # like. A red run means the token or chat ID is wrong, or the bot was never
 # started. Sends only — never touches the alerts-state branch.
 on:

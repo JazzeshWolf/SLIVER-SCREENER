@@ -59,7 +59,9 @@ export const ALERT_EXPIRIES = 2;
  *  fewer left). Once tracked it is followed to its exit regardless. Override
  *  with the repo variable ALERT_MIN_DTE_METALS. */
 export const DEFAULT_MIN_DTE = 10;
-const BRAND = "⚖️ MCX";
+const BRAND_ICON = "⚖️";
+const BRAND_NAME = "MCX";
+const BRAND = `${BRAND_ICON} ${BRAND_NAME}`;
 const SCREENER_URL = "https://jazzeshwolf.github.io/SLIVER-SCREENER/";
 const TG_LIMIT = 3900; // Telegram caps a message at 4096 chars; leave headroom.
 
@@ -196,6 +198,10 @@ export function collectMetal(id, snap, view) {
         metal: id, emoji: metal.emoji, symbol, expiry: e.optionExpiry, dte: e.optionDte,
         strike: c.strike, type: c.type, conviction: c.conv, ltp: c.premium,
         unit: metal.quoteUnit, lot: lotLabel(metal, symbol), credit: Math.round(c.credit),
+        // Return on the screener's modelled margin for one lot (not annualised),
+        // and its forecast chance the strike expires worthless.
+        rom: c.marginPerLot > 0 ? Number(((c.credit / c.marginPerLot) * 100).toFixed(2)) : null,
+        pop: Number.isFinite(c.pOtm) ? Number(c.pOtm.toFixed(4)) : null,
         displayed: shown.has(`${c.strike}${c.type}`), ok: c.ok,
         why: c.ok ? null : reasonOf(c.reasons),
         block,
@@ -220,6 +226,8 @@ export function explainMissing(t, context) {
 const snapshotOf = (r) => ({
   metal: r.metal, emoji: r.emoji, symbol: r.symbol, expiry: r.expiry, strike: r.strike, type: r.type,
   conviction: r.conviction, ltp: r.ltp, unit: r.unit, lot: r.lot, credit: r.credit,
+  // Kept so an exit and the end-of-day cards can still show ROM / POP and the gate.
+  rom: r.rom ?? null, pop: r.pop ?? null, block: r.block ?? null,
 });
 const keyOf = (r) => key(r.metal, r.expiry, r.strike, r.type);
 
@@ -266,133 +274,162 @@ export function diff(tracked, current, { threshold, today, isFresh, minDte = 0, 
 
 // --- formatting -------------------------------------------------------------
 //
-// Built for a phone. Each metal + expiry gets a header line, then ONE <pre>
-// block holding up to three small tables (NEW, OUT, MOVED). Monospace keeps
-// the columns lined up; every table row stays within 30 characters so it
-// does not wrap on a phone at a large font size. No emoji inside <pre>: they
-// are wider than a monospace cell and break the alignment.
+// The same cards as the NSE screener's alerts (owner's ask, 2026-10-01: "look
+// like the nifty alerts"). One card per commodity + expiry: a bold header
+// outside the grid, then ONE <pre> holding NEW / ABOVE / MOVED / exit
+// sections whose columns line up with each other. Telegram has no table
+// markup; monospace is what keeps the columns aligned. Rows stay within ~34
+// characters so a phone held upright doesn't wrap them, and nothing inside
+// <pre> is an emoji (wider than a monospace cell, it would shift the columns).
 
 export const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const dm = (iso) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
-const lp = (v, n) => String(v).padStart(n);
-const rp = (v, n) => String(v).padEnd(n);
-/** Premium as the chain quotes it: 1485.5, 612, 4.35 — no forced decimals. */
-const num = (n) => String(Number(Number(n).toFixed(2)));
-const grouped = (n) => Math.round(n).toLocaleString("en-IN");
-const strikeCol = (r) => rp(`${r.strike} ${r.type}`, 10);
-const signed = (n) => (n > 0 ? `+${n}` : String(n));
+const ROWS_PER_BLOCK = 30;
 
-const rule = (threshold, minDte) => `CONV ≥ ${threshold}${minDte > 0 ? ` · new alerts need ${minDte}+ days left` : ""}`;
-
-/** The monospace block for one metal + expiry. */
-export function sectionTable(sec) {
-  const tables = [];
-  let lines = [];
-  const close = () => { if (lines.length) tables.push(lines.join("\n")); lines = []; };
-  if (sec.NEW.length) {
-    lines.push(rp("NEW", 10) + lp("CONV", 5) + " " + lp("PREM", 7) + " " + lp("CREDIT", 6));
-    for (const e of sec.NEW) {
-      const r = e.row;
-      lines.push(strikeCol(r) + lp(r.conviction, 5) + " " + lp(num(r.ltp), 7) + " " + lp(grouped(r.credit), 6));
-    }
-  }
-  close();
-  if (sec.OUT.length) {
-    lines.push(rp("OUT", 10) + lp("CONV", 5) + " " + "REASON");
-    for (const e of sec.OUT) {
-      const r = e.row;
-      const conv = e.kind === "DROPPED" ? `${e.from}>${r.conviction}` : e.from;
-      const why = e.kind === "DROPPED" ? `below ${sec.threshold}` : e.why ?? "off the list";
-      lines.push(strikeCol(r) + lp(conv, 5) + " " + why);
-    }
-  }
-  close();
-  if (sec.MOVED.length) {
-    lines.push(rp("MOVED", 10) + lp("CONV", 5) + " " + lp("PREM", 7) + " " + lp("CHG", 6));
-    for (const e of sec.MOVED) {
-      const r = e.row;
-      lines.push(strikeCol(r) + lp(`${e.from}>${r.conviction}`, 5) + " " + lp(num(r.ltp), 7) + " " + lp(signed(r.conviction - e.from), 6));
-    }
-  }
-  close();
-  // A blank line between the small tables keeps them apart at a glance.
-  return `<pre>${esc(tables.join("\n\n"))}</pre>`;
+/** Render rows as an aligned monospace table. `align` is "l"/"r" per column. */
+export function table(head, rows, align) {
+  const all = [head, ...rows];
+  const w = head.map((_, i) => Math.max(...all.map((r) => String(r[i]).length)));
+  const fmt = (cells) =>
+    cells.map((c, i) => (align[i] === "r" ? String(c).padStart(w[i]) : String(c).padEnd(w[i]))).join(" ").trimEnd();
+  return all.map(fmt).join("\n");
 }
 
-/**
- * Group a run's events by metal + expiry. Sections holding an entry or exit
- * come first (the original "NEW/DROPPED/LEFT before MOVED" rule), then metal
- * order, then expiry; inside a section the tables run NEW, OUT, MOVED.
- */
-export function groupSections(events, threshold) {
-  const map = new Map();
+// ≥ ₹1000 as a whole number, ≥ ₹100 to one decimal, so a premium never needs
+// more than 6 characters.
+const num = (n) => (n >= 1000 ? Math.round(n).toLocaleString("en-IN")
+  : n >= 100 ? String(Number(Number(n).toFixed(1))) : String(Number(Number(n).toFixed(2))));
+const daysLeft = (expiry, today) =>
+  Math.round((Date.parse(expiry + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86400000);
+
+// Exits are split by reason so the reason is the section title rather than a
+// column. The three that say something about the trade get their own title;
+// the rest (thin chain, no IV, gone from the chain…) are REMOVED.
+const EXIT_SECTIONS = [
+  ["ITM", /^in the money/],
+  ["GAMMA", /^gamma zone/],
+  ["DECAYED", /^prem decayed/],
+];
+const exitTitle = (e) =>
+  e.expiring ? "EXPIRED" : EXIT_SECTIONS.find(([, re]) => re.test(e.why ?? ""))?.[0] ?? "REMOVED";
+const SECTION_ORDER = ["NEW", "ABOVE", "MOVED", "DROPPED", "ITM", "GAMMA", "DECAYED", "REMOVED", "EXPIRED"];
+const titleOf = (e) =>
+  e.kind === "NEW" ? "NEW" : e.kind === "HELD" ? "ABOVE" : e.kind === "MOVED" ? "MOVED" : e.kind === "DROPPED" ? "DROPPED" : exitTitle(e);
+
+function card(events, { today }) {
+  const r0 = events[0].row;
+  const dte = daysLeft(r0.expiry, today);
+  const left = dte <= 0 ? "expires today" : dte === 1 ? "1 day left" : `${dte} days left`;
+  const head = [`${r0.emoji ?? ""} <b>${esc(r0.symbol)} · ${dm(r0.expiry)}</b>`.trim(),
+    `${left}${r0.lot ? ` · lot ${esc(r0.lot)}` : ""}`];
+  // A tracked row that has left carries the gate from when it was tracked;
+  // only a current row speaks for the expiry now.
+  const gate = events.find((e) => e.kind !== "LEFT" && e.row.block)?.row.block;
+  if (gate) head.push(`🔴 ${esc(gate)}`);
+
+  const romOf = (r) => (r.rom == null ? "–" : r.rom.toFixed(1));
+  const popOf = (r) => (r.pop == null ? "–" : String(Math.round(r.pop * 100)));
+  const convOf = (e) =>
+    e.kind === "NEW" || e.kind === "HELD" ? String(e.row.conviction)
+      : e.kind === "LEFT" ? `${e.from}→–` : `${e.from}→${e.row.conviction}`;
+  const cells = (e) => [`${e.row.strike}${e.row.type}`, convOf(e), e.row.ltp == null ? "–" : num(e.row.ltp), romOf(e.row), popOf(e.row)];
+
+  const bySection = new Map(SECTION_ORDER.map((t) => [t, []]));
+  for (const e of events) bySection.get(titleOf(e)).push(e);
+  bySection.get("ABOVE").sort((a, b) => b.row.conviction - a.row.conviction);
+  const sections = [...bySection].filter(([, evs]) => evs.length);
+
+  // Every row carries the same five columns, so they share one set of widths.
+  const all = events.map(cells);
+  const w = [0, 1, 2, 3, 4].map((i) =>
+    Math.max(i === 0 ? Math.max(...sections.map(([t]) => t.length)) : ["", "CONV", "PREM", "ROM", "POP"][i].length,
+      ...all.map((c) => c[i].length)));
+  const fmt = (c) => [c[0].padEnd(w[0]), ...c.slice(1).map((v, i) => v.padStart(w[i + 1]))].join(" ").trimEnd();
+  const body = sections.map(([title, evs]) =>
+    [fmt([title, "CONV", "PREM", "ROM", "POP"]), ...evs.map((e) => fmt(cells(e)))].join("\n"));
+  return `${head.join("\n")}\n<pre>${esc(body.join("\n\n"))}</pre>`;
+}
+
+/** Cards ordered so fresh entries lead: groups holding a NEW first (highest
+ *  conviction first), then commodity order, then expiry. */
+export function cards(events, opts) {
+  const groups = new Map();
   for (const e of events) {
-    const r = e.row;
-    const k = `${r.metal}|${r.expiry}`;
-    if (!map.has(k)) map.set(k, { metal: r.metal, emoji: r.emoji, symbol: r.symbol, expiry: r.expiry, threshold, NEW: [], OUT: [], MOVED: [] });
-    const sec = map.get(k);
-    (e.kind === "NEW" ? sec.NEW : e.kind === "MOVED" ? sec.MOVED : sec.OUT).push(e);
-    if (r.dte != null) sec.dte = r.dte;
-    if (r.lot) sec.lot = r.lot;
-    if (r.block) sec.block = r.block;
+    const k = `${e.row.metal}|${e.row.expiry}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
   }
-  const byConv = (a, b) => b.row.conviction - a.row.conviction;
-  const list = [...map.values()];
-  for (const sec of list) {
-    sec.NEW.sort(byConv);
-    sec.OUT.sort((a, b) => (a.kind === b.kind ? b.from - a.from : a.kind === "DROPPED" ? -1 : 1));
-    sec.MOVED.sort(byConv);
-  }
-  const rank = (sec) => (sec.NEW.length || sec.OUT.length ? 0 : 1);
-  return list.sort((a, b) =>
-    rank(a) - rank(b) || METAL_IDS.indexOf(a.metal) - METAL_IDS.indexOf(b.metal) || a.expiry.localeCompare(b.expiry));
+  const top = (evs) => Math.max(-1, ...evs.filter((e) => e.kind === "NEW").map((e) => e.row.conviction));
+  return [...groups.values()]
+    .sort((x, y) => top(y) - top(x)
+      || METAL_IDS.indexOf(x[0].row.metal) - METAL_IDS.indexOf(y[0].row.metal)
+      || x[0].row.expiry.localeCompare(y[0].row.expiry))
+    .flatMap((evs) => {
+      // A very large group is split so no <pre> ever straddles two messages.
+      const parts = [];
+      for (let i = 0; i < evs.length; i += ROWS_PER_BLOCK) parts.push(card(evs.slice(i, i + ROWS_PER_BLOCK), opts));
+      return parts;
+    });
 }
 
-/** A long section is cut into pieces of at most `max` rows, keeping the
- *  NEW → OUT → MOVED order, so no single block can outgrow a message. */
-function chunkSection(sec, max = 40) {
-  const all = ["NEW", "OUT", "MOVED"].flatMap((k) => sec[k].map((e) => [k, e]));
-  if (all.length <= max) return [sec];
-  const parts = [];
-  for (let i = 0; i < all.length; i += max) {
-    const part = { ...sec, NEW: [], OUT: [], MOVED: [] };
-    for (const [k, e] of all.slice(i, i + max)) part[k].push(e);
-    parts.push(part);
+const UNIT_WORDS = { "₹/kg": "per kg", "₹/10g": "per 10 g", "₹/bbl": "per bbl" };
+
+/** The legend under the cards. PREM's unit differs by contract, so the line
+ *  names only the contracts in this message. */
+function legend(rows, threshold, titles = new Set()) {
+  const units = new Map();
+  for (const r of rows) {
+    const u = UNIT_WORDS[r.unit] ?? r.unit;
+    if (!u) continue;
+    if (!units.has(u)) units.set(u, new Set());
+    units.get(u).add(r.symbol);
   }
-  return parts;
+  const lines = [];
+  if (units.size) lines.push(`PREM ₹ ${[...units].map(([u, s]) => `${u} (${[...s].join(", ")})`).join(" · ")}`);
+  lines.push("ROM % = credit per lot ÷ margin per lot (screener's estimate)");
+  lines.push("POP % = model's chance it expires worthless");
+  if (threshold != null) lines.push(`DROPPED = fell below ${threshold} · REMOVED = off the list`);
+  const extra = [
+    ["ITM", "ITM = now in the money"],
+    ["GAMMA", "GAMMA = too close to the price"],
+    ["DECAYED", "DECAYED = premium too small to hold"],
+  ].filter(([t]) => titles.has(t)).map(([, s]) => s);
+  if (extra.length) lines.push(extra.join(" · "));
+  return `<i>${esc(lines.join("\n"))}</i>`;
 }
 
-function sectionText(sec) {
-  const head = [`${sec.emoji} <b>${esc(sec.symbol)} · ${dm(sec.expiry)}</b>`];
-  if (sec.dte != null) head.push(`${sec.dte}d left`);
-  if (sec.lot) head.push(`lot ${esc(sec.lot)}`);
-  const gate = sec.block ? `\n🔴 ${esc(sec.block)}` : "";
-  return `${head.join(" · ")}${gate}\n${sectionTable(sec)}`;
-}
+const alertLevel = (threshold, minDte) =>
+  `Alert level: conviction ${threshold}+${minDte > 0 ? ` · ${minDte}+ days to expiry` : ""}`;
 
-/** One message per run (split between sections only if Telegram's cap forces it). */
-export function formatMessages(events, { threshold, minDte = 0, when, armed = false }) {
-  if (!events.length && !armed) return [];
-  const title = `<b>${BRAND} alerts</b> · ${when} IST`;
-  const header = [title, `<i>${esc(rule(threshold, minDte))}</i>`];
-  if (armed)
-    header.push(events.length
-      ? `✅ Alerts armed. Already above the bar, now tracked (${events.length}):`
-      : "✅ Alerts armed. Nothing above the bar right now.");
-  const footer = `<a href="${SCREENER_URL}">Open screener</a> · PREM as quoted · CREDIT ₹ per lot`;
+/** Fill messages with blocks, starting a new one only when Telegram's cap forces it. */
+function pack(header, contHeader, blocks, footer) {
   const out = [];
-  let cur = header.join("\n");
-  for (const sec of groupSections(events, threshold).flatMap((x) => chunkSection(x))) {
-    const block = sectionText(sec);
+  let cur = header;
+  for (const block of blocks) {
     if (cur.length + block.length + footer.length + 4 > TG_LIMIT) {
-      out.push(cur);
-      cur = `${title} (cont.)`;
+      out.push(cur.trimEnd());
+      cur = contHeader;
     }
     cur += "\n\n" + block;
   }
-  out.push(cur + "\n\n" + footer);
+  out.push(cur.trimEnd() + "\n\n" + footer);
   return out;
+}
+
+/** One message per run (split only if Telegram's length cap forces it). */
+export function formatMessages(events, { threshold, minDte = 0, when, today = istDate(), armed = false }) {
+  if (!events.length && !armed) return [];
+  const title = `${BRAND_ICON} <b>${BRAND_NAME}</b> · ${when} IST`;
+  const header = [title, `<i>${esc(alertLevel(threshold, minDte))}</i>`];
+  if (armed)
+    header.push(events.length
+      ? `✅ Alerts armed — already above the bar, now tracked (${events.length})`
+      : "✅ Alerts armed — nothing above the bar right now");
+  const titles = new Set(events.map(titleOf));
+  const link = `<a href="${SCREENER_URL}">Open screener</a>`;
+  const footer = events.length ? `${legend(events.map((e) => e.row), threshold, titles)}\n${link}` : link;
+  return pack(header.join("\n"), `${title} (cont.)`, cards(events, { today }), footer);
 }
 
 const emptyCounts = () => ({ NEW: 0, MOVED: 0, DROPPED: 0, LEFT: 0 });
@@ -402,25 +439,36 @@ const emptyDay = (date) => ({
   events: Object.fromEntries(METAL_IDS.map((id) => [id, emptyCounts()])),
 });
 
-export function formatHeartbeat(state, session, threshold, minDte = 0) {
+/**
+ * End-of-day report, sent on the first run after MCX's close: the day's run
+ * counts per commodity, then every contract still tracked at the close, as
+ * the same cards the alerts use. Its absence the next morning is how the
+ * owner learns the pipeline stopped.
+ */
+export function formatEod(state, session, threshold) {
   const d = state?.day?.date === session ? state.day : emptyDay(session);
   const dead = METAL_IDS.filter((id) => !(d.runs?.[id] > 0));
-  const rows = [rp("", 8) + lp("RUNS", 5) + lp("NEW", 5) + lp("MOVE", 6) + lp("EXIT", 6)];
-  for (const id of METAL_IDS) {
+  const tracked = Object.values(state?.tracked ?? {});
+  const t = table(["", "Runs", "New", "Moves", "Exits", "Now"], METAL_IDS.map((id) => {
     const c = d.events?.[id] ?? emptyCounts();
-    rows.push(rp(METALS[id].label, 8) + lp(d.runs?.[id] ?? 0, 5) + lp(c.NEW, 5) + lp(c.MOVED, 6) + lp(c.DROPPED + c.LEFT, 6));
-  }
-  const n = Object.keys(state?.tracked ?? {}).length;
-  const last = state?.lastRunAt && !dead.length ? ` · last run ${istTime(new Date(state.lastRunAt))} IST` : "";
-  return [
-    `${dead.length ? "⚠️" : "✓"} <b>${BRAND} alerts · end of day ${dm(session)}</b>`,
-    `<pre>${esc(rows.join("\n"))}</pre>`,
-    `${n} tracked now${last}`,
-    `<i>${esc(rule(threshold, minDte))}</i>`,
-    dead.length
-      ? `\n⚠️ ${dead.map((id) => METALS[id].label).join(", ")} got no fresh data today. Check the Actions tab (Refresh MCX data) and the Upstox token.`
-      : "",
-  ].join("\n").trimEnd();
+    return [METALS[id].label, d.runs?.[id] ?? 0, c.NEW, c.MOVED, c.DROPPED + c.LEFT, tracked.filter((x) => x.metal === id).length];
+  }), ["l", "r", "r", "r", "r", "r"]);
+  const title = `<b>${BRAND_NAME} · end of day ${dm(session)}</b>`;
+  const last = d === state?.day && state?.lastRunAt ? istTime(new Date(state.lastRunAt)) : "—";
+  const header = [
+    `${dead.length ? "⚠️" : "📋"} ${title}`,
+    `<pre>${esc(t)}</pre>`,
+    `Last run: ${last} IST`,
+  ];
+  if (dead.length)
+    header.push(`\n⚠️ ${dead.map((id) => METALS[id].label).join(", ")} got no fresh data today — check the Actions tab (Refresh MCX data) and the Upstox token.`);
+
+  const held = tracked.filter((x) => x.expiry >= session && x.conviction >= threshold);
+  const blocks = [`${BRAND_ICON} <b>At ${threshold}+ at the close (${held.length})</b>${held.length ? "" : "\nNone."}`];
+  blocks.push(...cards(held.map((row) => ({ kind: "HELD", row })), { today: session }));
+  const link = `<a href="${SCREENER_URL}">Open screener</a>`;
+  const footer = held.length ? `${legend(held, null)}\n${link}` : link;
+  return pack(header.join("\n"), `📋 ${title} (cont.)`, blocks, footer);
 }
 
 // --- state bookkeeping ------------------------------------------------------
@@ -437,26 +485,38 @@ export function bumpDay(state, freshIds, events, session, nowIso) {
   return { ...state, day, lastRunAt: nowIso };
 }
 
-/** Invented sample for `--mock`: every line type, and a line for every commodity. */
-export function mockEvents() {
-  const row = (id, expiry, strike, type, conviction, ltp, block = null, dte = null) => {
+/** Invented sample for `--mock`: a card for every commodity and a row in
+ *  every section, dated from `today` so the days-left line stays plausible. */
+export function mockEvents(today = istDate()) {
+  const row = (id, days, strike, type, conviction, ltp, rom, pop, block = null) => {
     const m = METALS[id];
     const symbol = m.feedSymbol;
-    const lot = lotLabel(m, symbol);
     const units = m.contracts.find((c) => c.symbol === symbol).quoteUnitsPerLot;
-    return { metal: id, emoji: m.emoji, symbol, expiry, dte, strike, type, conviction, ltp, unit: m.quoteUnit, lot, credit: Math.round(ltp * units), block };
+    return {
+      metal: id, emoji: m.emoji, symbol, expiry: addDays(today, days), dte: days, strike, type, conviction, ltp,
+      unit: m.quoteUnit, lot: lotLabel(m, symbol), credit: Math.round(ltp * units), rom, pop, block,
+    };
   };
   return [
-    { kind: "NEW", row: row("silver", "2026-10-27", 262000, "CE", 81, 1485.5, null, 32) },
-    { kind: "NEW", row: row("gold", "2026-10-29", 144000, "PE", 76, 612, "VRP negative — selling blocked", 34) },
-    { kind: "NEW", row: row("copper", "2026-10-23", 1360, "PE", 71, 4.35, null, 28) },
-    { kind: "NEW", row: row("crude", "2026-10-15", 4900, "PE", 74, 21, null, 19) },
-    { kind: "DROPPED", from: 72, row: row("silver", "2026-10-27", 212000, "PE", 66, 1120) },
-    { kind: "LEFT", from: 74, row: row("gold", "2026-10-29", 158000, "CE", 74, 410), why: "gamma zone" },
-    { kind: "MOVED", from: 73, row: row("silver", "2026-10-27", 216000, "PE", 75, 1310) },
-    { kind: "MOVED", from: 78, row: row("copper", "2026-10-23", 1480, "CE", 77, 3.9) },
-    { kind: "MOVED", from: 71, row: row("crude", "2026-10-15", 6300, "CE", 76, 18) },
+    { kind: "NEW", row: row("silver", 26, 262000, "CE", 81, 1485.5, 4.9, 0.93) },
+    { kind: "NEW", row: row("gold", 28, 144000, "PE", 76, 612, 2.1, 0.91, "VRP negative — selling blocked") },
+    { kind: "NEW", row: row("copper", 22, 1360, "PE", 71, 4.35, 12.4, 0.9) },
+    { kind: "NEW", row: row("crude", 14, 4900, "PE", 74, 21, 9.6, 0.92) },
+    { kind: "DROPPED", from: 72, row: row("silver", 26, 212000, "PE", 66, 1120, 3.7, 0.88) },
+    { kind: "LEFT", from: 71, row: row("silver", 26, 205000, "PE", 71, 640, 2.1, 0.95), why: "prem decayed" },
+    { kind: "LEFT", from: 74, row: row("gold", 28, 158000, "CE", 74, 410, 1.4, 0.9), why: "gamma zone" },
+    { kind: "MOVED", from: 73, row: row("silver", 26, 216000, "PE", 75, 1310, 4.3, 0.9) },
+    { kind: "MOVED", from: 78, row: row("copper", 22, 1480, "CE", 77, 3.9, 11.8, 0.92) },
+    { kind: "MOVED", from: 71, row: row("crude", 14, 6300, "CE", 76, 18, 8.1, 0.94) },
   ];
+}
+
+/** State for a mock end-of-day report: the mock's surviving rows tracked, and a day's counts. */
+export function mockState(session = sessionDate(new Date())) {
+  const events = mockEvents(session);
+  const tracked = Object.fromEntries(events.filter((e) => e.kind === "NEW" || e.kind === "MOVED")
+    .map((e) => [keyOf(e.row), snapshotOf(e.row)]));
+  return bumpDay({ tracked }, METAL_IDS, events, session, new Date().toISOString());
 }
 
 // --- one run ------------------------------------------------------------------
@@ -466,9 +526,10 @@ const readJson = (p) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : n
 /**
  * One alert run over the snapshot files in `dataDir`, against the state file
  * in `stateDir`. `send` must throw when a message is not accepted — the state
- * is written only after every send has returned.
+ * is written only after every send has returned. `onEvents` sees each run's
+ * events (the replay counts them).
  */
-export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send, log = console.log }) {
+export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send, log = console.log, onEvents = () => {} }) {
   const { sellView } = await import("../src/lib/sellView.ts");
   const statePath = resolve(stateDir, "metals.json");
   const prev = readJson(statePath);
@@ -511,11 +572,12 @@ export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send,
     // loud NEW per contract — switching alerts on never floods, and nothing
     // already above the bar is swallowed either.
     const armed = !prev;
-    const msgs = formatMessages(events, { threshold, minDte, when, armed });
+    const msgs = formatMessages(events, { threshold, minDte, when, today, armed });
     for (const m of msgs) await send(m);
+    onEvents(events, { armed });
     const tally = events.reduce((a, e) => ((a[e.kind] = (a[e.kind] ?? 0) + 1), a), {});
     log(armed
-      ? `First run: armed, tracking ${Object.keys(tracked).length} contracts at ${rule(threshold, minDte)}.`
+      ? `First run: armed, tracking ${Object.keys(tracked).length} contracts (${alertLevel(threshold, minDte)}).`
       : `${events.length} events ${JSON.stringify(tally)}, ${Object.keys(tracked).length} tracked, ${msgs.length} message(s) sent.`);
     state = bumpDay(state, fresh, armed ? [] : events, session, now.toISOString());
   } else if (!prev) {
@@ -523,12 +585,12 @@ export async function run({ dataDir, stateDir, now, threshold, minDte = 0, send,
     return;
   }
 
-  // End-of-day heartbeat: the first run after MCX's close (23:30 / 23:55 IST).
+  // End-of-day report: the first run after MCX's close (23:30 / 23:55 IST).
   // Its absence the next morning is how the owner learns the pipeline stopped.
   if (afterClose(now, session) && state.heartbeatDate !== session) {
-    await send(formatHeartbeat(state, session, threshold, minDte));
+    for (const m of formatEod(state, session, threshold)) await send(m);
     state = { ...state, heartbeatDate: session };
-    log("Heartbeat sent.");
+    log("End-of-day report sent.");
   } else if (!fresh.size) {
     log("Nothing fresh — nothing to do.");
     return;
@@ -573,9 +635,14 @@ export async function main(argv = process.argv) {
   if (argv.includes("--mock")) {
     // Rendered by the real formatter so the owner sees exactly what a live
     // alert looks and sounds like. Contracts and prices are invented.
-    const [m] = formatMessages(mockEvents(), { threshold: DEFAULT_THRESHOLD, minDte: DEFAULT_MIN_DTE, when: istTime(new Date()) });
-    await sendTelegram("🧪 <b>MOCK ALERT (test only, not real)</b>\n\n" + m);
-    console.log("Mock alert sent.");
+    const now = new Date();
+    const mock = "🧪 <b>MOCK (test only, not real)</b>\n\n";
+    for (const m of formatMessages(mockEvents(istDate(now)), {
+      threshold: DEFAULT_THRESHOLD, minDte: DEFAULT_MIN_DTE, when: istTime(now), today: istDate(now),
+    })) await sendTelegram(mock + m);
+    const session = sessionDate(now);
+    for (const m of formatEod(mockState(session), session, DEFAULT_THRESHOLD)) await sendTelegram(mock + m);
+    console.log("Mock alert and mock end-of-day report sent.");
     return;
   }
   const envMin = Number(process.env.ALERT_MIN_CONV_METALS);
