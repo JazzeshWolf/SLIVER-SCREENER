@@ -8,11 +8,11 @@
    "expiry": "2026-10-23",
    "strike": 1300,
    "type": "PE",
-   "conviction": 72,
-   "ltp": 2.69,
+   "conviction": 78,
+   "ltp": 2.32,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 6725
+   "credit": 5800
   },
   "copper|2026-10-23|1500|CE": {
    "metal": "copper",
@@ -21,61 +21,48 @@
    "expiry": "2026-10-23",
    "strike": 1500,
    "type": "CE",
-   "conviction": 81,
-   "ltp": 3.03,
+   "conviction": 71,
+   "ltp": 3.02,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 7575
-  },
-  "crude|2026-10-15|7700|PE": {
-   "metal": "crude",
-   "emoji": "🛢️",
-   "symbol": "CRUDEOILM",
-   "expiry": "2026-10-15",
-   "strike": 7700,
-   "type": "PE",
-   "conviction": 70,
-   "ltp": 75.2,
-   "unit": "₹/bbl",
-   "lot": "10 bbl",
-   "credit": 752
+   "credit": 7550
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-10-01T10:00:55.734Z",
-   "fingerprint": "b43c068a1202cd49",
-   "regime": "chop"
+   "lastLiveAt": "2026-10-01T11:48:51.450Z",
+   "fingerprint": "d2e69f5282856c77",
+   "regime": "no_conviction"
   },
   "gold": {
-   "lastLiveAt": "2026-10-01T10:00:58.635Z",
-   "fingerprint": "3e4671940b0757d8",
+   "lastLiveAt": "2026-10-01T11:48:54.777Z",
+   "fingerprint": "24b7faeffc0e5399",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-10-01T10:01:02.809Z",
-   "fingerprint": "3951ff3638c3ecca",
+   "lastLiveAt": "2026-10-01T11:48:59.789Z",
+   "fingerprint": "33e24fa6b39b2507",
    "regime": "no_conviction"
   },
   "crude": {
-   "lastLiveAt": "2026-10-01T10:01:06.740Z",
-   "fingerprint": "c1e140b9147860fb",
+   "lastLiveAt": "2026-10-01T11:49:03.777Z",
+   "fingerprint": "1e4db19fef43a811",
    "regime": "chop"
   }
  },
  "day": {
   "date": "2026-10-01",
   "runs": {
-   "silver": 1,
-   "gold": 1,
-   "copper": 1,
-   "crude": 1
+   "silver": 2,
+   "gold": 2,
+   "copper": 2,
+   "crude": 2
   },
   "NEW": 2,
-  "MOVED": 1,
-  "DROPPED": 0,
+  "MOVED": 3,
+  "DROPPED": 1,
   "LEFT": 0
  },
- "lastRunAt": "2026-10-01T10:01:11.901Z",
+ "lastRunAt": "2026-10-01T11:49:07.842Z",
  "heartbeatDate": "2026-09-30"
 }
