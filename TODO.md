@@ -10,12 +10,10 @@
   the wrong anchor: MCX tracks LME while the only free feed is COMEX, and §232 has held them
   hundreds of dollars a tonne apart. westmetall.com publishes LME cash/3M free — if it parses,
   switching is a one-line registry change (`unitMult: 0.001`, `intlUnit: "$/t"`).
-- [ ] **Verify crude (CRUDEOILM) live in CI.** Built and tested against a mocked Upstox feed only.
-  First `main` run: the log must show `upstox: CRUDEOILM N expiries` (not "no CRUDEOILM contracts"),
-  chain legs, a sane ATM IV, a ₹50-ish derived strike step, `curve (MCX strip)` and a COT pull for
-  CFTC 067651; the Sell tab must show ₹/lot = premium × 10. Then check the first-cut calibration
-  against reality — OI floors (`minOi` 25, `minChainOi` 500) against the actual book, and the
-  modelled margin (`priceScan` 8%, `volScan` 30%) against the broker's real CRUDEOILM short margin.
+- [ ] **Check crude's OI floors against the live book** (`minOi` 25, `minChainOi` 500). The live
+  pipeline is verified (CRUDEOILM chain, ₹50 steps, MCX-strip curve, CFTC 067651) and the margin is
+  calibrated to the broker (see ✅). If MCX changes crude's margins, re-check `priceScan` against the
+  broker and update the pinned figure in `metals.test.ts`.
 - [ ] **Verify gold + copper live in CI.** Local runs have no Upstox token, so GOLDM/COPPER chains
   have never been exercised against the real instrument master. First `workflow_dispatch` run should
   be checked for: real chain legs, sane ATM IV, derived strike step, and **₹/lot = premium × 10 on
@@ -38,6 +36,8 @@
 - [ ] Visual polish pass (spacing, charts, motion).
 
 ## ✅ Done
+- [x] **Crude margin calibrated to the broker** (2026-10-01) — `priceScan` 8% → 46%, matching the
+  owner's Sensibull margin of ₹27,392 for a CRUDEOILM 7500 PE. EDGE was reading ~9× too high.
 - [x] **Crude reads its supply story live** — no fixed OPEC+ prior; the MCX futures curve carries
   that weight and the screen states it with the month prices (`src/lib/curveRead.ts`).
 - [x] **Crude oil (CRUDEOILM)** — fourth commodity: registry entry (10 bbl lot, WTI × USD-INR

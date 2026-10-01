@@ -19,6 +19,7 @@ import {
   strikeStep,
 } from "./metals.mjs";
 import { fairValue, basis, premiumPct, toIntlPrice } from "./basis";
+import { spanScanMargin } from "./options";
 
 describe("registry integrity", () => {
   it("exposes exactly the four commodities, each self-consistent", () => {
@@ -189,6 +190,20 @@ describe("import parity", () => {
   it("keeps silver's parity multiplier at its pre-refactor value", () => {
     // Guards the P1 promise that silver's numbers do not move.
     expect(parityMult(METALS.silver)).toBeCloseTo(32.1507 * 1.18, 10);
+  });
+});
+
+describe("crude margin model — calibrated to the broker", () => {
+  it("models the owner's real CRUDEOILM margin within 10%", () => {
+    // Sensibull, 1 Oct 2026: SELL 1 CRUDEOILM 15 Oct 7500 PE with the future
+    // at 8,883 → standalone margin ₹27,392 per lot. Strike IV ~65.7%, 14 days.
+    // The first cut (a ±8% scan) modelled ~₹2,500 — nine times too low, which
+    // inflated crude's EDGE and CONV.
+    const { priceScan, volScan } = METALS.crude.screen;
+    const perBbl = spanScanMargin(8883, 7500, 14 / 365, 0.657, "PE", { priceScan, volScan });
+    const perLot = perBbl * quoteUnitsPerLot(METALS.crude, "CRUDEOILM");
+    expect(perLot).toBeGreaterThan(27_392 * 0.9);
+    expect(perLot).toBeLessThan(27_392 * 1.1);
   });
 });
 

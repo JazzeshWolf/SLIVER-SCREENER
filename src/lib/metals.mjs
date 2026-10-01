@@ -358,17 +358,24 @@ export const METALS = {
     // feed timing into a fake contango.
     curveFrom: "mcx",
 
-    // First-cut calibration, to be checked against the first live chains (see
-    // TODO.md). The mini's book is shallower than the big contract's, so
-    // minChainOi is a light gate: below it, refuse to rank at all. The scan is
-    // the widest in the app — crude gaps on OPEC+ headlines and weekly
-    // inventory prints, and runs hotter than silver.
+    // The mini's book is shallower than the big contract's, so minChainOi is a
+    // light gate: below it, refuse to rank at all.
+    //
+    // MARGIN IS CALIBRATED TO THE BROKER, NOT TO VOLATILITY (2026-10-01). The
+    // first cut scanned ±8% (crude's daily vol, scaled the way the metals'
+    // scans are) and modelled ~₹3,100 a lot — but MCX margins crude far above
+    // its volatility. Owner's Sensibull, 1 Oct 2026: SELL 1 CRUDEOILM 15 Oct
+    // 7500 PE, future 8,883 → standalone margin ₹27,392. A ±46% scan models
+    // ~₹27,900 for that leg. With ±8% the EDGE column read 11.5% of margin
+    // where the trade really paid ~2%, and the inflated return lifted CONV
+    // (67 → 56 on that strike). Pinned by metals.test.ts; re-check against
+    // the broker if MCX changes crude's margins.
     screen: {
       minOi: 25,
       thinOi: 300,
       minChainOi: 500,
       romDivisor: 250,
-      priceScan: 0.08,
+      priceScan: 0.46,
       volScan: 0.3,
     },
 

@@ -68,8 +68,12 @@ lives in the same registry (the code still says "metal" throughout).
   *"The live market says the futures curve is steeply backwardated (October ₹8,843, November ₹8,511,
   December ₹8,281), which signals a tight market."* (`src/lib/curveRead.ts`, Score tab + Outlook +
   curve card).
-- **Crude's calibration is a first cut.** Its weights, OI gates and margin scan are still to be
-  checked against more live CRUDEOILM chains — see `TODO.md`.
+- **Crude's margin is calibrated to the broker, not to its volatility.** MCX margins crude far above
+  what its daily moves suggest: a ±46% scan reproduces the owner's real Sensibull margin (₹27,392 a
+  lot for a CRUDEOILM 7500 PE, 1 Oct 2026). The first cut used ±8% and modelled ~₹3,100, which made
+  EDGE read 11.5% of margin on a trade that paid ~2% and inflated CONV. A test pins the calibration.
+- **Crude's weights and OI gates are a first cut**, still to be checked against more live chains —
+  see `TODO.md`.
 
 ## Architecture ($0)
 
