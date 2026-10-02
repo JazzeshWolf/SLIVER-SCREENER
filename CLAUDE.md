@@ -36,7 +36,7 @@ credentials table.
 | `TWELVEDATA_KEY`, `FRED_KEY` | repo secrets | n/a | macro factors drop out (partial), direction score weaker |
 | `KITE_API_KEY`, `KITE_ACCESS_TOKEN` | repo secrets (optional fallback) | daily | nothing, unless Upstox is also dead |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | repo secrets — **the same bot and chat as xerxes** | never (revoke via @BotFather `/revoke` — which kills both screeners' alerts) | "Conviction alerts" step goes red; no end-of-day heartbeat |
-| `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (70) |
+| `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (60) |
 | `ALERT_MIN_DTE_METALS` | repo **variable** | n/a | unset → the code default (10 days); `0` turns the minimum off |
 
 Settings → Secrets and variables → Actions: secrets on the **Secrets** tab,
@@ -66,7 +66,7 @@ phone and breaks the alignment. The replay counts events from `run()`'s
 
 | event | when |
 |---|---|
-| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, reaches CONV ≥ 70 |
+| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, reaches CONV ≥ 60 |
 | ⬆️⬇️ MOVED | tracked, still above the bar, CONV changed by any amount |
 | 🔻 DROPPED | tracked, fell below the bar → untracked (re-crossing is NEW again) |
 | 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "premium decayed"), in the money, off the fetched chain, or expiry day → untracked |
@@ -74,7 +74,7 @@ phone and breaks the alignment. The replay counts events from `run()`'s
 One message per run, **always with sound** — the owner explicitly asked for no
 silent messages, moves included. Don't add `disable_notification` without
 asking (a test pins it). Tiers: ⭐ 75+, 🔥 80+. Threshold
-`ALERT_MIN_CONV_METALS`, default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
+`ALERT_MIN_CONV_METALS`, default 60 (was 70 until 3 Oct 2026, owner's call: 213 replayed messages since 11 Aug instead of 171); entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
 (tick *mock* for an invented alert through the real formatter, labelled MOCK;
 tick *active* for a real one: the contracts the alerts follow right now, re-priced
 on the latest snapshot, labelled TEST — it reads `alerts-state` but never writes it).
@@ -125,7 +125,7 @@ Things that will bite:
   a day at today's cadence, ~20 a day during the mid-August cadence, and a
   10-minute scheduler would mean most of ~85 in-session runs.
 - **Current and next expiry only** (`ALERT_EXPIRIES = 2`, owner's choice
-  2026-09-25, 70 on all three metals; crude, added 2026-09-26, inherits both
+  2026-09-25; the bar is 60 on every commodity since 3 Oct 2026; crude, added 2026-09-26, inherits both
   and the 10-day entry rule). Far months stay on the screen but never
   alert. An expiry on its last day (DTE 0) has no ranked strikes and gives up
   its slot, so on gold's 25 Sep expiry day the watch is Oct + Nov.

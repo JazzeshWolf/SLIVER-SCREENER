@@ -50,7 +50,11 @@ import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 
-export const DEFAULT_THRESHOLD = 70;
+/** Alert bar (owner's choice, 2026-10-03: 70 → 60). Replaying 11 Aug–3 Oct at
+ *  10+ days left: 213 messages instead of 171, 192 NEW instead of 112; in the
+ *  backtest every sale at CONV 60+ with 10+ days that has expired kept its
+ *  premium (95 of 95). Override with the repo variable ALERT_MIN_CONV_METALS. */
+export const DEFAULT_THRESHOLD = 60;
 export const TIERS = { star: 75, fire: 80 };
 /** Expiries watched per metal: the current one and the next (owner's choice,
  *  2026-09-25). Far months stay on the screen but never alert. */
