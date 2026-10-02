@@ -305,13 +305,13 @@ export interface SellCandidate {
   touch: number; // risk-neutral probability of being tested before expiry
   fair: number; // expected payoff under the forecast measure, ₹/kg
   edge: number; // premium − fair, ₹/kg
-  edgePct: number; // edge as % of margin
-  romAnnual: number; // annualized return on margin, %
-  margin: number; // modelled margin, ₹/kg
+  edgePct: number; // edge as % of the margin shown
+  romAnnual: number; // annualized return on the margin shown, %
+  margin: number; // margin shown, ₹/kg: broker-calibrated (CONV scores on the screen's own scan)
   marginPerLot: number; // ₹ per lot (override wins when supplied)
   marginModelled: boolean; // false once the user supplies a real margin
   cvar: number; // expected loss in the worst 5%, ₹/kg
-  tailPct: number; // cvar as % of margin
+  tailPct: number; // cvar as % of the margin shown
   breakeven: number; // strike ± premium
   oi: number;
   oiChg: number | null;
