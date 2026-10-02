@@ -53,6 +53,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ALERT_MIN_CONV_METALS: ${{ vars.ALERT_MIN_CONV_METALS }}
           ALERT_MIN_DTE_METALS: ${{ vars.ALERT_MIN_DTE_METALS }}
+          ALERT_TOP_N_METALS: ${{ vars.ALERT_TOP_N_METALS }}
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "::error::TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID secret is missing or misnamed."
