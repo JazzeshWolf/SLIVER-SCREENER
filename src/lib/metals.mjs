@@ -94,6 +94,15 @@ export const METALS = {
       volScan: 0.25,
     },
 
+    // MARGIN AS SHOWN — calibrated to the broker, separate from `screen` on
+    // purpose (owner, 3 Oct 2026). `screen.priceScan` above stays the basis of
+    // CONV, which is frozen; this scan only sizes the margin the screen DISPLAYS
+    // and the returns quoted on it (EDGE, ROM, tail %, the Telegram ROM column).
+    // Owner's Sensibull, 3 Oct 2026: SELL 1 SILVERM 27 Oct 210000 PE @ 1142.5,
+    // future 227,850 → standalone margin ₹1,46,000. The ±6% scan modelled
+    // ₹30,275 (4.8× low); ±20.4% models ₹1,45,528. Pinned by metals.test.ts.
+    margin: { priceScan: 0.204 },
+
     engine: {
       structuralBias: 0.6,
       structuralLabel: "Structural deficit bias",
@@ -182,6 +191,11 @@ export const METALS = {
       priceScan: 0.04,
       volScan: 0.2,
     },
+
+    // Margin as shown (see silver). Owner's Sensibull, 3 Oct 2026: SELL 1
+    // GOLDM 29 Oct 160000 CE @ 400, future ~149,000 → ₹1,36,000. The ±4% scan
+    // modelled ₹21,475 (6.3× low); ±16.1% models ₹1,36,531. CONV keeps ±4%.
+    margin: { priceScan: 0.161 },
 
     engine: {
       structuralBias: 0.2,
@@ -273,6 +287,11 @@ export const METALS = {
       priceScan: 0.05,
       volScan: 0.22,
     },
+
+    // Margin as shown (see silver). Owner's Sensibull, 3 Oct 2026: SELL 1
+    // COPPER 23 Oct 1500 CE @ 2.78, future 1,398.95 → ₹3,26,000. The ±5% scan
+    // modelled ₹58,257 (5.6× low); ±16.2% models ₹3,25,122. CONV keeps ±5%.
+    margin: { priceScan: 0.162 },
 
     engine: {
       structuralBias: 0.3,

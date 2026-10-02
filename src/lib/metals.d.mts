@@ -97,6 +97,15 @@ export interface MetalScreen {
   volScan: number;
 }
 
+/**
+ * The margin the screen SHOWS, when it differs from the scan CONV is scored
+ * on. Calibrated to the owner's broker; `screen.priceScan` stays CONV's basis.
+ */
+export interface MetalMargin {
+  /** Price scan that reproduces the broker's standalone margin. */
+  priceScan: number;
+}
+
 export interface MetalConfig {
   id: string;
   label: string;
@@ -127,6 +136,8 @@ export interface MetalConfig {
   curveFrom: CurveFrom;
 
   screen: MetalScreen;
+  /** Broker-calibrated display margin; absent → the screen's own scan is shown. */
+  margin?: MetalMargin;
   engine: MetalEngine;
   comex: MetalComex;
   news: MetalNews;

@@ -207,6 +207,35 @@ describe("crude margin model — calibrated to the broker", () => {
   });
 });
 
+describe("metal margins shown — calibrated to the broker", () => {
+  // Owner's Sensibull, 3 Oct 2026 01:20 IST, standalone margin for SELL 1 lot.
+  // Strike IV from the 2 Oct 15:07 snapshot, which priced each leg the same.
+  // CONV is still scored on `screen.priceScan` (frozen); this pins only the
+  // margin the screen displays and the returns quoted on it.
+  const legs = [
+    { id: "silver", symbol: "SILVERM", F: 227850, K: 210000, dte: 25, iv: 0.288, type: "PE", broker: 146_000 },
+    { id: "gold", symbol: "GOLDM", F: 149000, K: 160000, dte: 27, iv: 0.205, type: "CE", broker: 136_000 },
+    { id: "copper", symbol: "COPPER", F: 1398.95, K: 1500, dte: 21, iv: 0.212, type: "CE", broker: 326_000 },
+  ] as const;
+  for (const L of legs) {
+    it(`models the owner's real ${L.symbol} margin within 10%`, () => {
+      const scan = METALS[L.id].margin?.priceScan;
+      expect(scan, L.id).toBeDefined();
+      const perUnit = spanScanMargin(L.F, L.K, L.dte / 365, L.iv, L.type, {
+        priceScan: scan!,
+        volScan: METALS[L.id].screen.volScan,
+      });
+      const perLot = perUnit * quoteUnitsPerLot(METALS[L.id], L.symbol);
+      expect(perLot).toBeGreaterThan(L.broker * 0.9);
+      expect(perLot).toBeLessThan(L.broker * 1.1);
+    });
+  }
+
+  it("crude needs no separate display margin: its screen scan is already the broker's", () => {
+    expect(METALS.crude.margin).toBeUndefined();
+  });
+});
+
 describe("strikeStep", () => {
   const chainOf = (strikes: number[]) => strikes.map((strike) => ({ strike }));
 

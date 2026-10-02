@@ -36,6 +36,11 @@
 - [ ] Visual polish pass (spacing, charts, motion).
 
 ## ✅ Done
+- [x] **Metals' shown margin calibrated to the broker** (2026-10-03). Silver, gold and copper now
+  display margins near the owner's Sensibull figures, 4.8–6.3× the old model. CONV is untouched:
+  it still scores on `screen.priceScan`. That was checked over 803 archived snapshots (35,888 scored
+  strikes, zero differences), and the alert replay gives the same 170 messages; only the ROM column
+  changed. If MCX revises margins, re-check `margin.priceScan` against the broker (`metals.test.ts`).
 - [x] **Crude margin calibrated to the broker** (2026-10-01) — `priceScan` 8% → 46%, matching the
   owner's Sensibull margin of ₹27,392 for a CRUDEOILM 7500 PE. EDGE was reading ~9× too high.
 - [x] **Crude reads its supply story live** — no fixed OPEC+ prior; the MCX futures curve carries

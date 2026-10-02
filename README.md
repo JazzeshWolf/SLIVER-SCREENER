@@ -183,9 +183,16 @@ bounded ±8-point tilt for agreeing with the regime.
   a least-squares quadratic in log-moneyness. That last test is the important one: a leg that last
   traded days ago shows a large fake edge, and an OI floor alone doesn't catch it.
 - **Margin is modelled, not the exchange's.** MCX SPAN isn't in any free feed, so `spanScanMargin`
-  revalues the short leg across a ±6% price × ±25% vol scan grid, floors it at 0.5% of the future
-  and adds the blocked premium. Every margin-derived column is labelled `est.`; type your broker's
-  real ₹/lot into the override to replace it.
+  revalues the short leg across a price × vol scan grid, floors it at 0.5% of the future and adds
+  the blocked premium. Every margin-derived column is labelled `est.`; type your broker's real ₹/lot
+  into the override to replace it.
+- **Two margins: the one CONV is scored on, and the one the screen shows.** CONV's return and tail
+  sub-scores are normalised against each metal's `screen.priceScan` (±6% silver, ±4% gold, ±5%
+  copper), and that stays put: their CONV is frozen. The margin the screen *shows* uses
+  `margin.priceScan`, calibrated to the owner's Sensibull standalone margins on 3 Oct 2026. Those
+  were SILVERM 210000 PE ₹1.46L (±20.4%), GOLDM 160000 CE ₹1.36L (±16.1%) and COPPER 1500 CE
+  ₹3.26L (±16.2%), each 4.8–6.3× the CONV scan's figure. Margin/lot, EDGE, return on margin, tail %,
+  premium ÷ margin and the Telegram ROM column all use it. Crude's scan is already the broker's.
 
 > The CONV weights are hand-set priors, not backtested — same caveat as the direction engine. Trust
 > the shortlist and the columns, not the second decimal.

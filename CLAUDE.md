@@ -56,7 +56,8 @@ expiry — `<b>🛢️ CRUDEOILM · 15 Oct</b>`, then "Monthly · N days left ·
 bbl", a 🔴 line if that expiry's VRP or event gate blocks selling, then a
 `<pre>` table (monospace, copy button) with NEW / MOVED / DROPPED / REMOVED /
 EXPIRED sections on one grid: strike+type, CONV (`72→78` for moves), PREM,
-ROM (credit ÷ the screen's **estimated** margin per lot, %) and POP (the
+ROM (credit ÷ the screen's **broker-calibrated** margin per lot, %; ~2–4% on a
+typical metals alert) and POP (the
 model's chance it expires worthless). Tier emoji (⭐ 75+, 🔥 80+) sit only at a
 row's end, where they can't shift a column; a REMOVED strike's reason goes on
 an italic line under the table. Keep rows ~34 characters — wider wraps on a
@@ -150,6 +151,15 @@ covers their direction-engine weights, structural priors and macro pillar
 the CONV blend in `src/lib/sellCandidates.ts`. `src/lib/frozen.test.ts` pins
 every one of those numbers; if it fails, don't edit the numbers to make it
 pass — ask the owner.
+
+**The margin the screen shows is NOT frozen and is not CONV's** (owner, 3 Oct 2026).
+`screen.priceScan` (±6/±4/±5%) is CONV's basis and stays. The separate
+`margin.priceScan` (±20.4/±16.1/±16.2%) sizes the margin the screen displays,
+calibrated to the owner's Sensibull margins: SILVERM 210000 PE ₹1.46L, GOLDM
+160000 CE ₹1.36L, COPPER 1500 CE ₹3.26L, each 4.8–6.3× the CONV scan. EDGE, ROM,
+tail % and the Telegram ROM column follow the shown margin. Don't feed it back
+into CONV: scored on real margins, CONV drops ~10 points and the 70 bar would
+fire about a third as often. Re-check against the broker if MCX revises margins.
 
 Any change that touches shared code (a new commodity, a new factor, a builder
 change) must leave their CONV byte-identical. Prove it the way the crude change
