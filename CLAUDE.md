@@ -75,7 +75,9 @@ One message per run, **always with sound** — the owner explicitly asked for no
 silent messages, moves included. Don't add `disable_notification` without
 asking (a test pins it). Tiers: ⭐ 75+, 🔥 80+. Threshold
 `ALERT_MIN_CONV_METALS`, default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
-(tick *mock* for an invented alert through the real formatter, labelled MOCK).
+(tick *mock* for an invented alert through the real formatter, labelled MOCK;
+tick *active* for a real one: the contracts the alerts follow right now, re-priced
+on the latest snapshot, labelled TEST — it reads `alerts-state` but never writes it).
 
 Things that will bite:
 - **CONV is not in the snapshot.** The Sell tab computes it in the browser, so

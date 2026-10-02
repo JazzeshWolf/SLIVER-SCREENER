@@ -6,7 +6,7 @@ import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
   collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
-  mockEvents, sendTelegram, run,
+  mockEvents, sendTelegram, run, activeMessages,
 } from "./alerts.mjs";
 
 const TODAY = "2026-10-14";
@@ -261,6 +261,14 @@ describe("formatting", () => {
     ]);
   });
 
+  it("lists ACTIVE contracts with their current CONV and tier, no arrow", () => {
+    const [m] = formatMessages([{ kind: "ACTIVE", row: row({ conviction: 81, margin: 185000, pop: 0.93 }) }], opts);
+    expect(pre(m)).toEqual([
+      "ACTIVE   CONV  PREM ROM POP",
+      "262000CE   81 1,486 4.0  93 🔥",
+    ]);
+  });
+
   it("shows ROM as credit ÷ the screen's margin, and POP as the chance it expires worthless", () => {
     // Crude's 7500 PE from the owner's Sensibull: ₹553 credit on ₹27,392 → 2.0%.
     const r = row({ metal: "crude", emoji: "🛢️", symbol: "CRUDEOILM", expiry: "2026-10-15", strike: 7500, type: "PE",
@@ -454,6 +462,36 @@ describe("run", () => {
     await go(dirs, "2026-09-24T21:30:00Z", async (m) => sent.push(m));
     expect(sent).toHaveLength(2);
     expect(sent[1]).toMatch(/^✓ <b>⚖️ MCX alerts · end of day 24 Sep/);
+    rmSync(dirs.root, { recursive: true, force: true });
+  });
+
+  it("--active lists the tracked contracts under a TEST banner and never writes the state", async () => {
+    const dirs = setup("2026-09-24T19:00:00Z"); // after hours: --active ignores freshness
+    const tracked = row({ expiry: "2026-10-27", strike: 999000, conviction: 77, margin: 185000, pop: 0.93 });
+    const state = { version: 1, tracked: { [k(tracked)]: tracked }, metals: {} };
+    const { mkdirSync } = await import("node:fs");
+    mkdirSync(dirs.stateDir, { recursive: true });
+    const statePath = join(dirs.stateDir, "metals.json");
+    writeFileSync(statePath, JSON.stringify(state));
+    const before = readFileSync(statePath, "utf8");
+    const msgs = await activeMessages({ ...dirs, now: new Date("2026-10-14T05:00:00Z"), threshold: 101, minDte: 10 });
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]).toMatch(/^🧪 <b>TEST · active contracts<\/b> \(real data, prices as of 25 Sep 00:30 IST\)/);
+    expect(msgs[0]).toContain("Tracked by the alerts: 1 · above the bar, not yet announced: 0");
+    expect(msgs[0]).toContain("999000CE   77");
+    expect(readFileSync(statePath, "utf8")).toBe(before);
+    rmSync(dirs.root, { recursive: true, force: true });
+  });
+
+  it("--active says so when nothing is tracked or above the bar", async () => {
+    const dirs = setup();
+    const msgs = await activeMessages({ ...dirs, now: new Date("2026-09-24T08:41:00Z"), threshold: 101 });
+    expect(msgs).toEqual([
+      "🧪 <b>TEST · active contracts</b> (real data, prices as of 24 Sep 14:10 IST)\n" +
+        "<i>Tracked by the alerts: 0 · above the bar, not yet announced: 0</i>\n\n" +
+        "Nothing is tracked or above the bar right now (CONV ≥ 101).",
+    ]);
+    expect(existsSync(join(dirs.stateDir, "metals.json"))).toBe(false);
     rmSync(dirs.root, { recursive: true, force: true });
   });
 

@@ -312,6 +312,7 @@ function card(events, { today }) {
     (block ? `\n🔴 ${esc(block)}` : "");
 
   const sections = [
+    ["ACTIVE", events.filter((e) => e.kind === "ACTIVE")],
     ["NEW", events.filter((e) => e.kind === "NEW")],
     ["MOVED", events.filter((e) => e.kind === "MOVED")],
     ["DROPPED", events.filter((e) => e.kind === "DROPPED")],
@@ -320,7 +321,8 @@ function card(events, { today }) {
   ].filter(([, evs]) => evs.length);
 
   const conv = (e) =>
-    e.kind === "NEW" ? String(e.row.conviction) : e.kind === "LEFT" ? `${e.from}→–` : `${e.from}→${e.row.conviction}`;
+    e.kind === "NEW" || e.kind === "ACTIVE" ? String(e.row.conviction)
+      : e.kind === "LEFT" ? `${e.from}→–` : `${e.from}→${e.row.conviction}`;
   const rom = (r) => { const v = romPct(r); return v == null ? "–" : v.toFixed(1); };
   const pop = (r) => (r.pop == null ? "–" : String(Math.round(r.pop * 100)));
   const cells = (e) => [`${e.row.strike}${e.row.type}`, conv(e), e.row.ltp == null ? "–" : num(e.row.ltp), rom(e.row), pop(e.row)];
@@ -329,7 +331,7 @@ function card(events, { today }) {
     Math.max(i === 0 ? Math.max(...sections.map(([t]) => t.length)) : ["", "CONV", "PREM", "ROM", "POP"][i].length,
       ...all.map((c) => c[i].length)));
   const fmt = (c) => [c[0].padEnd(w[0]), ...c.slice(1).map((v, i) => v.padStart(w[i + 1]))].join(" ").trimEnd();
-  const mark = (e) => (e.kind === "NEW" || e.kind === "MOVED" ? tierMark(e.row.conviction) : "");
+  const mark = (e) => (["NEW", "MOVED", "ACTIVE"].includes(e.kind) ? tierMark(e.row.conviction) : "");
 
   const body = sections.map(([title, evs]) =>
     [fmt([title, "CONV", "PREM", "ROM", "POP"]), ...evs.map((e) => fmt(cells(e)) + (mark(e) ? ` ${mark(e)}` : ""))].join("\n"));
@@ -374,7 +376,7 @@ export function formatMessages(events, { threshold, minDte = 0, when, today = is
       : "✅ Alerts armed — nothing above the bar right now");
   const footer = [
     "<i>PREM ₹ per kg / 10g / bbl · credit/lot = PREM × lot",
-    "ROM % = credit ÷ the screen's estimated margin per lot",
+    "ROM % = credit ÷ margin per lot (broker-calibrated est.)",
     "POP % = model's chance it expires worthless",
     `DROPPED = fell below ${threshold} · REMOVED = off the list</i>`,
     `<a href="${SCREENER_URL}">Open screener</a>`,
@@ -408,6 +410,55 @@ export function formatHeartbeat(state, session, threshold, minDte = 0) {
       ? `\n${dead.map((id) => METALS[id].label).join(", ")} got no fresh data today — check the Actions tab (Refresh MCX data) and the Upstox token.`
       : "",
   ].join("\n").trimEnd();
+}
+
+// --- the "active contracts" test message -------------------------------------
+
+/**
+ * `--active` (Actions → Send test alert → "active"): a REAL test message, not
+ * an invented one. It lists what the alerts are following right now: every
+ * contract tracked in the state file, re-priced on the latest snapshot, plus
+ * any strike on the watched expiries already above the bar that the next fresh
+ * run would announce. Rendered by the real formatter under a TEST banner.
+ * Sends only: it never writes the state, so it can't announce, drop or re-arm
+ * anything, and it ignores freshness, so it works after hours and on weekends.
+ */
+export async function activeMessages({ dataDir, stateDir, now, threshold, minDte = 0 }) {
+  const { sellView } = await import("../src/lib/sellView.ts");
+  const state = readJson(resolve(stateDir, "metals.json"));
+  const tracked = state?.tracked ?? {};
+  const today = istDate(now);
+  const rows = new Map();
+  let asOf = null;
+  for (const id of METAL_IDS) {
+    const snap = readJson(resolve(dataDir, `${id}.json`));
+    if (!snap?.live) continue;
+    const { live, ...mcx } = snap;
+    const view = sellView(live, mcx, state?.metals?.[id]?.regime, now);
+    for (const [k, r] of collectMetal(id, snap, view).rows) rows.set(k, r);
+    const at = snap.feed?.lastLiveAt;
+    if (at && (!asOf || at > asOf)) asOf = at;
+  }
+  const events = [];
+  for (const [k, t] of Object.entries(tracked)) {
+    if (t.expiry < today) continue;
+    events.push({ kind: "ACTIVE", row: rows.get(k) ?? t });
+  }
+  const tracking = events.length;
+  for (const [k, r] of rows) {
+    if (k in tracked || !r.displayed || !r.ok || r.conviction < threshold || r.expiry < today) continue;
+    if ((r.dte ?? 0) < minDte) continue;
+    events.push({ kind: "ACTIVE", row: r });
+  }
+  const priced = asOf ? `${dm(istDate(new Date(asOf)))} ${istTime(new Date(asOf))} IST` : "no live data";
+  const banner = [
+    `🧪 <b>TEST · active contracts</b> (real data, prices as of ${priced})`,
+    `<i>Tracked by the alerts: ${tracking} · above the bar, not yet announced: ${events.length - tracking}</i>`,
+  ].join("\n");
+  if (!events.length)
+    return [`${banner}\n\nNothing is tracked or above the bar right now (${rule(threshold, minDte)}).`];
+  const msgs = formatMessages(events, { threshold, minDte, when: istTime(now), today });
+  return [`${banner}\n\n${msgs[0]}`, ...msgs.slice(1)];
 }
 
 // --- state bookkeeping ------------------------------------------------------
@@ -556,6 +607,25 @@ export async function main(argv = process.argv) {
     console.log("Test message sent.");
     return;
   }
+  const envMin = Number(process.env.ALERT_MIN_CONV_METALS);
+  // An unset repo variable arrives as "", which means "use the default"; 0 is
+  // a real value (no minimum).
+  const rawDte = process.env.ALERT_MIN_DTE_METALS ?? "";
+  const envDte = rawDte.trim() === "" ? NaN : Number(rawDte);
+  const threshold = Number.isFinite(envMin) && envMin > 0 ? envMin : DEFAULT_THRESHOLD;
+  const minDte = Number.isFinite(envDte) && envDte >= 0 ? envDte : DEFAULT_MIN_DTE;
+  if (argv.includes("--active")) {
+    const msgs = await activeMessages({
+      dataDir: process.env.ALERTS_DATA_DIR ?? "public/data",
+      stateDir: process.env.ALERTS_STATE_DIR ?? "_alerts",
+      now: new Date(),
+      threshold,
+      minDte,
+    });
+    for (const m of msgs) await sendTelegram(m);
+    console.log(`Active-contracts test sent (${msgs.length} message${msgs.length === 1 ? "" : "s"}).`);
+    return;
+  }
   if (argv.includes("--mock")) {
     // Rendered by the real formatter so the owner sees exactly what a live
     // alert looks and sounds like. Contracts and prices are invented.
@@ -564,17 +634,12 @@ export async function main(argv = process.argv) {
     console.log("Mock alert sent.");
     return;
   }
-  const envMin = Number(process.env.ALERT_MIN_CONV_METALS);
-  // An unset repo variable arrives as "", which means "use the default"; 0 is
-  // a real value (no minimum).
-  const rawDte = process.env.ALERT_MIN_DTE_METALS ?? "";
-  const envDte = rawDte.trim() === "" ? NaN : Number(rawDte);
   await run({
     dataDir: process.env.ALERTS_DATA_DIR ?? "public/data",
     stateDir: process.env.ALERTS_STATE_DIR ?? "_alerts",
     now: process.env.ALERTS_NOW ? new Date(process.env.ALERTS_NOW) : new Date(),
-    threshold: Number.isFinite(envMin) && envMin > 0 ? envMin : DEFAULT_THRESHOLD,
-    minDte: Number.isFinite(envDte) && envDte >= 0 ? envDte : DEFAULT_MIN_DTE,
+    threshold,
+    minDte,
     send: sendTelegram,
   });
 }
