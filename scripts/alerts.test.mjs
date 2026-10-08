@@ -6,7 +6,7 @@ import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
   collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
-  mockEvents, sendTelegram, run,
+  mockEvents, sendTelegram, run, activeMessages, romPerYear, topPicks,
 } from "./alerts.mjs";
 
 const TODAY = "2026-10-14";
@@ -180,6 +180,46 @@ describe("diff", () => {
     expect(diffAt(c.tracked, at(4, 80), { minDte: 10 }).events).toEqual([]);
   });
 
+  it("announces only the top N per commodity, ranked by return per year, not by CONV", () => {
+    // Same 13 days left, so /YR follows ROM: credit ÷ margin.
+    const a = row({ strike: 250000, conviction: 90, credit: 2000, margin: 200000 }); // 1%  → 28/yr
+    const b = row({ strike: 252000, conviction: 65, credit: 8000, margin: 200000 }); // 4%  → 112/yr
+    const c = row({ strike: 254000, conviction: 70, credit: 6000, margin: 200000 }); // 3%  → 84/yr
+    const d = row({ strike: 256000, conviction: 75, credit: 4000, margin: 200000 }); // 2%  → 56/yr
+    const gold = row({ metal: "gold", symbol: "GOLDM", strike: 150000, conviction: 61, credit: 1000, margin: 200000 });
+    const first = diffAt({}, cur(a, b, c, d, gold), { threshold: 60, topN: 3 });
+    expect(first.events.map((e) => `${e.row.metal} ${e.row.strike}`))
+      .toEqual(["silver 252000", "silver 254000", "silver 256000", "gold 150000"]);
+    // The tracked picks hold their slots: the 4th-best never jumps the queue…
+    expect(diffAt(first.tracked, cur(a, b, c, d, gold), { threshold: 60, topN: 3 }).events).toEqual([]);
+    // …until a slot frees up (here 254000 drops below the bar).
+    const next = diffAt(first.tracked, cur(a, b, row({ ...c, conviction: 55 }), d, gold), { threshold: 60, topN: 3 });
+    expect(next.events.map((e) => `${e.kind} ${e.row.strike}`)).toEqual(["NEW 250000", "DROPPED 254000"]);
+  });
+
+  it("ranks a short, rich trade above a long one: 5% in 20 days beats 7% in 90", () => {
+    expect(romPerYear({ credit: 5, margin: 100 }, 20)).toBeCloseTo(91.25, 6);
+    expect(romPerYear({ credit: 7, margin: 100 }, 90)).toBeCloseTo(28.39, 2);
+    const short = row({ strike: 250000, dte: 20, expiry: "2026-11-03", credit: 5000, margin: 100000 });
+    const long = row({ strike: 252000, dte: 90, expiry: "2027-01-12", credit: 7000, margin: 100000 });
+    const keys = topPicks(cur(short, long), { threshold: 70, today: TODAY, topN: 1 });
+    expect([...keys]).toEqual([k(short)]);
+  });
+
+  it("reports a tracked strike's CONV only once it has moved moveMin points from the last report", () => {
+    const { tracked } = diffAt({}, cur(row({ conviction: 72 })), { moveMin: 3 });
+    const one = diffAt(tracked, cur(row({ conviction: 73 })), { moveMin: 3 });
+    expect(one.events).toEqual([]);
+    const two = diffAt(one.tracked, cur(row({ conviction: 74 })), { moveMin: 3 });
+    expect(two.events).toEqual([]);
+    // Drift adds up from the value last reported (72), not the last seen.
+    const three = diffAt(two.tracked, cur(row({ conviction: 75 })), { moveMin: 3 });
+    expect(three.events).toMatchObject([{ kind: "MOVED", from: 72, row: { conviction: 75 } }]);
+    expect(diffAt(three.tracked, cur(row({ conviction: 73 })), { moveMin: 3 }).events).toEqual([]);
+    expect(diffAt(three.tracked, cur(row({ conviction: 72 })), { moveMin: 3 }).events)
+      .toMatchObject([{ kind: "MOVED", from: 75 }]);
+  });
+
   it("keeps metals apart: the same strike on two metals is two contracts", () => {
     const d = diffAt({}, cur(row(), row({ metal: "gold", symbol: "GOLDM" })));
     expect(Object.keys(d.tracked)).toHaveLength(2);
@@ -256,8 +296,16 @@ describe("formatting", () => {
     expect(m.startsWith("⚖️ <b>MCX")).toBe(true);
     expect(m).toContain("<b>🥈 SILVERM · 27 Oct</b>\nMonthly · 13 days left · lot 5 kg\n<pre>");
     expect(pre(m)).toEqual([
-      "NEW      CONV  PREM ROM POP",
-      "262000CE   72 1,486 4.0  93",
+      "NEW      CONV  PREM ROM /YR POP",
+      "262000CE   72 1,486 4.0 113  93",
+    ]);
+  });
+
+  it("lists ACTIVE contracts with their current CONV and tier, no arrow", () => {
+    const [m] = formatMessages([{ kind: "ACTIVE", row: row({ conviction: 81, margin: 185000, pop: 0.93 }) }], opts);
+    expect(pre(m)).toEqual([
+      "ACTIVE   CONV  PREM ROM /YR POP",
+      "262000CE   81 1,486 4.0 113  93 🔥",
     ]);
   });
 
@@ -267,10 +315,11 @@ describe("formatting", () => {
       conviction: 56, ltp: 55.25, unit: "₹/bbl", lot: "10 bbl", credit: 553, margin: 27392, pop: 0.912 });
     const [m] = formatMessages([{ kind: "NEW", row: r }], opts);
     expect(m).toContain("<b>🛢️ CRUDEOILM · 15 Oct</b>\nMonthly · 1 day left · lot 10 bbl");
-    expect(pre(m)[1]).toBe("7500PE   56 55.25 2.0  91");
+    // /YR is that ROM over the 1 day left, scaled to a year: 2.0 × 365.
+    expect(pre(m)[1]).toBe("7500PE   56 55.25 2.0 737  91");
     // No margin or POP on record (an older tracked entry): a dash, never NaN.
     const [old] = formatMessages([{ kind: "LEFT", from: 74, row: row(), why: "dropped off the fetched chain" }], opts);
-    expect(pre(old)[1]).toBe("262000CE 74→– 1,486   –   –");
+    expect(pre(old)[1]).toBe("262000CE 74→– 1,486   –   –   –");
   });
 
   it("states the rule under the header and the days left on the card", () => {
@@ -279,6 +328,10 @@ describe("formatting", () => {
     expect(m).toContain("13 days left");
     const s = bumpDay({ tracked: {} }, METAL_IDS, [], "2026-09-24", "2026-09-24T17:50:00Z");
     expect(formatHeartbeat(s, "2026-09-24", 70, 10)).toContain("(CONV ≥ 70, entry 10+ days left)");
+    expect(formatHeartbeat(s, "2026-09-24", 60, 10, 3)).toContain("(CONV ≥ 60, entry 10+ days left, top 3 per commodity by /YR)");
+    const [top] = formatMessages([{ kind: "NEW", row: row() }], { ...opts, threshold: 60, minDte: 10, topN: 3 });
+    expect(top).toContain("<i>Alert level: conviction 60+ · entry 10+ days left · top 3 per commodity by /YR</i>");
+    expect(top).toContain("/YR % = ROM per year at the days left (ROM × 365 ÷ days)");
   });
 
   it("splits a card into NEW / MOVED / DROPPED / REMOVED / EXPIRED sections on one grid", () => {
@@ -293,8 +346,8 @@ describe("formatting", () => {
     const lines = pre(m);
     expect(lines.filter((l) => /^[A-Z]+ +CONV/.test(l)).map((l) => l.split(" ")[0]))
       .toEqual(["NEW", "MOVED", "DROPPED", "REMOVED", "EXPIRED"]);
-    expect(lines).toContain("216000PE 73→75 1,310   –   – ⭐");
-    expect(lines).toContain("262000CE    81 1,486   –   – 🔥");
+    expect(lines).toContain("216000PE 73→75 1,310   –   –   – ⭐");
+    expect(lines).toContain("262000CE    81 1,486   –   –   – 🔥");
     // Every row and section head on the grid ends at the same column (tier
     // emoji, the only thing allowed past it, are trimmed off first).
     const widths = new Set(lines.filter(Boolean).map((l) => l.replace(/ [⭐🔥]$/u, "").length));
@@ -304,15 +357,18 @@ describe("formatting", () => {
     expect(m).not.toContain("275000CE: expires today");
   });
 
-  it("gives each contract and expiry its own card, cards with a NEW first", () => {
+  it("gives each contract and expiry its own card, new picks first, best return per year first", () => {
     const events = [
       { kind: "MOVED", from: 70, row: row({ expiry: "2026-10-27", strike: 250000, conviction: 72 }) },
-      { kind: "NEW", row: row({ metal: "copper", emoji: "🟠", symbol: "COPPER", expiry: "2026-10-23", strike: 1360, type: "PE", conviction: 71, ltp: 4.35 }) },
-      { kind: "NEW", row: row({ expiry: "2026-11-23", strike: 270000, conviction: 78 }) },
+      // Copper: 4.35% over 9 days ≈ 176%/yr — leads despite the lower CONV.
+      { kind: "NEW", row: row({ metal: "copper", emoji: "🟠", symbol: "COPPER", expiry: "2026-10-23", strike: 1360, type: "PE",
+        conviction: 71, ltp: 4.35, credit: 10875, margin: 250000 }) },
+      // Silver: 4.0% over 40 days ≈ 37%/yr.
+      { kind: "NEW", row: row({ expiry: "2026-11-23", strike: 270000, conviction: 78, margin: 185000 }) },
     ];
     const [m] = formatMessages(events, opts);
     const heads = [...m.matchAll(/<b>(.+? · \d+ \w+)<\/b>/g)].map((x) => x[1]);
-    expect(heads).toEqual(["🥈 SILVERM · 23 Nov", "🟠 COPPER · 23 Oct", "🥈 SILVERM · 27 Oct"]);
+    expect(heads).toEqual(["🟠 COPPER · 23 Oct", "🥈 SILVERM · 23 Nov", "🥈 SILVERM · 27 Oct"]);
   });
 
   it("puts the 🔴 gate on the card that it blocks", () => {
@@ -454,6 +510,36 @@ describe("run", () => {
     await go(dirs, "2026-09-24T21:30:00Z", async (m) => sent.push(m));
     expect(sent).toHaveLength(2);
     expect(sent[1]).toMatch(/^✓ <b>⚖️ MCX alerts · end of day 24 Sep/);
+    rmSync(dirs.root, { recursive: true, force: true });
+  });
+
+  it("--active lists the tracked contracts under a TEST banner and never writes the state", async () => {
+    const dirs = setup("2026-09-24T19:00:00Z"); // after hours: --active ignores freshness
+    const tracked = row({ expiry: "2026-10-27", strike: 999000, conviction: 77, margin: 185000, pop: 0.93 });
+    const state = { version: 1, tracked: { [k(tracked)]: tracked }, metals: {} };
+    const { mkdirSync } = await import("node:fs");
+    mkdirSync(dirs.stateDir, { recursive: true });
+    const statePath = join(dirs.stateDir, "metals.json");
+    writeFileSync(statePath, JSON.stringify(state));
+    const before = readFileSync(statePath, "utf8");
+    const msgs = await activeMessages({ ...dirs, now: new Date("2026-10-14T05:00:00Z"), threshold: 101, minDte: 10 });
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]).toMatch(/^🧪 <b>TEST · active contracts<\/b> \(real data, prices as of 25 Sep 00:30 IST\)/);
+    expect(msgs[0]).toContain("Tracked by the alerts: 1 · top picks not yet announced: 0");
+    expect(msgs[0]).toContain("999000CE   77");
+    expect(readFileSync(statePath, "utf8")).toBe(before);
+    rmSync(dirs.root, { recursive: true, force: true });
+  });
+
+  it("--active says so when nothing is tracked or above the bar", async () => {
+    const dirs = setup();
+    const msgs = await activeMessages({ ...dirs, now: new Date("2026-09-24T08:41:00Z"), threshold: 101 });
+    expect(msgs).toEqual([
+      "🧪 <b>TEST · active contracts</b> (real data, prices as of 24 Sep 14:10 IST)\n" +
+        "<i>Tracked by the alerts: 0 · top picks not yet announced: 0</i>\n\n" +
+        "Nothing is tracked or above the bar right now (CONV ≥ 101, top 3 per commodity by /YR).",
+    ]);
+    expect(existsSync(join(dirs.stateDir, "metals.json"))).toBe(false);
     rmSync(dirs.root, { recursive: true, force: true });
   });
 

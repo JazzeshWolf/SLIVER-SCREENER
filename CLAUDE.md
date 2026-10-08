@@ -36,11 +36,12 @@ credentials table.
 | `TWELVEDATA_KEY`, `FRED_KEY` | repo secrets | n/a | macro factors drop out (partial), direction score weaker |
 | `KITE_API_KEY`, `KITE_ACCESS_TOKEN` | repo secrets (optional fallback) | daily | nothing, unless Upstox is also dead |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | repo secrets — **the same bot and chat as xerxes** | never (revoke via @BotFather `/revoke` — which kills both screeners' alerts) | "Conviction alerts" step goes red; no end-of-day heartbeat |
-| `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (70) |
+| `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (60) |
 | `ALERT_MIN_DTE_METALS` | repo **variable** | n/a | unset → the code default (10 days); `0` turns the minimum off |
+| `ALERT_TOP_N_METALS` | repo **variable** | n/a | unset → the code default (top 3 per commodity by /YR); `all` → every strike at the bar |
 
 Settings → Secrets and variables → Actions: secrets on the **Secrets** tab,
-`ALERT_MIN_CONV_METALS` and `ALERT_MIN_DTE_METALS` on the **Variables** tab. Never paste the bot token into
+`ALERT_MIN_CONV_METALS`, `ALERT_MIN_DTE_METALS` and `ALERT_TOP_N_METALS` on the **Variables** tab. Never paste the bot token into
 a chat, an issue or a log line.
 
 ## Telegram conviction alerts (`scripts/alerts.mjs`, `alerts-state` branch)
@@ -57,8 +58,8 @@ bbl", a 🔴 line if that expiry's VRP or event gate blocks selling, then a
 `<pre>` table (monospace, copy button) with NEW / MOVED / DROPPED / REMOVED /
 EXPIRED sections on one grid: strike+type, CONV (`72→78` for moves), PREM,
 ROM (credit ÷ the screen's **broker-calibrated** margin per lot, %; ~2–4% on a
-typical metals alert) and POP (the
-model's chance it expires worthless). Tier emoji (⭐ 75+, 🔥 80+) sit only at a
+typical metals alert), /YR (that ROM per year at the days left, ROM × 365 ÷
+days) and POP (the model's chance it expires worthless). Tier emoji (⭐ 75+, 🔥 80+) sit only at a
 row's end, where they can't shift a column; a REMOVED strike's reason goes on
 an italic line under the table. Keep rows ~34 characters — wider wraps on a
 phone and breaks the alignment. The replay counts events from `run()`'s
@@ -66,16 +67,18 @@ phone and breaks the alignment. The replay counts events from `run()`'s
 
 | event | when |
 |---|---|
-| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, reaches CONV ≥ 70 |
-| ⬆️⬇️ MOVED | tracked, still above the bar, CONV changed by any amount |
+| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, at CONV ≥ 60, that ranks in its commodity's **top 3 by return per year** (`/YR`) |
+| ⬆️⬇️ MOVED | tracked, still above the bar, CONV moved **3+ points** from the value last reported (was: any amount, until 3 Oct 2026) |
 | 🔻 DROPPED | tracked, fell below the bar → untracked (re-crossing is NEW again) |
 | 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "premium decayed"), in the money, off the fetched chain, or expiry day → untracked |
 
 One message per run, **always with sound** — the owner explicitly asked for no
 silent messages, moves included. Don't add `disable_notification` without
 asking (a test pins it). Tiers: ⭐ 75+, 🔥 80+. Threshold
-`ALERT_MIN_CONV_METALS`, default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
-(tick *mock* for an invented alert through the real formatter, labelled MOCK).
+`ALERT_MIN_CONV_METALS`, default 60 (was 70 until 3 Oct 2026, owner's call: 213 replayed messages since 11 Aug instead of 171); entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
+(tick *mock* for an invented alert through the real formatter, labelled MOCK;
+tick *active* for a real one: the contracts the alerts follow right now, re-priced
+on the latest snapshot, labelled TEST — it reads `alerts-state` but never writes it).
 
 Things that will bite:
 - **CONV is not in the snapshot.** The Sell tab computes it in the browser, so
@@ -123,7 +126,7 @@ Things that will bite:
   a day at today's cadence, ~20 a day during the mid-August cadence, and a
   10-minute scheduler would mean most of ~85 in-session runs.
 - **Current and next expiry only** (`ALERT_EXPIRIES = 2`, owner's choice
-  2026-09-25, 70 on all three metals; crude, added 2026-09-26, inherits both
+  2026-09-25; the bar is 60 on every commodity since 3 Oct 2026; crude, added 2026-09-26, inherits both
   and the 10-day entry rule). Far months stay on the screen but never
   alert. An expiry on its last day (DTE 0) has no ranked strikes and gives up
   its slot, so on gold's 25 Sep expiry day the watch is Oct + Nov.
@@ -135,6 +138,19 @@ Things that will bite:
   under 10 days stays quiet. It does not remove scares: COPPER 1370 PE entered
   at 13 days and was ₹57,500/lot under water before expiring worthless.
   Replay volume: 159 messages instead of 281 over the same period.
+- **Only the best: top 3 per commodity by return per year** (`DEFAULT_TOP_N`,
+  owner's choice 2026-10-03, "the crème de la crème"; repo variable
+  `ALERT_TOP_N_METALS`). The ranking runs AFTER the safety gates (bar, 10+
+  days, current/next expiry, on the Sell tab), never instead: on its own, /YR
+  always points at the last week before expiry, where every losing sale in the
+  archive was made (CONV 60+ with 1–9 days left promised 104–275%/yr and made
+  26–202%/yr, with losers). Graded on every alert replayed since 11 Aug at 60+
+  and 10+ days, all winners: every strike 89%/yr and ₹8,009 a lot; top 3,
+  93%/yr and ₹9,047; top 2, 96%/yr and ₹9,653; top 1, 102%/yr and ₹11,318. Tracked picks hold their
+  slot until they exit, so ranking churn never re-announces or drops anything.
+  Message count barely moves (it follows the number of data runs, ~2.6 a day
+  at today's cadence); what shrinks is the content: fewer new lines, and moves
+  only at 3+ points (`DEFAULT_MOVE_MIN`), measured from the CONV last reported.
 - **The alerts do not score anything.** They call the Sell tab's own screen;
   moving its glue into `sellView.ts` was checked against `main` over 894
   archived snapshots (40,243 scored strikes) with zero differences. A change
