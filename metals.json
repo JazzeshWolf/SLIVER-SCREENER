@@ -1,41 +1,87 @@
 {
  "version": 1,
- "tracked": {},
+ "tracked": {
+  "crude|2026-11-17|8400|PE": {
+   "metal": "crude",
+   "emoji": "🛢️",
+   "symbol": "CRUDEOILM",
+   "expiry": "2026-11-17",
+   "strike": 8400,
+   "type": "PE",
+   "conviction": 60,
+   "ltp": 150.1,
+   "unit": "₹/bbl",
+   "lot": "10 bbl",
+   "credit": 1501,
+   "margin": 32722,
+   "pop": 0.878588551946758
+  },
+  "crude|2026-11-17|8300|PE": {
+   "metal": "crude",
+   "emoji": "🛢️",
+   "symbol": "CRUDEOILM",
+   "expiry": "2026-11-17",
+   "strike": 8300,
+   "type": "PE",
+   "conviction": 65,
+   "ltp": 131.7,
+   "unit": "₹/bbl",
+   "lot": "10 bbl",
+   "credit": 1317,
+   "margin": 31729,
+   "pop": 0.9000016054483243
+  },
+  "crude|2026-11-17|8250|PE": {
+   "metal": "crude",
+   "emoji": "🛢️",
+   "symbol": "CRUDEOILM",
+   "expiry": "2026-11-17",
+   "strike": 8250,
+   "type": "PE",
+   "conviction": 65,
+   "ltp": 126.85,
+   "unit": "₹/bbl",
+   "lot": "10 bbl",
+   "credit": 1269,
+   "margin": 31235,
+   "pop": 0.9096943809530933
+  }
+ },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-10-21T14:04:21.923Z",
-   "fingerprint": "0bbe79b50365d86f",
-   "regime": "no_conviction"
+   "lastLiveAt": "2026-10-22T08:30:14.884Z",
+   "fingerprint": "e359051920608735",
+   "regime": "chop"
   },
   "gold": {
-   "lastLiveAt": "2026-10-21T14:04:25.828Z",
-   "fingerprint": "98bbde67b273e64a",
+   "lastLiveAt": "2026-10-22T08:30:19.551Z",
+   "fingerprint": "7b85930d2784248c",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-10-21T14:04:29.623Z",
-   "fingerprint": "c37aee2fe3e34690",
+   "lastLiveAt": "2026-10-22T08:30:23.560Z",
+   "fingerprint": "ae59aa344091c36a",
    "regime": "no_conviction"
   },
   "crude": {
-   "lastLiveAt": "2026-10-21T14:04:33.236Z",
-   "fingerprint": "fd4ac1400709dadc",
+   "lastLiveAt": "2026-10-22T08:30:27.471Z",
+   "fingerprint": "dd8f3265aee73350",
    "regime": "trend_up"
   }
  },
  "day": {
-  "date": "2026-10-21",
+  "date": "2026-10-22",
   "runs": {
-   "silver": 2,
-   "gold": 2,
-   "copper": 2,
-   "crude": 2
+   "silver": 1,
+   "gold": 1,
+   "copper": 1,
+   "crude": 1
   },
-  "NEW": 0,
+  "NEW": 3,
   "MOVED": 0,
   "DROPPED": 0,
   "LEFT": 0
  },
- "lastRunAt": "2026-10-21T14:04:38.809Z",
+ "lastRunAt": "2026-10-22T08:30:32.689Z",
  "heartbeatDate": "2026-10-21"
 }
