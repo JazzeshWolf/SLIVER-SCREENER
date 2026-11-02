@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 import {
   usDst, closeMinutes, inSession, sessionDate, afterClose, eodDue, chainFingerprint, freshness,
-  collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
+  collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, formatEod, eodEvents, bumpDay, tierMark,
   mockEvents, sendTelegram, run, activeMessages, romPerYear, topPicks,
 } from "./alerts.mjs";
 
@@ -447,6 +447,88 @@ describe("formatting", () => {
   });
 });
 
+describe("end-of-day trades", () => {
+  const SESSION = "2026-10-14";
+  const A = row({ strike: 250000, conviction: 70 }); // enters today
+  const B = row({ strike: 252000, conviction: 75 }); // tracked, moves twice
+  const C = row({ strike: 254000, conviction: 58 }); // drops, then re-enters
+  const D = row({ strike: 256000, conviction: 66, margin: 180000 }); // removed
+  const E = row({ strike: 258000, conviction: 64 }); // tracked, untouched today
+  const F = row({ strike: 260000, conviction: 71 }); // moves, then back where it started
+  const day = () => {
+    let s = { tracked: {} };
+    s = bumpDay(s, METAL_IDS, [
+      { kind: "NEW", row: A },
+      { kind: "MOVED", from: 72, row: B },
+      { kind: "DROPPED", from: 71, row: C },
+      { kind: "MOVED", from: 71, row: { ...F, conviction: 75 } },
+    ], SESSION, "2026-10-14T09:00:00Z");
+    s = bumpDay(s, METAL_IDS, [
+      { kind: "MOVED", from: 75, row: { ...B, conviction: 79 } },
+      { kind: "LEFT", from: 66, row: D, why: "filtered out: premium decayed" },
+      { kind: "NEW", row: { ...C, conviction: 62 } },
+      { kind: "MOVED", from: 75, row: F },
+    ], SESSION, "2026-10-14T18:20:00Z");
+    // The tracked set after the last run, as diff leaves it.
+    s.tracked = Object.fromEntries([A, { ...B, conviction: 79 }, { ...C, conviction: 62 }, E, F].map((r) => [k(r), r]));
+    return s;
+  };
+
+  it("logs each contract once a day: its CONV before the day's first event, entry and exit", () => {
+    const t = day().day.trades;
+    expect(t[k(A)]).toMatchObject({ entered: true, from: 70, exit: null });
+    expect(t[k(B)]).toMatchObject({ from: 72, row: { conviction: 79 } });
+    expect(t[k(B)].entered).toBeUndefined();
+    expect(t[k(C)]).toMatchObject({ from: 71, entered: true, exit: null }); // re-entry clears the exit
+    expect(t[k(D)]).toMatchObject({ from: 66, exit: { kind: "LEFT", why: "filtered out: premium decayed", expiring: false } });
+    expect(bumpDay(day(), [], [], "2026-10-15", "z").day.trades).toEqual({}); // a new session starts empty
+  });
+
+  it("files every tracked contract once (NEW, MOVED or HELD) and every exit once", () => {
+    const evs = eodEvents(day(), SESSION);
+    const by = Object.fromEntries(evs.map((e) => [e.row.strike, e]));
+    expect(by[250000].kind).toBe("NEW");
+    expect(by[254000].kind).toBe("NEW");
+    expect(by[252000]).toMatchObject({ kind: "MOVED", from: 72, row: { conviction: 79 } });
+    expect(by[256000]).toMatchObject({ kind: "LEFT", from: 66, why: "filtered out: premium decayed" });
+    expect(by[258000].kind).toBe("HELD");
+    expect(by[260000].kind).toBe("HELD"); // 71 → 75 → 71: no net move
+    expect(evs).toHaveLength(6);
+    // A tracked contract whose expiry is behind the session is not listed.
+    const old = day();
+    old.tracked.x = row({ expiry: "2026-10-13" });
+    expect(eodEvents(old, SESSION)).toHaveLength(6);
+  });
+
+  it("prints the trades under the summary, in the alerts' columns", () => {
+    const [m] = formatEod(day(), SESSION, 60, 10, 3);
+    expect(m.startsWith("✓ <b>⚖️ MCX alerts · end of day 14 Oct</b>")).toBe(true);
+    const pre = [...m.matchAll(/<pre>([\s\S]*?)<\/pre>/g)].map((x) => x[1]).join("\n");
+    for (const t of ["NEW ", "MOVED ", "HELD ", "REMOVED "]) expect(pre).toContain(t);
+    expect(pre).toMatch(/252000CE 72→79/);
+    expect(pre).toMatch(/256000CE +66→–/);
+    expect(m).toContain("<i>256000CE: filtered out: premium decayed</i>");
+    expect(m).toContain("HELD = tracked, no move");
+    // Nothing traded and nothing tracked: just the summary.
+    expect(formatEod(bumpDay({ tracked: {} }, METAL_IDS, [], SESSION, "2026-10-14T18:20:00Z"), SESSION, 60)).toHaveLength(1);
+  });
+
+  it("splits a long report under Telegram's cap without breaking a card", () => {
+    const s = day();
+    for (let i = 0; i < 120; i++) {
+      const r = row({ strike: 100000 + i * 1000, expiry: i % 2 ? "2026-10-27" : "2026-11-23", metal: i % 3 ? "silver" : "gold" });
+      s.tracked[k(r)] = r;
+    }
+    const msgs = formatEod(s, SESSION, 60);
+    expect(msgs.length).toBeGreaterThan(1);
+    for (const m of msgs) {
+      expect(m.length).toBeLessThanOrEqual(4096);
+      expect(m.split("<pre>").length).toBe(m.split("</pre>").length);
+    }
+    expect(msgs[1]).toMatch(/^✓ <b>⚖️ MCX alerts · end of day 14 Oct<\/b> \(cont\.\)/);
+  });
+});
+
 describe("sendTelegram", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -525,6 +607,21 @@ describe("run", () => {
     expect(sent[1]).toMatch(/^✓ <b>⚖️ MCX alerts · end of day 24 Sep/);
     await go(dirs, "2026-09-24T20:30:00Z", async (m) => sent.push(m)); // 02:00: already sent
     expect(sent).toHaveLength(2);
+    rmSync(dirs.root, { recursive: true, force: true });
+  });
+
+  it("lists the tracked contracts in the end-of-day report", async () => {
+    const dirs = setup();
+    const sent = [];
+    // A bar of 1 tracks the top picks of every commodity at arming.
+    await go(dirs, "2026-09-24T08:41:00Z", async (m) => sent.push(m), 1);
+    const tracked = Object.keys(JSON.parse(readFileSync(join(dirs.stateDir, "metals.json"), "utf8")).tracked);
+    expect(tracked.length).toBeGreaterThan(0);
+    const before = sent.length;
+    await go(dirs, "2026-09-24T17:51:00Z", async (m) => sent.push(m), 1); // 23:21: last run
+    const eod = sent.slice(before).join("\n");
+    expect(eod).toMatch(/^✓ <b>⚖️ MCX alerts · end of day 24 Sep/);
+    expect(eod).toContain("HELD"); // armed at 14:11, no change since
     rmSync(dirs.root, { recursive: true, force: true });
   });
 
