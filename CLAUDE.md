@@ -30,7 +30,9 @@ Both POST `https://api.github.com/repos/JazzeshWolf/SLIVER-SCREENER/actions/work
 with body `{"ref":"main"}` and headers `Accept: application/vnd.github+json`,
 `Authorization: Bearer <PAT>`, `X-GitHub-Api-Version: 2022-11-28`,
 `Content-Type: application/json`. Success is **HTTP 204**. The PAT is in the
-credentials table below.
+credentials table below. GitHub marks API version `2022-11-28` deprecated, with a sunset of
+**10 Mar 2028** (its `Sunset` header): when the token is renewed in Nov 2027, also
+move `X-GitHub-Api-Version` to the current version.
 
 - **Same jobs all year.** MCX closes 23:55 IST while the US is on standard
   time, 23:30 while it is on daylight time (2nd Sunday of March → 1st Sunday of
@@ -75,7 +77,7 @@ fixing the token.
 | `ALERT_MIN_DTE_METALS` | repo **variable** | n/a | unset → the code default (10 days); `0` turns the minimum off |
 | `ALERT_TOP_N_METALS` | repo **variable** | n/a | unset → the code default (top 3 per commodity by /YR); `all` → every strike at the bar |
 | cron-job.org jobs `SLIVER data · session` and `SLIVER data · after close` | the owner's cron-job.org account (see Scheduling) | never; cron-job.org disables a job after repeated failures | Actions shows only `schedule` runs again (3–4 a day, none in the morning) |
-| Fine-grained PAT `cron-job.org · SLIVER-SCREENER data` (this repo only, Actions: read & write) | **only** in the `Authorization` header of both cron-job.org jobs, never a repo secret | **YYYY-MM-DD: fill in the expiry date set when it was created** | cron-job.org history shows HTTP 401 "Bad credentials"; same symptom as above. Make a new token, paste it into both jobs, update this date |
+| Fine-grained PAT `cron-job.org · SLIVER-SCREENER data` (this repo only, Actions: read & write) | **only** in the `Authorization` header of both cron-job.org jobs, never a repo secret | **2027-11-02 18:30 UTC** (00:00 IST, 3 Nov 2027; GitHub returns it as `github-authentication-token-expiration` on every dispatch) | cron-job.org history shows HTTP 401 "Bad credentials"; same symptom as above. Make a new token, paste it into both jobs, update this date |
 
 Settings → Secrets and variables → Actions: secrets on the **Secrets** tab,
 `ALERT_MIN_CONV_METALS`, `ALERT_MIN_DTE_METALS` and `ALERT_TOP_N_METALS` on the **Variables** tab. Never paste the bot token into
