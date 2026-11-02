@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { METALS, METAL_IDS } from "../src/lib/metals.mjs";
 import {
-  usDst, closeMinutes, inSession, sessionDate, afterClose, chainFingerprint, freshness,
+  usDst, closeMinutes, inSession, sessionDate, afterClose, eodDue, chainFingerprint, freshness,
   collectMetal, watchedExpiries, explainMissing, diff, formatMessages, formatHeartbeat, bumpDay, tierMark,
   mockEvents, sendTelegram, run, activeMessages, romPerYear, topPicks,
 } from "./alerts.mjs";
@@ -56,6 +56,18 @@ describe("MCX session clock", () => {
     expect(afterClose(at("2026-09-24T18:00:00Z"), "2026-09-24")).toBe(true); // 23:30
     expect(afterClose(at("2026-09-24T20:30:00Z"), "2026-09-24")).toBe(true); // 02:00 next day
     expect(afterClose(at("2026-12-01T18:20:00Z"), "2026-12-01")).toBe(false); // 23:50 winter
+  });
+
+  it("makes the end-of-day report due with the last run before the close", () => {
+    // Winter, close 23:55: the 23:50 run carries it, the 23:40 run doesn't.
+    expect(eodDue(at("2026-12-01T18:11:00Z"), "2026-12-01")).toBe(false); // 23:41
+    expect(eodDue(at("2026-12-01T18:21:00Z"), "2026-12-01")).toBe(true); // 23:51
+    // Summer, close 23:30: the 23:20 run carries it.
+    expect(eodDue(at("2026-09-24T17:41:00Z"), "2026-09-24")).toBe(false); // 23:11
+    expect(eodDue(at("2026-09-24T17:51:00Z"), "2026-09-24")).toBe(true); // 23:21
+    // A run after the close still does, if the last one never came.
+    expect(eodDue(at("2026-09-24T20:30:00Z"), "2026-09-24")).toBe(true); // 02:00
+    expect(eodDue(at("2026-09-24T08:41:00Z"), "2026-09-24")).toBe(false); // 14:11
   });
 });
 
@@ -502,7 +514,21 @@ describe("run", () => {
     rmSync(dirs.root, { recursive: true, force: true });
   });
 
-  it("sends the heartbeat once, on the first run after the close", async () => {
+  it("sends the heartbeat once, with the last run before the close", async () => {
+    const dirs = setup();
+    const sent = [];
+    await go(dirs, "2026-09-24T08:41:00Z", async (m) => sent.push(m)); // 14:11 IST, arms
+    await go(dirs, "2026-09-24T17:41:00Z", async (m) => sent.push(m)); // 23:11: not yet
+    expect(sent).toHaveLength(1);
+    await go(dirs, "2026-09-24T17:51:00Z", async (m) => sent.push(m)); // 23:21: last run
+    expect(sent).toHaveLength(2);
+    expect(sent[1]).toMatch(/^✓ <b>⚖️ MCX alerts · end of day 24 Sep/);
+    await go(dirs, "2026-09-24T20:30:00Z", async (m) => sent.push(m)); // 02:00: already sent
+    expect(sent).toHaveLength(2);
+    rmSync(dirs.root, { recursive: true, force: true });
+  });
+
+  it("sends the heartbeat on the first run after the close if the last one never came", async () => {
     const dirs = setup();
     const sent = [];
     await go(dirs, "2026-09-24T08:41:00Z", async (m) => sent.push(m));

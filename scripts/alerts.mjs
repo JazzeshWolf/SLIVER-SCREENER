@@ -131,6 +131,19 @@ export function afterClose(d, session) {
   return date > session || (date === session && istMinutes(d) >= closeMinutes(session));
 }
 
+/** The end-of-day report rides on the last run before the close (owner's ask,
+ *  2026-11-02: no separate after-close cron job). The 10-minute scheduler puts
+ *  exactly one run in the session's final EOD_LEAD_MIN minutes: 23:50 while
+ *  the close is 23:55, 23:20 while it is 23:30. */
+export const EOD_LEAD_MIN = 10;
+
+/** Time for this session's end-of-day report: its final EOD_LEAD_MIN minutes,
+ *  or any time after the close (the last run was late or never came). */
+export function eodDue(d, session) {
+  return afterClose(d, session)
+    || (istDate(d) === session && istMinutes(d) >= closeMinutes(session) - EOD_LEAD_MIN);
+}
+
 // --- freshness --------------------------------------------------------------
 
 /** Everything the screen could rank on: every expiry's chain plus its future. */
@@ -618,9 +631,11 @@ export async function run({
     return;
   }
 
-  // End-of-day heartbeat: the first run after MCX's close (23:30 / 23:55 IST).
-  // Its absence the next morning is how the owner learns the pipeline stopped.
-  if (afterClose(now, session) && state.heartbeatDate !== session) {
+  // End-of-day heartbeat: with the last run before MCX's close (its final
+  // EOD_LEAD_MIN minutes), else the first run after it. Sent after this run's
+  // own alert, so its counts include it. Its absence the next morning is how
+  // the owner learns the pipeline stopped.
+  if (eodDue(now, session) && state.heartbeatDate !== session) {
     await send(formatHeartbeat(state, session, threshold, minDte, topN));
     state = { ...state, heartbeatDate: session };
     log("Heartbeat sent.");
