@@ -61,7 +61,7 @@ move `X-GitHub-Api-Version` to the current version.
 - **Repo growth.** Every run commits the data files: ~14 KB per commit once
   packed (720 data commits = 10 MB by Nov 2026). At 90 a day, ~25–30 MB a month.
 - **Rate limits are fine.** Twelve Data takes 7 requests a run (only USD/INR and
-  XAU/USD succeed; DXY and the four XAG aliases 404): ≤ 637 a day against the
+  XAU/USD succeed; DXY and the four XAG aliases 404): ≤ 630 a day against the
   free plan's 800. Yahoo returns 429 to GitHub's runners on every run already.
 
 If the morning session goes quiet again, check cron-job.org's execution
