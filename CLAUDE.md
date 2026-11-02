@@ -159,8 +159,14 @@ Things that will bite:
 - **The heartbeat** goes out with the last run before the close (the 23:50
   IST cron-job.org run; 23:20 in US summer), right after that run's own alert,
   or else on the first run after the close: runs checked per metal, new/moves/exits,
-  tracked count, ⚠️ naming any metal with zero fresh runs. No heartbeat by
-  morning = the workflow didn't run after the close.
+  tracked count, ⚠️ naming any metal with zero fresh runs, then **the day's
+  trades as cards** (owner's ask, 2026-11-03): every contract tracked at the
+  close once, as NEW (entered today), MOVED (CONV today's first → last) or HELD
+  (no change), and every contract that left today once, as DROPPED / REMOVED /
+  EXPIRED. They come from `state.day.trades`, a per-contract log `bumpDay`
+  keeps (its CONV before the day's first event, entry, exit, latest snapshot);
+  a day that started before this log existed shows its tracked set as HELD.
+  No heartbeat by morning = the workflow didn't run after the close.
 - **High CONV on metals mostly means short-dated.** Replaying 12 Aug–25 Sep
   2026: ~77% of NEW alerts at ≥ 70 fired with ≤ 10 days to expiry (median 6),
   in every band — `romAnnual` divides by tenor. The ⭐/🔥 tiers do not pick out

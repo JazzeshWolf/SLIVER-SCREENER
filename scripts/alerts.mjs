@@ -380,13 +380,14 @@ function card(events, { today }) {
     ["ACTIVE", events.filter((e) => e.kind === "ACTIVE")],
     ["NEW", events.filter((e) => e.kind === "NEW")],
     ["MOVED", events.filter((e) => e.kind === "MOVED")],
+    ["HELD", events.filter((e) => e.kind === "HELD")],
     ["DROPPED", events.filter((e) => e.kind === "DROPPED")],
     ["REMOVED", events.filter((e) => e.kind === "LEFT" && !e.expiring)],
     ["EXPIRED", events.filter((e) => e.kind === "LEFT" && e.expiring)],
   ].filter(([, evs]) => evs.length);
 
   const conv = (e) =>
-    e.kind === "NEW" || e.kind === "ACTIVE" ? String(e.row.conviction)
+    e.kind === "NEW" || e.kind === "ACTIVE" || e.kind === "HELD" ? String(e.row.conviction)
       : e.kind === "LEFT" ? `${e.from}→–` : `${e.from}→${e.row.conviction}`;
   const rom = (r) => { const v = romPct(r); return v == null ? "–" : v.toFixed(1); };
   // Per year at the days left — the same for every row of a card (one expiry).
@@ -398,7 +399,7 @@ function card(events, { today }) {
   const w = COLS.map((h, i) =>
     Math.max(i === 0 ? Math.max(...sections.map(([t]) => t.length)) : h.length, ...all.map((c) => c[i].length)));
   const fmt = (c) => [c[0].padEnd(w[0]), ...c.slice(1).map((v, i) => v.padStart(w[i + 1]))].join(" ").trimEnd();
-  const mark = (e) => (["NEW", "MOVED", "ACTIVE"].includes(e.kind) ? tierMark(e.row.conviction) : "");
+  const mark = (e) => (["NEW", "MOVED", "ACTIVE", "HELD"].includes(e.kind) ? tierMark(e.row.conviction) : "");
 
   const body = sections.map(([title, evs]) =>
     [fmt([title, ...COLS.slice(1)]), ...evs.map((e) => fmt(cells(e)) + (mark(e) ? ` ${mark(e)}` : ""))].join("\n"));
@@ -482,6 +483,57 @@ export function formatHeartbeat(state, session, threshold, minDte = 0, topN = In
   ].join("\n").trimEnd();
 }
 
+/**
+ * The day's trades, contract by contract, from the log bumpDay keeps (owner's
+ * ask, 2026-11-03: "what I really want to see are the trades"). Every contract
+ * tracked at the close appears once, as NEW (entered today), MOVED (CONV moved
+ * today: the day's first value → the last reported) or HELD (no change today);
+ * every contract that left today appears once, as DROPPED / REMOVED / EXPIRED.
+ * Prices are those of the last run that saw each contract.
+ */
+export function eodEvents(state, session) {
+  const tracked = state?.tracked ?? {};
+  const trades = state?.day?.date === session ? state.day.trades ?? {} : {};
+  const out = [];
+  for (const [k, t] of Object.entries(trades)) {
+    if (k in tracked) continue;
+    if (t.exit) out.push({ kind: t.exit.kind, from: t.from, row: t.row, why: t.exit.why, expiring: t.exit.expiring });
+  }
+  for (const [k, row] of Object.entries(tracked)) {
+    if (row.expiry < session) continue;
+    const t = trades[k];
+    if (t?.entered) out.push({ kind: "NEW", row });
+    else if (t && t.from != null && t.from !== row.conviction) out.push({ kind: "MOVED", from: t.from, row });
+    else out.push({ kind: "HELD", row });
+  }
+  return out;
+}
+
+/** End-of-day report: the summary lines, then the day's trades as cards. */
+export function formatEod(state, session, threshold, minDte = 0, topN = Infinity) {
+  const header = formatHeartbeat(state, session, threshold, minDte, topN);
+  const events = eodEvents(state, session);
+  if (!events.length) return [header];
+  const title = header.split("\n")[0];
+  const footer = [
+    "<i>NEW = entered today · MOVED = CONV today's first → last · HELD = tracked, no move",
+    "DROPPED / REMOVED / EXPIRED = left today · prices as of the last run that saw each",
+    "ROM % of margin per lot · /YR = ROM per year · POP = chance it expires worthless</i>",
+    `<a href="${SCREENER_URL}">Open screener</a>`,
+  ].join("\n");
+  const out = [];
+  let cur = header;
+  for (const block of cards(events, { today: session })) {
+    if (cur.length + block.length + footer.length + 4 > TG_LIMIT) {
+      out.push(cur.trimEnd());
+      cur = `${title} (cont.)`;
+    }
+    cur += "\n\n" + block;
+  }
+  out.push(cur.trimEnd() + "\n\n" + footer);
+  return out;
+}
+
 // --- the "active contracts" test message -------------------------------------
 
 /**
@@ -532,9 +584,28 @@ export async function activeMessages({ dataDir, stateDir, now, threshold, minDte
 // --- state bookkeeping ------------------------------------------------------
 
 export function bumpDay(state, freshIds, events, session, nowIso) {
-  const day = state.day?.date === session ? { ...state.day, runs: { ...state.day.runs } } : emptyDay(session);
+  const day = state.day?.date === session
+    ? { ...state.day, runs: { ...state.day.runs }, trades: { ...(state.day.trades ?? {}) } }
+    : { ...emptyDay(session), trades: {} };
   for (const id of freshIds) day.runs[id] = (day.runs[id] ?? 0) + 1;
-  for (const e of events) day[e.kind] += 1;
+  for (const e of events) {
+    day[e.kind] += 1;
+    if (!e.row?.metal) continue;
+    // One entry per contract for the end-of-day report: the CONV it had before
+    // the day's first event (`from`), whether it entered today, the latest
+    // snapshot, and how it left if it did. Re-entering clears the exit.
+    const k = keyOf(e.row);
+    const t = { ...(day.trades[k] ?? {}) };
+    if (t.from === undefined) t.from = e.kind === "NEW" ? e.row.conviction : e.from ?? null;
+    t.row = snapshotOf(e.row);
+    if (e.kind === "NEW") {
+      t.entered = true;
+      t.exit = null;
+    } else if (e.kind === "DROPPED" || e.kind === "LEFT") {
+      t.exit = { kind: e.kind, why: e.why ?? null, expiring: !!e.expiring };
+    }
+    day.trades[k] = t;
+  }
   return { ...state, day, lastRunAt: nowIso };
 }
 
@@ -636,7 +707,7 @@ export async function run({
   // own alert, so its counts include it. Its absence the next morning is how
   // the owner learns the pipeline stopped.
   if (eodDue(now, session) && state.heartbeatDate !== session) {
-    await send(formatHeartbeat(state, session, threshold, minDte, topN));
+    for (const m of formatEod(state, session, threshold, minDte, topN)) await send(m);
     state = { ...state, heartbeatDate: session };
     log("Heartbeat sent.");
   } else if (!fresh.size) {
