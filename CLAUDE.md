@@ -23,10 +23,13 @@ screener (JazzeshWolf/xerxes), an external scheduler fires the workflow:
 
 | cron-job.org job | Schedule (time zone **Asia/Kolkata**) | Runs |
 |---|---|---|
-| `SLIVER data · session` | every 10 min, 09:00–23:50, Mon–Fri (`*/10 9-23 * * 1-5`) | 90 a day |
-| `SLIVER data · after close` | 00:15, Tue–Sat (`15 0 * * 2-6`) | 1 a day |
+| `SLIVER data session` | every 10 min, 09:00–23:50, Mon–Fri (`*/10 9-23 * * 1-5`) | 90 a day |
 
-Both POST `https://api.github.com/repos/JazzeshWolf/SLIVER-SCREENER/actions/workflows/data.yml/dispatches`
+No after-close job (owner's call, 2026-11-02): the end-of-day report rides on
+the last run before the close instead (`eodDue`, `EOD_LEAD_MIN = 10` in
+`scripts/alerts.mjs`).
+
+It POSTs `https://api.github.com/repos/JazzeshWolf/SLIVER-SCREENER/actions/workflows/data.yml/dispatches`
 with body `{"ref":"main"}` and headers `Accept: application/vnd.github+json`,
 `Authorization: Bearer <PAT>`, `X-GitHub-Api-Version: 2022-11-28`,
 `Content-Type: application/json`. Success is **HTTP 204**. The PAT is in the
@@ -34,12 +37,14 @@ credentials table below. GitHub marks API version `2022-11-28` deprecated, with 
 **10 Mar 2028** (its `Sunset` header): when the token is renewed in Nov 2027, also
 move `X-GitHub-Api-Version` to the current version.
 
-- **Same jobs all year.** MCX closes 23:55 IST while the US is on standard
+- **Same job all year.** MCX closes 23:55 IST while the US is on standard
   time, 23:30 while it is on daylight time (2nd Sunday of March → 1st Sunday of
-  November). In winter 23:50 is the last in-session run and 00:15 the first
-  after the close, so the end-of-day report goes at 00:15. In summer the
-  23:40 run is the first after the close and sends it; 23:50 and 00:15 are
-  then harmless (alerts ignore data captured outside MCX hours).
+  November). The end-of-day report goes with the one run in the session's final
+  10 minutes: 23:50 in winter, 23:20 in summer (the 23:30–23:50 runs are then
+  after the close and harmless: alerts ignore data captured outside MCX hours).
+  It reflects the market up to that run, not the last 5–10 minutes. If that
+  run fails or is late, the first run after the close sends it instead,
+  usually GitHub's backup cron (00:03–00:23 or its 02:00–03:00 stragglers).
 - **Keep the GitHub cron.** It is the fallback when the external job or its
   token dies: the data keeps moving 3–4 times a day instead of stopping.
 - **Overlap is handled by the `refresh-data` concurrency group**
@@ -50,11 +55,11 @@ move `X-GitHub-Api-Version` to the current version.
   `timeout-minutes: 15` stops a hung build from holding the group for hours.
 - **Cost.** The repo is public, so standard Actions minutes are free (GitHub
   reports 0 billable ms on these runs). A run takes 30–90 s (median 40 s, Oct
-  2026). If the repo ever goes private, 91 runs × ~1 billed minute × ~21
+  2026). If the repo ever goes private, 90 runs × ~1 billed minute × ~21
   sessions ≈ 1,900 min a month is the whole Free-plan allowance (2,000): move
   the session job to every 15 min (`*/15 9-23 * * 1-5`).
 - **Repo growth.** Every run commits the data files: ~14 KB per commit once
-  packed (720 data commits = 10 MB by Nov 2026). At 91 a day, ~25–30 MB a month.
+  packed (720 data commits = 10 MB by Nov 2026). At 90 a day, ~25–30 MB a month.
 - **Rate limits are fine.** Twelve Data takes 7 requests a run (only USD/INR and
   XAU/USD succeed; DXY and the four XAG aliases 404): ≤ 637 a day against the
   free plan's 800. Yahoo returns 429 to GitHub's runners on every run already.
@@ -76,8 +81,8 @@ fixing the token.
 | `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (60) |
 | `ALERT_MIN_DTE_METALS` | repo **variable** | n/a | unset → the code default (10 days); `0` turns the minimum off |
 | `ALERT_TOP_N_METALS` | repo **variable** | n/a | unset → the code default (top 3 per commodity by /YR); `all` → every strike at the bar |
-| cron-job.org jobs `SLIVER data · session` and `SLIVER data · after close` | the owner's cron-job.org account (see Scheduling) | never; cron-job.org disables a job after repeated failures | Actions shows only `schedule` runs again (3–4 a day, none in the morning) |
-| Fine-grained PAT `cron-job.org · SLIVER-SCREENER data` (this repo only, Actions: read & write) | **only** in the `Authorization` header of both cron-job.org jobs, never a repo secret | **2027-11-02 18:30 UTC** (00:00 IST, 3 Nov 2027; GitHub returns it as `github-authentication-token-expiration` on every dispatch) | cron-job.org history shows HTTP 401 "Bad credentials"; same symptom as above. Make a new token, paste it into both jobs, update this date |
+| cron-job.org job `SLIVER data session` | the owner's cron-job.org account (see Scheduling) | never; cron-job.org disables a job after repeated failures | Actions shows only `schedule` runs again (3–4 a day, none in the morning) |
+| Fine-grained PAT `cron-job.org · SLIVER-SCREENER data` (this repo only, Actions: read & write) | **only** in the `Authorization` header of the cron-job.org job, never a repo secret | **2027-11-02 18:30 UTC** (00:00 IST, 3 Nov 2027; GitHub returns it as `github-authentication-token-expiration` on every dispatch) | cron-job.org history shows HTTP 401 "Bad credentials"; same symptom as above. Make a new token, paste it into the job, update this date |
 
 Settings → Secrets and variables → Actions: secrets on the **Secrets** tab,
 `ALERT_MIN_CONV_METALS`, `ALERT_MIN_DTE_METALS` and `ALERT_TOP_N_METALS` on the **Variables** tab. Never paste the bot token into
@@ -151,9 +156,9 @@ Things that will bite:
   message listing what is already above the bar, then normal operation.
   Deleting the `alerts-state` branch is the way to reset tracking without a
   flood. Arming waits for the first fresh in-session run.
-- **The heartbeat** goes out on the first run after the close (the 00:15 IST
-  cron-job.org run; 23:40 in US summer; GitHub's late cron if the external job
-  is dead): runs checked per metal, new/moves/exits,
+- **The heartbeat** goes out with the last run before the close (the 23:50
+  IST cron-job.org run; 23:20 in US summer), right after that run's own alert,
+  or else on the first run after the close: runs checked per metal, new/moves/exits,
   tracked count, ⚠️ naming any metal with zero fresh runs. No heartbeat by
   morning = the workflow didn't run after the close.
 - **High CONV on metals mostly means short-dated.** Replaying 12 Aug–25 Sep
