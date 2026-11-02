@@ -4,14 +4,21 @@ name: Refresh MCX data
 # OI/IV/basis, and commits public/data/latest.json + history.jsonl.
 on:
   schedule:
-    # Every 10 min, ~09:00–23:30 IST (03:30–18:00 UTC), Mon–Fri.
+    # BACKUP ONLY. The real cadence comes from cron-job.org (workflow_dispatch,
+    # below): GitHub's cron asks for every 10 min but delivered 3–4 runs a day
+    # all of October 2026, none in the morning. Kept so the data still moves,
+    # if slowly, when the external job or its token dies. See CLAUDE.md.
+    # Every 10 min, ~08:33–00:23 IST (03:03–18:53 UTC), Mon–Fri.
     # Offset off the top of the hour (:03/:13/… not :00/:10/…): GitHub delays or
     # drops scheduled runs that land on :00 (platform-wide load spike), so this
     # offset meaningfully improves how often the auto-refresh actually fires.
     # NOTE: markets are closed weekends, so Sat/Sun the app intentionally shows
     # Friday's last data — that is not a fault.
     - cron: "3,13,23,33,43,53 3-18 * * 1-5"
-  workflow_dispatch: {} # manual trigger for testing
+  # The main trigger: cron-job.org POSTs .../actions/workflows/data.yml/dispatches
+  # with {"ref":"main"} every 10 min in MCX hours (job and token in CLAUDE.md).
+  # Also the manual "Run workflow" button.
+  workflow_dispatch: {}
   push:
     # Rebuild data on code changes (e.g. fetcher tweaks) — ignore data-only
     # commits to avoid a self-trigger loop.
@@ -27,6 +34,10 @@ on:
 permissions:
   contents: write
 
+# One run at a time, so two builds never race to push the data commit. A run
+# that arrives while one is building waits instead of cancelling it. GitHub
+# keeps only ONE waiting run per group: a third arrival replaces the waiting
+# one (shown as "cancelled"). At ~1 min a run every 10 min that never bites.
 concurrency:
   group: refresh-data
   cancel-in-progress: false
@@ -34,6 +45,9 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    # A run takes 30–90 s. A hung fetch would otherwise hold the concurrency
+    # group for GitHub's default 6 hours, and every run behind it waits.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
