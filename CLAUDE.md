@@ -11,7 +11,6 @@ traps: the things that break silently or that a well-meaning change would undo.
 | Data builder | `scripts/build-data.mjs`, run by `.github/workflows/data.yml` | commits `public/data/{silver,gold,copper,crude,index,latest}.json` to **`main`** with ordinary commits — the git history of those files is the only snapshot archive |
 | Site | `.github/workflows/deploy.yml` → GitHub Pages | the client reads the raw `main` copy of the data, so data commits don't redeploy |
 | Telegram alerts | last step of `data.yml` → `scripts/alerts.mjs`, state on the `alerts-state` branch | see below |
-| EOD archive | separate **private** repo `JazzeshWolf/sliver-screener-eod-archive`, 08:35 IST Tue–Sat | reads this repo's `main` history; calls `scripts/score-snapshot.mjs` — see below |
 
 ## ⚠️ Scheduling: GitHub's cron is NOT keeping the advertised cadence
 
@@ -29,27 +28,6 @@ with body `{"ref":"main"}` and a fine-grained PAT (Actions: read & write). Not
 set up here yet; if it is, note the job and the PAT's expiry in the
 credentials table.
 
-## The EOD archive (separate private repo)
-
-`JazzeshWolf/sliver-screener-eod-archive` keeps one closing snapshot per MCX
-session (chains + every scored strike), plus frozen settled outcomes, so we can
-later test whether CONV predicts results. Its README is the design; the parts
-that constrain THIS repo:
-
-- **It reads `main`'s history.** It picks each session's close from the data
-  commits by `feed.lastLiveAt`, which is why it can catch up skipped days and
-  why the 33 sessions from 11 Aug were backfilled. **If live data ever moves to a
-  force-pushed branch, that stops working** and a missed archive day becomes
-  unrecoverable. Update the archive before making that change.
-- **`scripts/score-snapshot.mjs` is its contract** (schema 1, pinned by
-  `score-snapshot.test.mjs`). The archive runs it with vite-node on each day's
-  files, so CONV in the archive is exactly what the Sell tab computes. Keep the
-  output backwards compatible; bump `SCHEMA` if a field has to change meaning.
-- **`feed.chainOk` / `feed.lastLiveAt` are load-bearing there too.** A build that
-  re-serves an old chain must keep `chainOk: false` and not move `lastLiveAt`.
-- About 73 KB per session, around 18 MB a year. The archive's database is never
-  committed; it is published as the `db-latest` release asset.
-
 ## 🔑 Credentials & expiry (the things that will silently break this)
 
 | Secret / variable | Where | Expires | Symptom when dead |
@@ -58,11 +36,12 @@ that constrain THIS repo:
 | `TWELVEDATA_KEY`, `FRED_KEY` | repo secrets | n/a | macro factors drop out (partial), direction score weaker |
 | `KITE_API_KEY`, `KITE_ACCESS_TOKEN` | repo secrets (optional fallback) | daily | nothing, unless Upstox is also dead |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | repo secrets — **the same bot and chat as xerxes** | never (revoke via @BotFather `/revoke` — which kills both screeners' alerts) | "Conviction alerts" step goes red; no end-of-day heartbeat |
-| `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (70) |
+| `ALERT_MIN_CONV_METALS` | repo **variable** (not a secret) | n/a | unset → the code default (60) |
 | `ALERT_MIN_DTE_METALS` | repo **variable** | n/a | unset → the code default (10 days); `0` turns the minimum off |
+| `ALERT_TOP_N_METALS` | repo **variable** | n/a | unset → the code default (top 3 per commodity by /YR); `all` → every strike at the bar |
 
 Settings → Secrets and variables → Actions: secrets on the **Secrets** tab,
-`ALERT_MIN_CONV_METALS` and `ALERT_MIN_DTE_METALS` on the **Variables** tab. Never paste the bot token into
+`ALERT_MIN_CONV_METALS`, `ALERT_MIN_DTE_METALS` and `ALERT_TOP_N_METALS` on the **Variables** tab. Never paste the bot token into
 a chat, an issue or a log line.
 
 ## Telegram conviction alerts (`scripts/alerts.mjs`, `alerts-state` branch)
@@ -70,59 +49,36 @@ a chat, an issue or a log line.
 The last step of `data.yml` messages the owner's Telegram bot — the one the NSE
 screener already uses, same chat — when a strike on the Sell tab crosses the
 bar, and follows it afterwards. Every message is headed **⚖️ MCX** and every
-line carries the metal's emoji and contract (🥈 SILVERM / 🥇 GOLDM / 🟠 COPPER /
+card carries the metal's emoji and contract (🥈 SILVERM / 🥇 GOLDM / 🟠 COPPER /
 🛢️ CRUDEOILM), so it can't be mistaken for an NSE alert.
+
+**Layout = the Xerxes one** (owner's ask, 2026-10-01): one card per contract and
+expiry — `<b>🛢️ CRUDEOILM · 15 Oct</b>`, then "Monthly · N days left · lot 10
+bbl", a 🔴 line if that expiry's VRP or event gate blocks selling, then a
+`<pre>` table (monospace, copy button) with NEW / MOVED / DROPPED / REMOVED /
+EXPIRED sections on one grid: strike+type, CONV (`72→78` for moves), PREM,
+ROM (credit ÷ the screen's **broker-calibrated** margin per lot, %; ~2–4% on a
+typical metals alert), /YR (that ROM per year at the days left, ROM × 365 ÷
+days) and POP (the model's chance it expires worthless). Tier emoji (⭐ 75+, 🔥 80+) sit only at a
+row's end, where they can't shift a column; a REMOVED strike's reason goes on
+an italic line under the table. Keep rows ~34 characters — wider wraps on a
+phone and breaks the alignment. The replay counts events from `run()`'s
+`onEvents` hook, not by parsing the text, so the layout can change freely.
 
 | event | when |
 |---|---|
-| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, reaches CONV ≥ 70 |
-| ⬆️⬇️ MOVED | tracked, still above the bar, CONV changed by any amount |
+| 🔔 NEW | a strike on the **displayed** list (Sell tab: top 8 per side per expiry), on the **current or next expiry**, with **10+ days to expiry**, at CONV ≥ 60, that ranks in its commodity's **top 3 by return per year** (`/YR`) |
+| ⬆️⬇️ MOVED | tracked, still above the bar, CONV moved **3+ points** from the value last reported (was: any amount, until 3 Oct 2026) |
 | 🔻 DROPPED | tracked, fell below the bar → untracked (re-crossing is NEW again) |
-| 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "prem decayed"), in the money, off the fetched chain, or expiry day → untracked |
+| 🚪 LEFT | tracked, no longer scored: filtered out (the reason is printed — mostly "premium decayed"), in the money, off the fetched chain, or expiry day → untracked |
 
 One message per run, **always with sound** — the owner explicitly asked for no
 silent messages, moves included. Don't add `disable_notification` without
-asking (a test pins it).
-
-**Layout: the NSE screener's cards (owner's ask, 2026-10-01: "look like the
-nifty alerts").** Title `⚖️ MCX · HH:MM IST`, then `Alert level: conviction
-70+ · 10+ days to expiry`. One card per commodity + expiry: `🥈 SILVERM · 27 Oct`
-(bold), `26 days left · lot 5 kg`, a 🔴 line when that expiry's VRP or event
-gate blocks selling, then ONE `<pre>` holding sections with the same five
-columns as xerxes — strike+type, CONV (`81`, `73→75`, `71→–` for an exit),
-PREM (as quoted), ROM, POP:
-
-- NEW, MOVED, DROPPED, then exits titled by reason: ITM (in the money), GAMMA
-  (too close to the price), DECAYED (premium too small), REMOVED (anything
-  else: off the chain, thin, no IV…), EXPIRED (expiry day). The end-of-day
-  cards use ABOVE.
-- **ROM = credit ÷ the BROKER's margin**, not annualised: premium ÷
-  (`MARGIN_PCT[metal]` × future). The rates in `scripts/alerts.mjs` are read
-  off the owner's broker (COPPER 9.3%: Oct 1480 CE, ₹3.25L margin, future
-  1,398.45, broker's "max profit +3.4%"). **Never use the screener's
-  `marginPerLot` here**: its modelled SPAN runs 4–5× under the broker's
-  (₹72,503 for that strike), which made the first card build print ROM 14%
-  where the broker said 3.4%. That model feeds CONV and is frozen, so the
-  alerts keep their own rate. A commodity with no rate shows "–" and the
-  legend says so. MCX changes margins, so re-check a rate when the broker's
-  "max profit %" and the card disagree.
-- POP = `pOtm`, the screen's forecast, not 1 − |Δ| (92 vs the broker's 91 on
-  that strike). ROM and POP are stored in the tracked state so an exit and the
-  end-of-day cards can show them; state written before 2026-10-01 shows "–".
-- Cards holding a NEW lead (highest CONV first), then commodity order, then
-  expiry. The legend under the cards names PREM's unit only for the contracts
-  in that message (₹/kg, GOLDM per 10 g, CRUDEOILM per bbl).
-
-Rules a test pins: every `<pre>` row ≤ 34 characters (xerxes's width; wider
-wraps on a phone held upright), rows in a card share one set of column widths,
-and no emoji inside `<pre>` (wider than a monospace cell, they break the
-columns). The **end-of-day report** replaces the old heartbeat: `📋 MCX · end
-of day 1 Oct` (⚠️ when a commodity had no fresh run), a per-commodity table
-(Runs, New, Moves, Exits, Now), `Last run`, then `⚖️ At 70+ at the close (N)`
-with the tracked contracts as ABOVE cards. Threshold `ALERT_MIN_CONV_METALS`,
-default 70; entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual
-check: Actions → **Send test alert** (tick *mock* for an invented alert AND an
-invented end-of-day report through the real formatter, labelled MOCK).
+asking (a test pins it). Tiers: ⭐ 75+, 🔥 80+. Threshold
+`ALERT_MIN_CONV_METALS`, default 60 (was 70 until 3 Oct 2026, owner's call: 213 replayed messages since 11 Aug instead of 171); entry minimum `ALERT_MIN_DTE_METALS`, default 10 days. Manual check: Actions → **Send test alert**
+(tick *mock* for an invented alert through the real formatter, labelled MOCK;
+tick *active* for a real one: the contracts the alerts follow right now, re-priced
+on the latest snapshot, labelled TEST — it reads `alerts-state` but never writes it).
 
 Things that will bite:
 - **CONV is not in the snapshot.** The Sell tab computes it in the browser, so
@@ -156,11 +112,10 @@ Things that will bite:
   message listing what is already above the bar, then normal operation.
   Deleting the `alerts-state` branch is the way to reset tracking without a
   flood. Arming waits for the first fresh in-session run.
-- **The end-of-day report** (the heartbeat) goes out on the first run after
-  the close (so today: usually GitHub's 02:00–03:00 IST run): runs checked per
-  commodity, new/moves/exits, tracked count, ⚠️ naming any commodity with zero
-  fresh runs, then what is still at the bar. No report by morning = the
-  workflow didn't run after the close. `state.heartbeatDate` keeps its name.
+- **The heartbeat** goes out on the first run after the close (so today:
+  usually GitHub's 02:00–03:00 IST run): runs checked per metal, new/moves/exits,
+  tracked count, ⚠️ naming any metal with zero fresh runs. No heartbeat by
+  morning = the workflow didn't run after the close.
 - **High CONV on metals mostly means short-dated.** Replaying 12 Aug–25 Sep
   2026: ~77% of NEW alerts at ≥ 70 fired with ≤ 10 days to expiry (median 6),
   in every band — `romAnnual` divides by tenor. The ⭐/🔥 tiers do not pick out
@@ -171,7 +126,7 @@ Things that will bite:
   a day at today's cadence, ~20 a day during the mid-August cadence, and a
   10-minute scheduler would mean most of ~85 in-session runs.
 - **Current and next expiry only** (`ALERT_EXPIRIES = 2`, owner's choice
-  2026-09-25, 70 on all three metals; crude, added 2026-09-26, inherits both
+  2026-09-25; the bar is 60 on every commodity since 3 Oct 2026; crude, added 2026-09-26, inherits both
   and the 10-day entry rule). Far months stay on the screen but never
   alert. An expiry on its last day (DTE 0) has no ranked strikes and gives up
   its slot, so on gold's 25 Sep expiry day the watch is Oct + Nov.
@@ -183,6 +138,19 @@ Things that will bite:
   under 10 days stays quiet. It does not remove scares: COPPER 1370 PE entered
   at 13 days and was ₹57,500/lot under water before expiring worthless.
   Replay volume: 159 messages instead of 281 over the same period.
+- **Only the best: top 3 per commodity by return per year** (`DEFAULT_TOP_N`,
+  owner's choice 2026-10-03, "the crème de la crème"; repo variable
+  `ALERT_TOP_N_METALS`). The ranking runs AFTER the safety gates (bar, 10+
+  days, current/next expiry, on the Sell tab), never instead: on its own, /YR
+  always points at the last week before expiry, where every losing sale in the
+  archive was made (CONV 60+ with 1–9 days left promised 104–275%/yr and made
+  26–202%/yr, with losers). Graded on every alert replayed since 11 Aug at 60+
+  and 10+ days, all winners: every strike 89%/yr and ₹8,009 a lot; top 3,
+  93%/yr and ₹9,047; top 2, 96%/yr and ₹9,653; top 1, 102%/yr and ₹11,318. Tracked picks hold their
+  slot until they exit, so ranking churn never re-announces or drops anything.
+  Message count barely moves (it follows the number of data runs, ~2.6 a day
+  at today's cadence); what shrinks is the content: fewer new lines, and moves
+  only at 3+ points (`DEFAULT_MOVE_MIN`), measured from the CONV last reported.
 - **The alerts do not score anything.** They call the Sell tab's own screen;
   moving its glue into `sellView.ts` was checked against `main` over 894
   archived snapshots (40,243 scored strikes) with zero differences. A change
@@ -199,6 +167,15 @@ covers their direction-engine weights, structural priors and macro pillar
 the CONV blend in `src/lib/sellCandidates.ts`. `src/lib/frozen.test.ts` pins
 every one of those numbers; if it fails, don't edit the numbers to make it
 pass — ask the owner.
+
+**The margin the screen shows is NOT frozen and is not CONV's** (owner, 3 Oct 2026).
+`screen.priceScan` (±6/±4/±5%) is CONV's basis and stays. The separate
+`margin.priceScan` (±20.4/±16.1/±16.2%) sizes the margin the screen displays,
+calibrated to the owner's Sensibull margins: SILVERM 210000 PE ₹1.46L, GOLDM
+160000 CE ₹1.36L, COPPER 1500 CE ₹3.26L, each 4.8–6.3× the CONV scan. EDGE, ROM,
+tail % and the Telegram ROM column follow the shown margin. Don't feed it back
+into CONV: scored on real margins, CONV drops ~10 points and the 70 bar would
+fire about a third as often. Re-check against the broker if MCX revises margins.
 
 Any change that touches shared code (a new commodity, a new factor, a builder
 change) must leave their CONV byte-identical. Prove it the way the crude change
@@ -230,6 +207,12 @@ branching on `id === "crude"`:
   which signals a tight market." Don't reintroduce a hand-set OPEC+ prior —
   the first live run showed one ("supply overhang") contradicting a steeply
   backwardated, tight market.
+- **Crude's margin is calibrated to the broker** (owner's Sensibull, 1 Oct
+  2026: CRUDEOILM 15 Oct 7500 PE, future 8,883 → ₹27,392 a lot). That needs
+  a ±46% `priceScan`; the vol-scaled ±8% the metals' logic suggests modelled
+  ~₹3,100 and made EDGE read 11.5% of margin on a ~2% trade, inflating CONV.
+  `metals.test.ts` pins the model within 10% of that figure. Don't "fix" the
+  scan back toward the metals' range.
 - **First live run is the real test.** Nothing here has met a live CRUDEOILM
   chain: check the Actions log for `upstox: CRUDEOILM N expiries` and
   `curve (MCX strip)`. If the instrument master has no CRUDEOILM options, the

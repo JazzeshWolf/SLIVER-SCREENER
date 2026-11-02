@@ -254,6 +254,10 @@ function Row({ c, unit, open, onToggle }: { c: SellCandidate; unit: string; open
               label={c.marginModelled ? "Margin / lot (est.)" : "Margin / lot"}
               value={`₹${fmtInt(c.marginPerLot)}`}
             />
+            <Detail
+              label="Premium ÷ margin"
+              value={c.marginPerLot > 0 ? `${((c.credit / c.marginPerLot) * 100).toFixed(1)}%` : "–"}
+            />
             <Detail label="Return on margin" value={`${c.romAnnual.toFixed(0)}% ann.`} />
             <Detail label="Breakeven" value={fmtInt(c.breakeven)} />
             <Detail label="Strike IV" value={`${(c.iv * 100).toFixed(1)}%`} />

@@ -17,7 +17,8 @@
 // Honesty: the CONV weights below are hand-set PRIORS, not backtested — the
 // same convention as scoring.ts. Trust the shortlist and the columns, not the
 // second decimal of the score. Margin is MODELLED (see spanScanMargin), never
-// the exchange's number.
+// the exchange's number — and CONV is scored on a narrower scan than the margin
+// the screen shows (see "TWO MARGINS" below).
 // ---------------------------------------------------------------------------
 
 import type { McxData, OptionQuote, RegimeResult, SellCandidate, SellScreen } from "./types";
@@ -196,6 +197,7 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
   const metal = metalForSymbol(mcx.mcx.symbol);
   const cfg = metal.screen;
   const lotUnits = opts.lotUnits ?? lotUnitsForSymbol(mcx.mcx.symbol);
+  const override = opts.marginOverridePerLot ?? null;
   const confidence = dataConfidence(mcx);
   // Whole-chain liquidity gate. Ranking a chain nobody trades produces a
   // confident-looking shortlist of unfillable strikes, which is worse than
@@ -249,14 +251,27 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
 
     // --- metrics ---
     const fair = fairValueUnder(o.strike, o.type, measure);
-    const margin = spanScanMargin(F, o.strike, t, strikeIv, o.type, {
+    const edge = o.ltp - fair; // ₹/kg expected edge over the tenor
+    const cvar = cvarShort(o.strike, o.type, o.ltp, measure);
+    // TWO MARGINS. CONV's return and tail sub-scores are normalised against the
+    // screen's own scan (`cfg.priceScan`), and that stays exactly as it is —
+    // silver, gold and copper CONV are frozen (owner's rule). The margin the
+    // screen SHOWS, and every return quoted on it, is the broker's: the figure
+    // the user typed, else the broker-calibrated scan (`metal.margin`, owner's
+    // Sensibull 3 Oct 2026 — 4.8–6.3× the CONV scan), else CONV's own.
+    const convMargin = spanScanMargin(F, o.strike, t, strikeIv, o.type, {
       priceScan: cfg.priceScan,
       volScan: cfg.volScan,
     });
-    const edge = o.ltp - fair; // ₹/kg expected edge over the tenor
+    const convRom = convMargin > 0 && t > 0 ? (edge / convMargin / t) * 100 : 0;
+    const convTail = convMargin > 0 ? (cvar / convMargin) * 100 : 0;
+    const margin = override != null && override > 0
+      ? override / lotUnits
+      : metal.margin
+        ? spanScanMargin(F, o.strike, t, strikeIv, o.type, { priceScan: metal.margin.priceScan, volScan: cfg.volScan })
+        : convMargin;
     const edgePct = margin > 0 ? (edge / margin) * 100 : 0;
     const romAnnual = margin > 0 && t > 0 ? (edge / margin / t) * 100 : 0;
-    const cvar = cvarShort(o.strike, o.type, o.ltp, measure);
     const tailPct = margin > 0 ? (cvar / margin) * 100 : 0;
     const pOtm = probOtm(o.strike, o.type, measure);
     const touch = probabilityOfTouch(F, o.strike, strikeIv, t);
@@ -264,9 +279,9 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
 
     // --- sub-scores, each 0..1 ---
     const sub = {
-      ret: clamp(romAnnual / cfg.romDivisor, 0, 1),
+      ret: clamp(convRom / cfg.romDivisor, 0, 1),
       safety: clamp((pOtm - 0.8) / 0.15, 0, 1),
-      tail: clamp(1 - (tailPct / 100 - 0.5) / 1.2, 0, 1),
+      tail: clamp(1 - (convTail / 100 - 0.5) / 1.2, 0, 1),
       liquidity: clamp(Math.log10(Math.max(o.oi ?? 0, 1) / 100) / 1.5, 0, 1),
       volRich: clamp((strikeIv / sigF - 1) / 0.5, 0, 1),
       touch: clamp(1 - (touch - 0.1) / 0.35, 0, 1),
@@ -304,8 +319,8 @@ export function screenSellCandidates(mcx: McxData, opts: ScreenOptions = {}): Se
       edgePct,
       romAnnual,
       margin,
-      marginPerLot: (opts.marginOverridePerLot ?? null) ?? margin * lotUnits,
-      marginModelled: opts.marginOverridePerLot == null,
+      marginPerLot: override != null && override > 0 ? override : margin * lotUnits,
+      marginModelled: !(override != null && override > 0),
       cvar,
       tailPct,
       breakeven: o.type === "CE" ? o.strike + o.ltp : o.strike - o.ltp,

@@ -94,6 +94,15 @@ export const METALS = {
       volScan: 0.25,
     },
 
+    // MARGIN AS SHOWN — calibrated to the broker, separate from `screen` on
+    // purpose (owner, 3 Oct 2026). `screen.priceScan` above stays the basis of
+    // CONV, which is frozen; this scan only sizes the margin the screen DISPLAYS
+    // and the returns quoted on it (EDGE, ROM, tail %, the Telegram ROM column).
+    // Owner's Sensibull, 3 Oct 2026: SELL 1 SILVERM 27 Oct 210000 PE @ 1142.5,
+    // future 227,850 → standalone margin ₹1,46,000. The ±6% scan modelled
+    // ₹30,275 (4.8× low); ±20.4% models ₹1,45,528. Pinned by metals.test.ts.
+    margin: { priceScan: 0.204 },
+
     engine: {
       structuralBias: 0.6,
       structuralLabel: "Structural deficit bias",
@@ -182,6 +191,11 @@ export const METALS = {
       priceScan: 0.04,
       volScan: 0.2,
     },
+
+    // Margin as shown (see silver). Owner's Sensibull, 3 Oct 2026: SELL 1
+    // GOLDM 29 Oct 160000 CE @ 400, future ~149,000 → ₹1,36,000. The ±4% scan
+    // modelled ₹21,475 (6.3× low); ±16.1% models ₹1,36,531. CONV keeps ±4%.
+    margin: { priceScan: 0.161 },
 
     engine: {
       structuralBias: 0.2,
@@ -274,6 +288,11 @@ export const METALS = {
       volScan: 0.22,
     },
 
+    // Margin as shown (see silver). Owner's Sensibull, 3 Oct 2026: SELL 1
+    // COPPER 23 Oct 1500 CE @ 2.78, future 1,398.95 → ₹3,26,000. The ±5% scan
+    // modelled ₹58,257 (5.6× low); ±16.2% models ₹3,25,122. CONV keeps ±5%.
+    margin: { priceScan: 0.162 },
+
     engine: {
       structuralBias: 0.3,
       structuralLabel: "Tight concentrate / electrification demand",
@@ -358,17 +377,24 @@ export const METALS = {
     // feed timing into a fake contango.
     curveFrom: "mcx",
 
-    // First-cut calibration, to be checked against the first live chains (see
-    // TODO.md). The mini's book is shallower than the big contract's, so
-    // minChainOi is a light gate: below it, refuse to rank at all. The scan is
-    // the widest in the app — crude gaps on OPEC+ headlines and weekly
-    // inventory prints, and runs hotter than silver.
+    // The mini's book is shallower than the big contract's, so minChainOi is a
+    // light gate: below it, refuse to rank at all.
+    //
+    // MARGIN IS CALIBRATED TO THE BROKER, NOT TO VOLATILITY (2026-10-01). The
+    // first cut scanned ±8% (crude's daily vol, scaled the way the metals'
+    // scans are) and modelled ~₹3,100 a lot — but MCX margins crude far above
+    // its volatility. Owner's Sensibull, 1 Oct 2026: SELL 1 CRUDEOILM 15 Oct
+    // 7500 PE, future 8,883 → standalone margin ₹27,392. A ±46% scan models
+    // ~₹27,900 for that leg. With ±8% the EDGE column read 11.5% of margin
+    // where the trade really paid ~2%, and the inflated return lifted CONV
+    // (67 → 56 on that strike). Pinned by metals.test.ts; re-check against
+    // the broker if MCX changes crude's margins.
     screen: {
       minOi: 25,
       thinOi: 300,
       minChainOi: 500,
       romDivisor: 250,
-      priceScan: 0.08,
+      priceScan: 0.46,
       volScan: 0.3,
     },
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildForecast, fitSmile, screenSellCandidates } from "./sellCandidates";
 import type { McxData, OptionQuote, RegimeResult } from "./types";
+import { METALS } from "./metals.mjs";
 
 // Fixture: a real MCX SILVERM chain (2026-08-10 snapshot, F = 235,900, 14 DTE,
 // ATM IV 36.9%, RV20 26.1%), trimmed to both wings and deliberately including
@@ -245,6 +246,37 @@ describe("screenSellCandidates — honesty and degradation", () => {
     const c = byStrike(res.candidates, 215000, "PE");
     expect(c.marginPerLot).toBe(42000);
     expect(c.marginModelled).toBe(false);
+  });
+
+  it("shows the broker-calibrated margin without moving CONV", () => {
+    // Owner's rule: silver/gold/copper CONV is frozen. The display margin
+    // (`metal.margin`) may change what the screen shows, never what it scores.
+    const shown = screenSellCandidates(mcxFixture(), { score: 0 });
+    const saved = METALS.silver.margin;
+    try {
+      delete (METALS.silver as { margin?: unknown }).margin;
+      const convBasis = screenSellCandidates(mcxFixture(), { score: 0 });
+      for (const c of shown.candidates) {
+        const o = byStrike(convBasis.candidates, c.strike, c.type);
+        expect(c.conv).toBe(o.conv);
+        expect(c.sub).toEqual(o.sub);
+        expect(c.ok).toBe(o.ok);
+        expect(c.marginPerLot).toBeGreaterThan(o.marginPerLot);
+        expect(Math.abs(c.edgePct)).toBeLessThanOrEqual(Math.abs(o.edgePct) + 1e-9);
+      }
+    } finally {
+      METALS.silver.margin = saved;
+    }
+  });
+
+  it("a typed broker margin changes the returns shown, never CONV", () => {
+    const base = screenSellCandidates(mcxFixture(), { score: 0 });
+    const typed = screenSellCandidates(mcxFixture(), { score: 0, marginOverridePerLot: 150_000 });
+    const a = byStrike(base.candidates, 215000, "PE");
+    const b = byStrike(typed.candidates, 215000, "PE");
+    expect(b.conv).toBe(a.conv);
+    expect(b.margin * 5).toBeCloseTo(150_000, 6);
+    expect(b.edgePct).toBeCloseTo((b.edge / b.margin) * 100, 10);
   });
 
   it("returns an empty screen instead of throwing on missing data", () => {

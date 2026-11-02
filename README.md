@@ -68,8 +68,12 @@ lives in the same registry (the code still says "metal" throughout).
   *"The live market says the futures curve is steeply backwardated (October ₹8,843, November ₹8,511,
   December ₹8,281), which signals a tight market."* (`src/lib/curveRead.ts`, Score tab + Outlook +
   curve card).
-- **Crude's calibration is a first cut.** Its weights, OI gates and margin scan are still to be
-  checked against more live CRUDEOILM chains — see `TODO.md`.
+- **Crude's margin is calibrated to the broker, not to its volatility.** MCX margins crude far above
+  what its daily moves suggest: a ±46% scan reproduces the owner's real Sensibull margin (₹27,392 a
+  lot for a CRUDEOILM 7500 PE, 1 Oct 2026). The first cut used ±8% and modelled ~₹3,100, which made
+  EDGE read 11.5% of margin on a trade that paid ~2% and inflated CONV. A test pins the calibration.
+- **Crude's weights and OI gates are a first cut**, still to be checked against more live chains —
+  see `TODO.md`.
 
 ## Architecture ($0)
 
@@ -179,9 +183,16 @@ bounded ±8-point tilt for agreeing with the regime.
   a least-squares quadratic in log-moneyness. That last test is the important one: a leg that last
   traded days ago shows a large fake edge, and an OI floor alone doesn't catch it.
 - **Margin is modelled, not the exchange's.** MCX SPAN isn't in any free feed, so `spanScanMargin`
-  revalues the short leg across a ±6% price × ±25% vol scan grid, floors it at 0.5% of the future
-  and adds the blocked premium. Every margin-derived column is labelled `est.`; type your broker's
-  real ₹/lot into the override to replace it.
+  revalues the short leg across a price × vol scan grid, floors it at 0.5% of the future and adds
+  the blocked premium. Every margin-derived column is labelled `est.`; type your broker's real ₹/lot
+  into the override to replace it.
+- **Two margins: the one CONV is scored on, and the one the screen shows.** CONV's return and tail
+  sub-scores are normalised against each metal's `screen.priceScan` (±6% silver, ±4% gold, ±5%
+  copper), and that stays put: their CONV is frozen. The margin the screen *shows* uses
+  `margin.priceScan`, calibrated to the owner's Sensibull standalone margins on 3 Oct 2026. Those
+  were SILVERM 210000 PE ₹1.46L (±20.4%), GOLDM 160000 CE ₹1.36L (±16.1%) and COPPER 1500 CE
+  ₹3.26L (±16.2%), each 4.8–6.3× the CONV scan's figure. Margin/lot, EDGE, return on margin, tail %,
+  premium ÷ margin and the Telegram ROM column all use it. Crude's scan is already the broker's.
 
 > The CONV weights are hand-set priors, not backtested — same caveat as the direction engine. Trust
 > the shortlist and the columns, not the second decimal.

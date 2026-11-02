@@ -12,8 +12,7 @@
     "test:watch": "vitest",
     "build:data": "node scripts/build-data.mjs",
     "alerts": "vite-node scripts/alerts-run.mjs",
-    "alerts:replay": "vite-node scripts/alerts-replay.mjs",
-    "score": "vite-node scripts/score-snapshot-run.mjs"
+    "alerts:replay": "vite-node scripts/alerts-replay.mjs"
   },
   "dependencies": {
     "preact": "^10.24.3"
