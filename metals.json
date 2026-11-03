@@ -9,12 +9,12 @@
    "strike": 1300,
    "type": "PE",
    "conviction": 63,
-   "ltp": 8.58,
+   "ltp": 8.08,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 21450,
-   "margin": 399086,
-   "pop": 0.8629693508004614
+   "credit": 20200,
+   "margin": 394897,
+   "pop": 0.871168046856794
   },
   "copper|2026-11-23|1450|CE": {
    "metal": "copper",
@@ -24,12 +24,12 @@
    "strike": 1450,
    "type": "CE",
    "conviction": 79,
-   "ltp": 4.51,
+   "ltp": 4.48,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 11275,
-   "margin": 342221,
-   "pop": 0.940527807190344
+   "credit": 11200,
+   "margin": 346960,
+   "pop": 0.93625416476334
   },
   "gold|2026-11-27|129000|PE": {
    "metal": "gold",
@@ -39,12 +39,12 @@
    "strike": 129000,
    "type": "PE",
    "conviction": 63,
-   "ltp": 846.5,
+   "ltp": 832,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 8465,
-   "margin": 132963,
-   "pop": 0.9094993013770264
+   "credit": 8320,
+   "margin": 132551,
+   "pop": 0.9111025370307607
   },
   "gold|2026-11-27|128000|PE": {
    "metal": "gold",
@@ -54,12 +54,12 @@
    "strike": 128000,
    "type": "PE",
    "conviction": 75,
-   "ltp": 729.5,
+   "ltp": 725.5,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 7295,
-   "margin": 124668,
-   "pop": 0.9313253904043001
+   "credit": 7255,
+   "margin": 124360,
+   "pop": 0.9326705760415515
   },
   "copper|2026-11-23|1250|PE": {
    "metal": "copper",
@@ -69,12 +69,12 @@
    "strike": 1250,
    "type": "PE",
    "conviction": 89,
-   "ltp": 3.1,
+   "ltp": 3.03,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 7750,
-   "margin": 284706,
-   "pop": 0.9796522706117158
+   "credit": 7575,
+   "margin": 281246,
+   "pop": 0.9815051125545697
   },
   "silver|2026-11-23|160000|PE": {
    "metal": "silver",
@@ -84,12 +84,12 @@
    "strike": 160000,
    "type": "PE",
    "conviction": 60,
-   "ltp": 1870,
+   "ltp": 1878.5,
    "unit": "₹/kg",
    "lot": "5 kg",
-   "credit": 9350,
-   "margin": 100882,
-   "pop": 0.8750193101984958
+   "credit": 9393,
+   "margin": 101033,
+   "pop": 0.8752950170736623
   },
   "gold|2026-11-27|130000|PE": {
    "metal": "gold",
@@ -99,12 +99,12 @@
    "strike": 130000,
    "type": "PE",
    "conviction": 67,
-   "ltp": 982,
+   "ltp": 966,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 9820,
-   "margin": 141525,
-   "pop": 0.8831270062768009
+   "credit": 9660,
+   "margin": 141113,
+   "pop": 0.8849919359714153
   },
   "silver|2026-11-23|155000|PE": {
    "metal": "silver",
@@ -114,43 +114,43 @@
    "strike": 155000,
    "type": "PE",
    "conviction": 77,
-   "ltp": 1324.5,
+   "ltp": 1336,
    "unit": "₹/kg",
    "lot": "5 kg",
-   "credit": 6623,
-   "margin": 84034,
-   "pop": 0.9318090748066573
+   "credit": 6680,
+   "margin": 84223,
+   "pop": 0.9321280251101989
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-03T07:00:50.007Z",
-   "fingerprint": "28bc28371439e5fc",
+   "lastLiveAt": "2026-11-03T07:10:31.371Z",
+   "fingerprint": "6906101bf96f8587",
    "regime": "no_conviction"
   },
   "gold": {
-   "lastLiveAt": "2026-11-03T07:00:53.258Z",
-   "fingerprint": "35c893c459784fca",
+   "lastLiveAt": "2026-11-03T07:10:34.535Z",
+   "fingerprint": "06898ea951338d81",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-03T07:00:57.223Z",
-   "fingerprint": "39bf4d4f5089b7dd",
+   "lastLiveAt": "2026-11-03T07:10:38.443Z",
+   "fingerprint": "aacaccf27999418c",
    "regime": "chop"
   },
   "crude": {
-   "lastLiveAt": "2026-11-03T07:01:00.340Z",
-   "fingerprint": "9027616c4fea15a8",
+   "lastLiveAt": "2026-11-03T07:10:41.817Z",
+   "fingerprint": "3140b792aa508e2f",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-03",
   "runs": {
-   "silver": 22,
-   "gold": 22,
-   "copper": 22,
-   "crude": 22
+   "silver": 23,
+   "gold": 23,
+   "copper": 23,
+   "crude": 23
   },
   "NEW": 13,
   "MOVED": 20,
@@ -548,6 +548,6 @@
    }
   }
  },
- "lastRunAt": "2026-11-03T07:01:05.779Z",
+ "lastRunAt": "2026-11-03T07:10:45.920Z",
  "heartbeatDate": "2026-11-02"
 }
