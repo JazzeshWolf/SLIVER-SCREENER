@@ -8,13 +8,13 @@
    "expiry": "2026-11-23",
    "strike": 1450,
    "type": "CE",
-   "conviction": 80,
-   "ltp": 4.12,
+   "conviction": 83,
+   "ltp": 4.05,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 10300,
-   "margin": 346317,
-   "pop": 0.9413322883814508
+   "credit": 10125,
+   "margin": 341381,
+   "pop": 0.945930313800672
   },
   "copper|2026-11-23|1300|PE": {
    "metal": "copper",
@@ -23,13 +23,13 @@
    "expiry": "2026-11-23",
    "strike": 1300,
    "type": "PE",
-   "conviction": 65,
-   "ltp": 6.77,
+   "conviction": 62,
+   "ltp": 6.78,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 16925,
-   "margin": 394198,
-   "pop": 0.8768611296740954
+   "credit": 16950,
+   "margin": 398110,
+   "pop": 0.8690488841288077
   },
   "silver|2026-11-23|165000|PE": {
    "metal": "silver",
@@ -39,12 +39,12 @@
    "strike": 165000,
    "type": "PE",
    "conviction": 72,
-   "ltp": 970,
+   "ltp": 929,
    "unit": "₹/kg",
    "lot": "5 kg",
-   "credit": 4850,
-   "margin": 89781,
-   "pop": 0.9298968594350434
+   "credit": 4645,
+   "margin": 88935,
+   "pop": 0.9321715118027526
   },
   "gold|2026-11-27|132000|PE": {
    "metal": "gold",
@@ -54,12 +54,12 @@
    "strike": 132000,
    "type": "PE",
    "conviction": 69,
-   "ltp": 372,
+   "ltp": 359,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 3720,
-   "margin": 116610,
-   "pop": 0.9443917036840651
+   "credit": 3590,
+   "margin": 115356,
+   "pop": 0.946221408860658
   },
   "gold|2026-11-27|133000|PE": {
    "metal": "gold",
@@ -69,12 +69,12 @@
    "strike": 133000,
    "type": "PE",
    "conviction": 63,
-   "ltp": 445,
+   "ltp": 420,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 4450,
-   "margin": 125013,
-   "pop": 0.9272917853903173
+   "credit": 4200,
+   "margin": 123594,
+   "pop": 0.9296171408174766
   },
   "copper|2026-11-23|1250|PE": {
    "metal": "copper",
@@ -84,12 +84,12 @@
    "strike": 1250,
    "type": "PE",
    "conviction": 92,
-   "ltp": 2.41,
+   "ltp": 2.67,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 6025,
-   "margin": 279359,
-   "pop": 0.9837556475068021
+   "credit": 6675,
+   "margin": 283573,
+   "pop": 0.9822189997446126
   },
   "crude|2026-11-17|9700|CE": {
    "metal": "crude",
@@ -99,12 +99,12 @@
    "strike": 9700,
    "type": "CE",
    "conviction": 60,
-   "ltp": 87.35,
+   "ltp": 91,
    "unit": "₹/bbl",
    "lot": "10 bbl",
-   "credit": 874,
-   "margin": 27568,
-   "pop": 0.9074974373931078
+   "credit": 910,
+   "margin": 27713,
+   "pop": 0.9061571776862433
   },
   "crude|2026-11-17|9750|CE": {
    "metal": "crude",
@@ -114,46 +114,76 @@
    "strike": 9750,
    "type": "CE",
    "conviction": 60,
-   "ltp": 84.85,
+   "ltp": 86.35,
    "unit": "₹/bbl",
    "lot": "10 bbl",
-   "credit": 849,
-   "margin": 27155,
-   "pop": 0.9152977237124449
+   "credit": 864,
+   "margin": 27279,
+   "pop": 0.914049157829977
+  },
+  "gold|2026-11-27|132500|PE": {
+   "metal": "gold",
+   "emoji": "🥇",
+   "symbol": "GOLDM",
+   "expiry": "2026-11-27",
+   "strike": 132500,
+   "type": "PE",
+   "conviction": 60,
+   "ltp": 391.5,
+   "unit": "₹/10g",
+   "lot": "100 g",
+   "credit": 3915,
+   "margin": 119481,
+   "pop": 0.9383391063317074
+  },
+  "copper|2026-11-23|1430|CE": {
+   "metal": "copper",
+   "emoji": "🟠",
+   "symbol": "COPPER",
+   "expiry": "2026-11-23",
+   "strike": 1430,
+   "type": "CE",
+   "conviction": 60,
+   "ltp": 5.96,
+   "unit": "₹/kg",
+   "lot": "2500 kg",
+   "credit": 14900,
+   "margin": 386375,
+   "pop": 0.8960878291828585
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-05T14:50:38.171Z",
-   "fingerprint": "2ccdff53e69c139a",
+   "lastLiveAt": "2026-11-05T15:00:50.992Z",
+   "fingerprint": "834adc37c35b48d8",
    "regime": "chop"
   },
   "gold": {
-   "lastLiveAt": "2026-11-05T14:50:41.059Z",
-   "fingerprint": "55e0d6b559f27f53",
+   "lastLiveAt": "2026-11-05T15:00:54.051Z",
+   "fingerprint": "eed92c6c0cb404f2",
    "regime": "no_conviction"
   },
   "copper": {
-   "lastLiveAt": "2026-11-05T14:50:44.712Z",
-   "fingerprint": "29900ce4f81779ce",
+   "lastLiveAt": "2026-11-05T15:00:58.234Z",
+   "fingerprint": "8e95f895b7214bcc",
    "regime": "no_conviction"
   },
   "crude": {
-   "lastLiveAt": "2026-11-05T14:50:48.063Z",
-   "fingerprint": "47402d47f98d2aec",
+   "lastLiveAt": "2026-11-05T15:01:01.582Z",
+   "fingerprint": "2c3baffe262c14a3",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-05",
   "runs": {
-   "silver": 69,
-   "gold": 69,
-   "copper": 69,
-   "crude": 69
+   "silver": 70,
+   "gold": 70,
+   "copper": 70,
+   "crude": 70
   },
-  "NEW": 95,
-  "MOVED": 35,
+  "NEW": 97,
+  "MOVED": 37,
   "DROPPED": 50,
   "LEFT": 46,
   "trades": {
@@ -421,13 +451,13 @@
      "expiry": "2026-11-23",
      "strike": 1450,
      "type": "CE",
-     "conviction": 80,
-     "ltp": 4.3,
+     "conviction": 83,
+     "ltp": 4.05,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 10750,
-     "margin": 353906,
-     "pop": 0.9374978105383
+     "credit": 10125,
+     "margin": 341381,
+     "pop": 0.945930313800672
     }
    },
    "copper|2026-11-23|1300|PE": {
@@ -439,13 +469,13 @@
      "expiry": "2026-11-23",
      "strike": 1300,
      "type": "PE",
-     "conviction": 65,
-     "ltp": 6.77,
+     "conviction": 62,
+     "ltp": 6.78,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 16925,
-     "margin": 394198,
-     "pop": 0.8768611296740954
+     "credit": 16950,
+     "margin": 398110,
+     "pop": 0.8690488841288077
     }
    },
    "copper|2026-11-23|1250|PE": {
@@ -549,20 +579,16 @@
      "expiry": "2026-11-27",
      "strike": 132500,
      "type": "PE",
-     "conviction": 58,
-     "ltp": 329.5,
+     "conviction": 60,
+     "ltp": 391.5,
      "unit": "₹/10g",
      "lot": "100 g",
-     "credit": 3295,
-     "margin": 117331,
-     "pop": 0.9408134704715924
+     "credit": 3915,
+     "margin": 119481,
+     "pop": 0.9383391063317074
     },
     "entered": true,
-    "exit": {
-     "kind": "DROPPED",
-     "why": null,
-     "expiring": false
-    }
+    "exit": null
    },
    "crude|2026-11-17|9450|CE": {
     "from": 60,
@@ -597,20 +623,16 @@
      "expiry": "2026-11-23",
      "strike": 1430,
      "type": "CE",
-     "conviction": 59,
-     "ltp": 5.79,
+     "conviction": 60,
+     "ltp": 5.96,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 14475,
-     "margin": 391242,
-     "pop": 0.8918366303084624
+     "credit": 14900,
+     "margin": 386375,
+     "pop": 0.8960878291828585
     },
     "entered": true,
-    "exit": {
-     "kind": "DROPPED",
-     "why": null,
-     "expiring": false
-    }
+    "exit": null
    },
    "crude|2026-11-17|9650|CE": {
     "from": 61,
@@ -722,6 +744,6 @@
    }
   }
  },
- "lastRunAt": "2026-11-05T14:50:52.748Z",
+ "lastRunAt": "2026-11-05T15:01:08.188Z",
  "heartbeatDate": "2026-11-04"
 }
