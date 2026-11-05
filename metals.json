@@ -13,8 +13,8 @@
    "unit": "₹/kg",
    "lot": "2500 kg",
    "credit": 11750,
-   "margin": 371570,
-   "pop": 0.9246256258036286
+   "margin": 369056,
+   "pop": 0.9280837232228488
   },
   "copper|2026-11-23|1300|PE": {
    "metal": "copper",
@@ -24,12 +24,12 @@
    "strike": 1300,
    "type": "PE",
    "conviction": 74,
-   "ltp": 4.5,
+   "ltp": 4.6,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 11250,
-   "margin": 373160,
-   "pop": 0.919623684147622
+   "credit": 11500,
+   "margin": 375183,
+   "pop": 0.9176784774071526
   },
   "crude|2026-11-17|9450|CE": {
    "metal": "crude",
@@ -39,12 +39,12 @@
    "strike": 9450,
    "type": "CE",
    "conviction": 60,
-   "ltp": 86.1,
+   "ltp": 84.4,
    "unit": "₹/bbl",
    "lot": "10 bbl",
-   "credit": 861,
-   "margin": 26262,
-   "pop": 0.9122324059806135
+   "credit": 844,
+   "margin": 26186,
+   "pop": 0.9130082806591022
   },
   "copper|2026-11-23|1500|CE": {
    "metal": "copper",
@@ -58,8 +58,8 @@
    "unit": "₹/kg",
    "lot": "2500 kg",
    "credit": 5500,
-   "margin": 268870,
-   "pop": 0.9897865487315974
+   "margin": 266975,
+   "pop": 0.9905340121642119
   },
   "crude|2026-11-17|7000|PE": {
    "metal": "crude",
@@ -69,27 +69,12 @@
    "strike": 7000,
    "type": "PE",
    "conviction": 65,
-   "ltp": 59,
+   "ltp": 60.25,
    "unit": "₹/bbl",
    "lot": "10 bbl",
-   "credit": 590,
-   "margin": 25601,
-   "pop": 0.9223974318600966
-  },
-  "silver|2026-11-23|170000|PE": {
-   "metal": "silver",
-   "emoji": "🥈",
-   "symbol": "SILVERM",
-   "expiry": "2026-11-23",
-   "strike": 170000,
-   "type": "PE",
-   "conviction": 61,
-   "ltp": 986,
-   "unit": "₹/kg",
-   "lot": "5 kg",
-   "credit": 4930,
-   "margin": 95865,
-   "pop": 0.9160293828581478
+   "credit": 603,
+   "margin": 25629,
+   "pop": 0.9217398867456738
   },
   "gold|2026-11-27|134000|PE": {
    "metal": "gold",
@@ -99,47 +84,47 @@
    "strike": 134000,
    "type": "PE",
    "conviction": 62,
-   "ltp": 360.5,
+   "ltp": 363.5,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 3605,
-   "margin": 120990,
-   "pop": 0.9340832080291364
+   "credit": 3635,
+   "margin": 121288,
+   "pop": 0.9325817144400985
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-05T04:00:49.864Z",
-   "fingerprint": "cb6de48dbcaaf986",
+   "lastLiveAt": "2026-11-05T04:10:31.601Z",
+   "fingerprint": "7c859e6e011d1852",
    "regime": "chop"
   },
   "gold": {
-   "lastLiveAt": "2026-11-05T04:00:52.810Z",
-   "fingerprint": "93e5f6e8169b4ee3",
+   "lastLiveAt": "2026-11-05T04:10:34.310Z",
+   "fingerprint": "815166b3b3f88d9c",
    "regime": "no_conviction"
   },
   "copper": {
-   "lastLiveAt": "2026-11-05T04:00:56.347Z",
-   "fingerprint": "97dd0f09ee8f1689",
+   "lastLiveAt": "2026-11-05T04:10:37.732Z",
+   "fingerprint": "1c837864668c8a41",
    "regime": "no_conviction"
   },
   "crude": {
-   "lastLiveAt": "2026-11-05T04:00:59.271Z",
-   "fingerprint": "b6667764fc19a6ca",
+   "lastLiveAt": "2026-11-05T04:10:40.582Z",
+   "fingerprint": "5031aeb05ce75606",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-05",
   "runs": {
-   "silver": 4,
-   "gold": 4,
-   "copper": 4,
-   "crude": 4
+   "silver": 5,
+   "gold": 5,
+   "copper": 5,
+   "crude": 5
   },
   "NEW": 8,
   "MOVED": 4,
-  "DROPPED": 3,
+  "DROPPED": 4,
   "LEFT": 7,
   "trades": {
    "silver|2026-11-23|167000|PE": {
@@ -461,16 +446,20 @@
      "expiry": "2026-11-23",
      "strike": 170000,
      "type": "PE",
-     "conviction": 61,
-     "ltp": 986,
+     "conviction": 59,
+     "ltp": 972.5,
      "unit": "₹/kg",
      "lot": "5 kg",
-     "credit": 4930,
-     "margin": 95865,
-     "pop": 0.9160293828581478
+     "credit": 4863,
+     "margin": 96036,
+     "pop": 0.914406941803589
     },
     "entered": true,
-    "exit": null
+    "exit": {
+     "kind": "DROPPED",
+     "why": null,
+     "expiring": false
+    }
    },
    "gold|2026-11-27|134000|PE": {
     "from": 62,
@@ -494,6 +483,6 @@
    }
   }
  },
- "lastRunAt": "2026-11-05T04:01:03.843Z",
+ "lastRunAt": "2026-11-05T04:10:45.164Z",
  "heartbeatDate": "2026-11-04"
 }
