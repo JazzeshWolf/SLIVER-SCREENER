@@ -9,12 +9,12 @@
    "strike": 155000,
    "type": "PE",
    "conviction": 94,
-   "ltp": 422,
+   "ltp": 389.5,
    "unit": "₹/kg",
    "lot": "5 kg",
-   "credit": 2110,
-   "margin": 94455,
-   "pop": 0.9679181804372381
+   "credit": 1948,
+   "margin": 94259,
+   "pop": 0.9690375910417881
   },
   "gold|2026-11-27|143000|CE": {
    "metal": "gold",
@@ -23,13 +23,13 @@
    "expiry": "2026-11-27",
    "strike": 143000,
    "type": "CE",
-   "conviction": 77,
-   "ltp": 252,
+   "conviction": 80,
+   "ltp": 250.5,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 2520,
-   "margin": 131659,
-   "pop": 0.9441689176715631
+   "credit": 2505,
+   "margin": 130755,
+   "pop": 0.9495739380752017
   },
   "gold|2026-11-27|143500|CE": {
    "metal": "gold",
@@ -39,12 +39,12 @@
    "strike": 143500,
    "type": "CE",
    "conviction": 79,
-   "ltp": 226,
+   "ltp": 225,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 2260,
-   "margin": 127182,
-   "pop": 0.9531922994420007
+   "credit": 2250,
+   "margin": 126300,
+   "pop": 0.9580309642608318
   },
   "gold|2026-11-27|142000|CE": {
    "metal": "gold",
@@ -53,13 +53,13 @@
    "expiry": "2026-11-27",
    "strike": 142000,
    "type": "CE",
-   "conviction": 67,
-   "ltp": 313.5,
+   "conviction": 71,
+   "ltp": 307,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 3135,
-   "margin": 140819,
-   "pop": 0.9219251292815631
+   "credit": 3070,
+   "margin": 139846,
+   "pop": 0.9285024304924485
   },
   "gold|2026-11-27|142500|CE": {
    "metal": "gold",
@@ -68,13 +68,13 @@
    "expiry": "2026-11-27",
    "strike": 142500,
    "type": "CE",
-   "conviction": 71,
-   "ltp": 285,
+   "conviction": 74,
+   "ltp": 280.5,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 2850,
-   "margin": 136241,
-   "pop": 0.9337871489952736
+   "credit": 2805,
+   "margin": 135295,
+   "pop": 0.9397748878084957
   },
   "gold|2026-11-27|141500|CE": {
    "metal": "gold",
@@ -84,12 +84,12 @@
    "strike": 141500,
    "type": "CE",
    "conviction": 62,
-   "ltp": 366,
+   "ltp": 359.5,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 3660,
-   "margin": 145582,
-   "pop": 0.9084665666970068
+   "credit": 3595,
+   "margin": 144606,
+   "pop": 0.9156291951800248
   },
   "gold|2026-11-27|141000|CE": {
    "metal": "gold",
@@ -99,46 +99,61 @@
    "strike": 141000,
    "type": "CE",
    "conviction": 60,
-   "ltp": 412,
+   "ltp": 396,
    "unit": "₹/10g",
    "lot": "100 g",
-   "credit": 4120,
-   "margin": 150313,
-   "pop": 0.8933044963570729
+   "credit": 3960,
+   "margin": 149286,
+   "pop": 0.9010357755504849
+  },
+  "gold|2026-11-27|127000|PE": {
+   "metal": "gold",
+   "emoji": "🥇",
+   "symbol": "GOLDM",
+   "expiry": "2026-11-27",
+   "strike": 127000,
+   "type": "PE",
+   "conviction": 60,
+   "ltp": 334,
+   "unit": "₹/10g",
+   "lot": "100 g",
+   "credit": 3340,
+   "margin": 144360,
+   "pop": 0.9091139989177011
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-17T14:50:39.363Z",
-   "fingerprint": "494894d6423bf2c9",
-   "regime": "no_conviction"
+   "lastLiveAt": "2026-11-17T15:01:01.892Z",
+   "fingerprint": "00d73bd5a63b71af",
+   "regime": "chop"
   },
   "gold": {
-   "lastLiveAt": "2026-11-17T14:50:44.503Z",
-   "fingerprint": "a04678759f4ab878",
+   "lastLiveAt": "2026-11-17T15:01:06.808Z",
+   "fingerprint": "0362bc4fa89bbd0d",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-17T14:50:49.138Z",
-   "fingerprint": "c9f290e73525eafb",
+   "lastLiveAt": "2026-11-17T15:01:10.324Z",
+   "fingerprint": "c70c97548a3b785d",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-17T14:50:55.582Z",
-   "fingerprint": "1063c827c6aa2868",
+   "lastLiveAt": "2026-11-17T15:01:14.118Z",
+   "fingerprint": "924511399427494e",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-17",
   "runs": {
-   "silver": 69,
-   "gold": 69,
-   "copper": 69,
-   "crude": 69
+   "silver": 70,
+   "gold": 70,
+   "copper": 70,
+   "crude": 70
   },
-  "NEW": 10,
-  "MOVED": 79,
+  "NEW": 11,
+  "MOVED": 82,
   "DROPPED": 12,
   "LEFT": 1,
   "trades": {
@@ -230,13 +245,13 @@
      "expiry": "2026-11-27",
      "strike": 143000,
      "type": "CE",
-     "conviction": 77,
-     "ltp": 239,
+     "conviction": 80,
+     "ltp": 250.5,
      "unit": "₹/10g",
      "lot": "100 g",
-     "credit": 2390,
-     "margin": 131313,
-     "pop": 0.9459626386749869
+     "credit": 2505,
+     "margin": 130755,
+     "pop": 0.9495739380752017
     }
    },
    "gold|2026-11-27|142000|CE": {
@@ -248,13 +263,13 @@
      "expiry": "2026-11-27",
      "strike": 142000,
      "type": "CE",
-     "conviction": 67,
-     "ltp": 313.5,
+     "conviction": 71,
+     "ltp": 307,
      "unit": "₹/10g",
      "lot": "100 g",
-     "credit": 3135,
-     "margin": 140819,
-     "pop": 0.9219251292815631
+     "credit": 3070,
+     "margin": 139846,
+     "pop": 0.9285024304924485
     }
    },
    "gold|2026-11-27|142500|CE": {
@@ -266,13 +281,13 @@
      "expiry": "2026-11-27",
      "strike": 142500,
      "type": "CE",
-     "conviction": 71,
-     "ltp": 274,
+     "conviction": 74,
+     "ltp": 280.5,
      "unit": "₹/10g",
      "lot": "100 g",
-     "credit": 2740,
-     "margin": 135936,
-     "pop": 0.9357555913506108
+     "credit": 2805,
+     "margin": 135295,
+     "pop": 0.9397748878084957
     }
    },
    "gold|2026-11-27|128000|PE": {
@@ -331,19 +346,15 @@
      "expiry": "2026-11-27",
      "strike": 127000,
      "type": "PE",
-     "conviction": 59,
-     "ltp": 337.5,
+     "conviction": 60,
+     "ltp": 334,
      "unit": "₹/10g",
      "lot": "100 g",
-     "credit": 3375,
-     "margin": 143739,
-     "pop": 0.907762516178902
+     "credit": 3340,
+     "margin": 144360,
+     "pop": 0.9091139989177011
     },
-    "exit": {
-     "kind": "DROPPED",
-     "why": null,
-     "expiring": false
-    },
+    "exit": null,
     "entered": true
    },
    "gold|2026-11-27|141000|CE": {
@@ -392,6 +403,6 @@
    }
   }
  },
- "lastRunAt": "2026-11-17T14:50:59.712Z",
+ "lastRunAt": "2026-11-17T15:01:20.453Z",
  "heartbeatDate": "2026-11-16"
 }
