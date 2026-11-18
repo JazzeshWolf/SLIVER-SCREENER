@@ -1,55 +1,39 @@
 {
  "version": 1,
- "tracked": {
-  "silver|2026-11-23|155000|PE": {
-   "metal": "silver",
-   "emoji": "🥈",
-   "symbol": "SILVERM",
-   "expiry": "2026-11-23",
-   "strike": 155000,
-   "type": "PE",
-   "conviction": 66,
-   "ltp": 702,
-   "unit": "₹/kg",
-   "lot": "5 kg",
-   "credit": 3510,
-   "margin": 120200,
-   "pop": 0.8728347468496422
-  }
- },
+ "tracked": {},
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-18T12:30:45.008Z",
-   "fingerprint": "0446a123e33d944c",
-   "regime": "chop"
+   "lastLiveAt": "2026-11-18T12:40:32.414Z",
+   "fingerprint": "a50f732a4d73efae",
+   "regime": "trend_down"
   },
   "gold": {
-   "lastLiveAt": "2026-11-18T12:30:48.953Z",
-   "fingerprint": "4f12e34f3508bdea",
+   "lastLiveAt": "2026-11-18T12:40:37.754Z",
+   "fingerprint": "b6a6b6a16407b8ea",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-18T12:30:52.438Z",
-   "fingerprint": "b5b9d6bc4e650f91",
+   "lastLiveAt": "2026-11-18T12:40:42.467Z",
+   "fingerprint": "597e6e827475f05d",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-18T12:30:54.878Z",
-   "fingerprint": "b439a169d1ceb36b",
+   "lastLiveAt": "2026-11-18T12:40:45.114Z",
+   "fingerprint": "46fb82e3a9ecf466",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-18",
   "runs": {
-   "silver": 56,
-   "gold": 56,
-   "copper": 56,
-   "crude": 56
+   "silver": 57,
+   "gold": 57,
+   "copper": 57,
+   "crude": 57
   },
   "NEW": 0,
   "MOVED": 13,
-  "DROPPED": 1,
+  "DROPPED": 2,
   "LEFT": 6,
   "trades": {
    "gold|2026-11-27|127000|PE": {
@@ -222,17 +206,22 @@
      "expiry": "2026-11-23",
      "strike": 155000,
      "type": "PE",
-     "conviction": 66,
-     "ltp": 637,
+     "conviction": 47,
+     "ltp": 968,
      "unit": "₹/kg",
      "lot": "5 kg",
-     "credit": 3185,
-     "margin": 118567,
-     "pop": 0.8829058218298813
+     "credit": 4840,
+     "margin": 124456,
+     "pop": 0.833212847580863
+    },
+    "exit": {
+     "kind": "DROPPED",
+     "why": null,
+     "expiring": false
     }
    }
   }
  },
- "lastRunAt": "2026-11-18T12:30:59.438Z",
+ "lastRunAt": "2026-11-18T12:40:49.005Z",
  "heartbeatDate": "2026-11-17"
 }
