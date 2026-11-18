@@ -9,63 +9,48 @@
    "strike": 155000,
    "type": "PE",
    "conviction": 68,
-   "ltp": 691.5,
+   "ltp": 717.5,
    "unit": "₹/kg",
    "lot": "5 kg",
-   "credit": 3458,
-   "margin": 117118,
-   "pop": 0.888564317161344
-  },
-  "gold|2026-11-27|141000|CE": {
-   "metal": "gold",
-   "emoji": "🥇",
-   "symbol": "GOLDM",
-   "expiry": "2026-11-27",
-   "strike": 141000,
-   "type": "CE",
-   "conviction": 95,
-   "ltp": 207.5,
-   "unit": "₹/10g",
-   "lot": "100 g",
-   "credit": 2075,
-   "margin": 119545,
-   "pop": 0.9773265135507572
+   "credit": 3588,
+   "margin": 117734,
+   "pop": 0.8838550038481017
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-18T05:00:50.989Z",
-   "fingerprint": "e82dab27ad59ae9d",
+   "lastLiveAt": "2026-11-18T05:10:50.659Z",
+   "fingerprint": "e9a7dd91c34d22bc",
    "regime": "chop"
   },
   "gold": {
-   "lastLiveAt": "2026-11-18T05:00:55.313Z",
-   "fingerprint": "28dbab3252fefe92",
+   "lastLiveAt": "2026-11-18T05:10:55.261Z",
+   "fingerprint": "e2de2c76d8c05207",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-18T05:00:59.437Z",
-   "fingerprint": "d9b4847599d4c94c",
+   "lastLiveAt": "2026-11-18T05:11:09.134Z",
+   "fingerprint": "be426a0bcf76494d",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-18T05:01:02.154Z",
-   "fingerprint": "e17c9421454c8d97",
+   "lastLiveAt": "2026-11-18T05:11:20.561Z",
+   "fingerprint": "38ebf4d93dd81d53",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-18",
   "runs": {
-   "silver": 10,
-   "gold": 10,
-   "copper": 10,
-   "crude": 10
+   "silver": 11,
+   "gold": 11,
+   "copper": 11,
+   "crude": 11
   },
   "NEW": 0,
   "MOVED": 5,
   "DROPPED": 1,
-  "LEFT": 5,
+  "LEFT": 6,
   "trades": {
    "gold|2026-11-27|127000|PE": {
     "from": 63,
@@ -192,12 +177,17 @@
      "strike": 141000,
      "type": "CE",
      "conviction": 95,
-     "ltp": 245.5,
+     "ltp": 207.5,
      "unit": "₹/10g",
      "lot": "100 g",
-     "credit": 2455,
-     "margin": 123849,
-     "pop": 0.9732937966466281
+     "credit": 2075,
+     "margin": 119545,
+     "pop": 0.9773265135507572
+    },
+    "exit": {
+     "kind": "LEFT",
+     "why": "filtered out: premium decayed below the screen's floor",
+     "expiring": false
     }
    },
    "gold|2026-11-27|141500|CE": {
@@ -243,6 +233,6 @@
    }
   }
  },
- "lastRunAt": "2026-11-18T05:01:06.411Z",
+ "lastRunAt": "2026-11-18T05:11:24.537Z",
  "heartbeatDate": "2026-11-17"
 }
