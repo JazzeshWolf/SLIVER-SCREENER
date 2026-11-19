@@ -13,41 +13,56 @@
    "unit": "₹/kg",
    "lot": "2500 kg",
    "credit": 9600,
-   "margin": 171878,
-   "pop": 0.9755163269578506
+   "margin": 170077,
+   "pop": 0.9769093764896964
+  },
+  "copper|2026-12-23|1350|CE": {
+   "metal": "copper",
+   "emoji": "🟠",
+   "symbol": "COPPER",
+   "expiry": "2026-12-23",
+   "strike": 1350,
+   "type": "CE",
+   "conviction": 60,
+   "ltp": 7.05,
+   "unit": "₹/kg",
+   "lot": "2500 kg",
+   "credit": 17625,
+   "margin": 228920,
+   "pop": 0.9383756396724002
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-19T14:10:35.852Z",
-   "fingerprint": "4e6e95e72a41ad79",
+   "lastLiveAt": "2026-11-19T14:20:35.539Z",
+   "fingerprint": "1f41a6cf9b29972e",
    "regime": "trend_down"
   },
   "gold": {
-   "lastLiveAt": "2026-11-19T14:10:39.245Z",
-   "fingerprint": "33a0cc494507f681",
+   "lastLiveAt": "2026-11-19T14:20:39.020Z",
+   "fingerprint": "46ed69f9a55c8ac9",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-19T14:10:43.430Z",
-   "fingerprint": "0f1e7c6af385258d",
+   "lastLiveAt": "2026-11-19T14:20:42.400Z",
+   "fingerprint": "4ef39e713cf0b312",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-19T14:10:46.178Z",
-   "fingerprint": "4ce2dea6f5500a01",
+   "lastLiveAt": "2026-11-19T14:20:45.134Z",
+   "fingerprint": "9154ace6b896829d",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-19",
   "runs": {
-   "silver": 66,
-   "gold": 66,
-   "copper": 66,
-   "crude": 66
+   "silver": 67,
+   "gold": 67,
+   "copper": 67,
+   "crude": 67
   },
-  "NEW": 1,
+  "NEW": 2,
   "MOVED": 8,
   "DROPPED": 0,
   "LEFT": 0,
@@ -71,9 +86,29 @@
     },
     "entered": true,
     "exit": null
+   },
+   "copper|2026-12-23|1350|CE": {
+    "from": 60,
+    "row": {
+     "metal": "copper",
+     "emoji": "🟠",
+     "symbol": "COPPER",
+     "expiry": "2026-12-23",
+     "strike": 1350,
+     "type": "CE",
+     "conviction": 60,
+     "ltp": 7.05,
+     "unit": "₹/kg",
+     "lot": "2500 kg",
+     "credit": 17625,
+     "margin": 228920,
+     "pop": 0.9383756396724002
+    },
+    "entered": true,
+    "exit": null
    }
   }
  },
- "lastRunAt": "2026-11-19T14:10:50.795Z",
+ "lastRunAt": "2026-11-19T14:20:49.657Z",
  "heartbeatDate": "2026-11-18"
 }
