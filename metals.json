@@ -1,42 +1,79 @@
 {
  "version": 1,
- "tracked": {},
+ "tracked": {
+  "copper|2026-12-23|1400|CE": {
+   "metal": "copper",
+   "emoji": "🟠",
+   "symbol": "COPPER",
+   "expiry": "2026-12-23",
+   "strike": 1400,
+   "type": "CE",
+   "conviction": 76,
+   "ltp": 3.42,
+   "unit": "₹/kg",
+   "lot": "2500 kg",
+   "credit": 8550,
+   "margin": 163595,
+   "pop": 0.9767258409817954
+  }
+ },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-19T08:20:29.954Z",
-   "fingerprint": "c8e4084e8aeee89c",
+   "lastLiveAt": "2026-11-19T08:30:45.810Z",
+   "fingerprint": "6ba6800b17a4357c",
    "regime": "trend_down"
   },
   "gold": {
-   "lastLiveAt": "2026-11-19T08:20:33.352Z",
-   "fingerprint": "78d3091c3908a353",
+   "lastLiveAt": "2026-11-19T08:30:49.940Z",
+   "fingerprint": "967e714a349404e5",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-19T08:20:36.832Z",
-   "fingerprint": "130f39a8c7d42ca3",
+   "lastLiveAt": "2026-11-19T08:30:54.100Z",
+   "fingerprint": "40ee946597f56de2",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-19T08:20:39.390Z",
-   "fingerprint": "8d04a4e1a3a181e0",
+   "lastLiveAt": "2026-11-19T08:30:57.182Z",
+   "fingerprint": "80138c968671d00f",
    "regime": "chop"
   }
  },
  "day": {
   "date": "2026-11-19",
   "runs": {
-   "silver": 30,
-   "gold": 30,
-   "copper": 30,
-   "crude": 30
+   "silver": 31,
+   "gold": 31,
+   "copper": 31,
+   "crude": 31
   },
-  "NEW": 0,
+  "NEW": 1,
   "MOVED": 0,
   "DROPPED": 0,
   "LEFT": 0,
-  "trades": {}
+  "trades": {
+   "copper|2026-12-23|1400|CE": {
+    "from": 76,
+    "row": {
+     "metal": "copper",
+     "emoji": "🟠",
+     "symbol": "COPPER",
+     "expiry": "2026-12-23",
+     "strike": 1400,
+     "type": "CE",
+     "conviction": 76,
+     "ltp": 3.42,
+     "unit": "₹/kg",
+     "lot": "2500 kg",
+     "credit": 8550,
+     "margin": 163595,
+     "pop": 0.9767258409817954
+    },
+    "entered": true,
+    "exit": null
+   }
+  }
  },
- "lastRunAt": "2026-11-19T08:20:43.140Z",
+ "lastRunAt": "2026-11-19T08:31:02.356Z",
  "heartbeatDate": "2026-11-18"
 }
