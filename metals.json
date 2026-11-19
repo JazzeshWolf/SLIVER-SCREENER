@@ -13,59 +13,44 @@
    "unit": "₹/kg",
    "lot": "2500 kg",
    "credit": 9600,
-   "margin": 169761,
-   "pop": 0.9764279804443979
-  },
-  "copper|2026-12-23|1350|CE": {
-   "metal": "copper",
-   "emoji": "🟠",
-   "symbol": "COPPER",
-   "expiry": "2026-12-23",
-   "strike": 1350,
-   "type": "CE",
-   "conviction": 60,
-   "ltp": 6.42,
-   "unit": "₹/kg",
-   "lot": "2500 kg",
-   "credit": 16050,
-   "margin": 224177,
-   "pop": 0.9378748754115449
+   "margin": 167778,
+   "pop": 0.9775166398868406
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-19T14:30:41.488Z",
-   "fingerprint": "8909cde239c880d4",
+   "lastLiveAt": "2026-11-19T14:41:02.193Z",
+   "fingerprint": "7041f1853f01e269",
    "regime": "trend_down"
   },
   "gold": {
-   "lastLiveAt": "2026-11-19T14:30:45.619Z",
-   "fingerprint": "0ef6cea2c4108360",
+   "lastLiveAt": "2026-11-19T14:41:06.936Z",
+   "fingerprint": "b9036c3d644d8fc4",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-19T14:30:50.186Z",
-   "fingerprint": "fe72826f697ec319",
+   "lastLiveAt": "2026-11-19T14:41:19.612Z",
+   "fingerprint": "223f1b1765672b37",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-19T14:30:52.965Z",
-   "fingerprint": "1a20aa5c734b5d36",
+   "lastLiveAt": "2026-11-19T14:41:31.155Z",
+   "fingerprint": "48754fb7062dfd45",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-19",
   "runs": {
-   "silver": 68,
-   "gold": 68,
-   "copper": 68,
-   "crude": 68
+   "silver": 69,
+   "gold": 69,
+   "copper": 69,
+   "crude": 69
   },
   "NEW": 2,
   "MOVED": 8,
   "DROPPED": 0,
-  "LEFT": 0,
+  "LEFT": 1,
   "trades": {
    "copper|2026-12-23|1400|CE": {
     "from": 76,
@@ -97,18 +82,22 @@
      "strike": 1350,
      "type": "CE",
      "conviction": 60,
-     "ltp": 7.05,
+     "ltp": 6.42,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 17625,
-     "margin": 228920,
-     "pop": 0.9383756396724002
+     "credit": 16050,
+     "margin": 224177,
+     "pop": 0.9378748754115449
     },
     "entered": true,
-    "exit": null
+    "exit": {
+     "kind": "LEFT",
+     "why": "filtered out: open interest too thin",
+     "expiring": false
+    }
    }
   }
  },
- "lastRunAt": "2026-11-19T14:30:56.718Z",
+ "lastRunAt": "2026-11-19T14:41:35.659Z",
  "heartbeatDate": "2026-11-18"
 }
