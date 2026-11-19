@@ -13,41 +13,56 @@
    "unit": "₹/kg",
    "lot": "2500 kg",
    "credit": 9600,
-   "margin": 167778,
-   "pop": 0.9775166398868406
+   "margin": 168679,
+   "pop": 0.9769775778680942
+  },
+  "copper|2026-12-23|1350|CE": {
+   "metal": "copper",
+   "emoji": "🟠",
+   "symbol": "COPPER",
+   "expiry": "2026-12-23",
+   "strike": 1350,
+   "type": "CE",
+   "conviction": 60,
+   "ltp": 6.6,
+   "unit": "₹/kg",
+   "lot": "2500 kg",
+   "credit": 16500,
+   "margin": 223994,
+   "pop": 0.9390950516377589
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-19T14:41:02.193Z",
-   "fingerprint": "7041f1853f01e269",
+   "lastLiveAt": "2026-11-19T14:50:36.854Z",
+   "fingerprint": "0d91dc3cd95a7d34",
    "regime": "trend_down"
   },
   "gold": {
-   "lastLiveAt": "2026-11-19T14:41:06.936Z",
-   "fingerprint": "b9036c3d644d8fc4",
+   "lastLiveAt": "2026-11-19T14:50:40.604Z",
+   "fingerprint": "dabd14c52a4e323c",
    "regime": "chop"
   },
   "copper": {
-   "lastLiveAt": "2026-11-19T14:41:19.612Z",
-   "fingerprint": "223f1b1765672b37",
+   "lastLiveAt": "2026-11-19T14:50:44.855Z",
+   "fingerprint": "a3f8bd98b51b59d6",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-19T14:41:31.155Z",
-   "fingerprint": "48754fb7062dfd45",
+   "lastLiveAt": "2026-11-19T14:50:47.807Z",
+   "fingerprint": "8fef23d084d79ce9",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-19",
   "runs": {
-   "silver": 69,
-   "gold": 69,
-   "copper": 69,
-   "crude": 69
+   "silver": 70,
+   "gold": 70,
+   "copper": 70,
+   "crude": 70
   },
-  "NEW": 2,
+  "NEW": 3,
   "MOVED": 8,
   "DROPPED": 0,
   "LEFT": 1,
@@ -82,22 +97,18 @@
      "strike": 1350,
      "type": "CE",
      "conviction": 60,
-     "ltp": 6.42,
+     "ltp": 6.6,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 16050,
-     "margin": 224177,
-     "pop": 0.9378748754115449
+     "credit": 16500,
+     "margin": 223994,
+     "pop": 0.9390950516377589
     },
     "entered": true,
-    "exit": {
-     "kind": "LEFT",
-     "why": "filtered out: open interest too thin",
-     "expiring": false
-    }
+    "exit": null
    }
   }
  },
- "lastRunAt": "2026-11-19T14:41:35.659Z",
+ "lastRunAt": "2026-11-19T14:50:52.672Z",
  "heartbeatDate": "2026-11-18"
 }
