@@ -8,13 +8,13 @@
    "expiry": "2026-12-23",
    "strike": 1000,
    "type": "PE",
-   "conviction": 90,
-   "ltp": 4.91,
+   "conviction": 87,
+   "ltp": 4.96,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 12275,
-   "margin": 154538,
-   "pop": 0.973120944556435
+   "credit": 12400,
+   "margin": 156761,
+   "pop": 0.9697057828482198
   },
   "copper|2026-12-23|1400|CE": {
    "metal": "copper",
@@ -24,12 +24,12 @@
    "strike": 1400,
    "type": "CE",
    "conviction": 77,
-   "ltp": 3.4,
+   "ltp": 3.16,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 8500,
-   "margin": 156421,
-   "pop": 0.9742858381852729
+   "credit": 7900,
+   "margin": 151076,
+   "pop": 0.9758166379294564
   },
   "copper|2026-12-23|1350|CE": {
    "metal": "copper",
@@ -38,63 +38,48 @@
    "expiry": "2026-12-23",
    "strike": 1350,
    "type": "CE",
-   "conviction": 65,
-   "ltp": 5.33,
+   "conviction": 62,
+   "ltp": 4.93,
    "unit": "₹/kg",
    "lot": "2500 kg",
-   "credit": 13325,
-   "margin": 204598,
-   "pop": 0.9368525345148238
-  },
-  "copper|2026-12-23|1050|PE": {
-   "metal": "copper",
-   "emoji": "🟠",
-   "symbol": "COPPER",
-   "expiry": "2026-12-23",
-   "strike": 1050,
-   "type": "PE",
-   "conviction": 61,
-   "ltp": 8.04,
-   "unit": "₹/kg",
-   "lot": "2500 kg",
-   "credit": 20100,
-   "margin": 214415,
-   "pop": 0.9141313752272127
+   "credit": 12325,
+   "margin": 197717,
+   "pop": 0.9403758324365685
   }
  },
  "metals": {
   "silver": {
-   "lastLiveAt": "2026-11-27T06:30:37.065Z",
-   "fingerprint": "126845f7d0fa02cf",
+   "lastLiveAt": "2026-11-27T06:40:33.140Z",
+   "fingerprint": "ac38c2e5af162e66",
    "regime": "no_conviction"
   },
   "gold": {
-   "lastLiveAt": "2026-11-27T06:30:40.216Z",
-   "fingerprint": "d9373f8c91a5c810",
+   "lastLiveAt": "2026-11-27T06:40:36.527Z",
+   "fingerprint": "e09ed4d68473506d",
    "regime": "no_conviction"
   },
   "copper": {
-   "lastLiveAt": "2026-11-27T06:30:43.162Z",
-   "fingerprint": "96d73c971bb59e76",
+   "lastLiveAt": "2026-11-27T06:40:40.040Z",
+   "fingerprint": "5c8b6d6e11b2e7f2",
    "regime": "trend_down"
   },
   "crude": {
-   "lastLiveAt": "2026-11-27T06:30:46.183Z",
-   "fingerprint": "351fc918e2ae5bc8",
+   "lastLiveAt": "2026-11-27T06:40:43.098Z",
+   "fingerprint": "fd198683a3e9084b",
    "regime": "no_conviction"
   }
  },
  "day": {
   "date": "2026-11-27",
   "runs": {
-   "silver": 19,
-   "gold": 19,
-   "copper": 19,
-   "crude": 19
+   "silver": 20,
+   "gold": 20,
+   "copper": 20,
+   "crude": 20
   },
   "NEW": 7,
-  "MOVED": 11,
-  "DROPPED": 6,
+  "MOVED": 13,
+  "DROPPED": 7,
   "LEFT": 0,
   "trades": {
    "copper|2026-12-23|1000|PE": {
@@ -106,13 +91,13 @@
      "expiry": "2026-12-23",
      "strike": 1000,
      "type": "PE",
-     "conviction": 90,
-     "ltp": 4.91,
+     "conviction": 87,
+     "ltp": 4.96,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 12275,
-     "margin": 154538,
-     "pop": 0.973120944556435
+     "credit": 12400,
+     "margin": 156761,
+     "pop": 0.9697057828482198
     },
     "entered": true,
     "exit": null
@@ -146,13 +131,13 @@
      "expiry": "2026-12-23",
      "strike": 1350,
      "type": "CE",
-     "conviction": 65,
-     "ltp": 4.73,
+     "conviction": 62,
+     "ltp": 4.93,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 11825,
-     "margin": 190971,
-     "pop": 0.9463130757645432
+     "credit": 12325,
+     "margin": 197717,
+     "pop": 0.9403758324365685
     },
     "exit": null,
     "entered": true
@@ -213,19 +198,23 @@
      "expiry": "2026-12-23",
      "strike": 1050,
      "type": "PE",
-     "conviction": 61,
-     "ltp": 8.04,
+     "conviction": 59,
+     "ltp": 8.3,
      "unit": "₹/kg",
      "lot": "2500 kg",
-     "credit": 20100,
-     "margin": 214415,
-     "pop": 0.9141313752272127
+     "credit": 20750,
+     "margin": 218557,
+     "pop": 0.9062694157486718
     },
     "entered": true,
-    "exit": null
+    "exit": {
+     "kind": "DROPPED",
+     "why": null,
+     "expiring": false
+    }
    }
   }
  },
- "lastRunAt": "2026-11-27T06:30:49.319Z",
+ "lastRunAt": "2026-11-27T06:40:48.191Z",
  "heartbeatDate": "2026-11-26"
 }
